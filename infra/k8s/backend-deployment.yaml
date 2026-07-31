@@ -1,0 +1,102 @@
+# Backend API (FastAPI/uvicorn) — Batch 17.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stellix-backend
+  namespace: stellix
+  labels:
+    app.kubernetes.io/name: stellix-backend
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: stellix-labs
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: stellix-backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: stellix-backend
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: stellix-labs
+      annotations:
+        # Scraped by the Prometheus instrumentator (Batch 13) at /metrics.
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: backend
+          image: ghcr.io/stellix-labs/stellix-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: stellix-config
+            - secretRef:
+                name: stellix-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          # Slow-start guard: don't let liveness kill the pod while the ASGI app
+          # and driver pools are still warming up (up to 30 x 5s = 150s).
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            # 503s when Postgres/Redis is unreachable → pod is pulled from the
+            # Service endpoints without being restarted.
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            # readOnlyRootFilesystem is on, so mount writable scratch for the
+            # local-disk artifact stores and tempfiles. Back /app/var with a PVC
+            # or object storage for durable exports/avatars.
+            - name: var
+              mountPath: /app/var
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: var
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}

@@ -1,0 +1,15 @@
+# Single webhook contact point (Discord/Slack incoming-webhook URL, or any
+# HTTP endpoint) — GRAFANA_ALERT_WEBHOOK_URL is unset by default (deferred
+# credential, same pattern as SENTRY_DSN); Grafana just won't have a working
+# contact point until the owner supplies one via infra/.env.
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: stellix-webhook
+    receivers:
+      - uid: stellix-webhook-receiver
+        type: webhook
+        settings:
+          url: "${GRAFANA_ALERT_WEBHOOK_URL}"
+          httpMethod: POST

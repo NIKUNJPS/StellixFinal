@@ -1,0 +1,25 @@
+# Stellix Labs — Prometheus scrape config (Batch 13).
+#
+# The backend runs natively (uvicorn on the host), not in a container, in every
+# dev environment this project has actually run in so far — same reason
+# postgres/neo4j/redis above are the containerized pieces, not the app itself
+# (see docs/schemas.md "Judgment calls"). `host.docker.internal` is Docker
+# Desktop's DNS name for reaching the host from inside a container; it resolves
+# to the container's own gateway on Linux hosts too via the `extra_hosts` entry
+# on the `prometheus` service in docker-compose.yml.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "stellix-backend"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:8000"]
+        labels:
+          service: "stellix-backend"
+
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

@@ -1,0 +1,11 @@
+{
+  // VS Code will offer to install these when you open the workspace.
+  "recommendations": [
+    "ms-python.python",           // Python language support + debugger
+    "ms-python.vscode-pylance",   // fast IntelliSense / type checking
+    "charliermarsh.ruff",         // the linter/formatter this repo uses
+    "dbaeumer.vscode-eslint",     // frontend linting
+    "esbenp.prettier-vscode",     // frontend formatting
+    "bradlc.vscode-tailwindcss"   // Tailwind class IntelliSense (frontend)
+  ]
+}

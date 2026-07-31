@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Stellix Labs theme.
+ * The three brand colors below are LOCKED (Batch 0). Use the Tailwind tokens
+ * (bg-stellix-primary, text-stellix-highlight, ...) or the CSS variables; do not
+ * hardcode these hex values elsewhere.
+ */
+:root {
+  /* --- Locked brand palette --------------------------------------------- */
+  --stellix-primary: #0a1628; /* dark navy   */
+  --stellix-accent: #1565c0; /* accent blue  */
+  --stellix-highlight: #00b4d8; /* cyan highlight */
+
+  /* --- shadcn/ui tokens (HSL triplets), dark-navy theme by default ------ */
+  --background: 217 60% 10%; /* ≈ #0A1628 */
+  --foreground: 210 40% 96%;
+
+  --card: 216 50% 14%;
+  --card-foreground: 210 40% 96%;
+
+  /* Batch 12: floating-surface token (dialog/dropdown/select/command/tooltip),
+     distinct from --card so surface theming can diverge later — slightly
+     darker than --card for visual separation when a popover sits over a card. */
+  --popover: 217 55% 12%;
+  --popover-foreground: 210 40% 96%;
+
+  --primary: 212 80% 42%; /* ≈ #1565C0 */
+  --primary-foreground: 210 40% 98%;
+
+  --secondary: 216 40% 20%;
+  --secondary-foreground: 210 40% 96%;
+
+  --muted: 216 35% 22%;
+  --muted-foreground: 215 20% 70%;
+
+  --accent: 190 100% 42%; /* ≈ #00B4D8 */
+  --accent-foreground: 217 60% 10%;
+
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 216 35% 24%;
+  --input: 216 35% 24%;
+  --ring: 190 100% 42%;
+
+  --radius: 0.5rem;
+}
+
+/*
+ * Cold Precision theme — PUBLIC MARKETING PAGES ONLY (landing redesign).
+ * Scoped to the `.marketing` wrapper set in app/(marketing)/layout.tsx, so every
+ * token-driven class (bg-background, text-accent, border-border, font-display, …)
+ * flips to the light high-contrast palette inside the marketing shell while the
+ * dashboard (outside the wrapper) keeps the locked navy/cyan `:root` theme above.
+ * White #FFFFFF · near-black #0A0F1E · slate #64748B · electric #0066FF ·
+ * deep #003399 · ice #E8F0FF · borders #E2E8F0 · alt surface #F7F9FC.
+ */
+.marketing {
+  --background: 0 0% 100%;
+  --foreground: 225 50% 8%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 225 50% 8%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 225 50% 8%;
+
+  --primary: 216 100% 50%; /* #0066FF electric blue */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 216 45% 98%; /* #F7F9FC off-white */
+  --secondary-foreground: 225 50% 8%;
+
+  --muted: 216 45% 98%;
+  --muted-foreground: 215 16% 47%; /* #64748B slate */
+
+  --accent: 216 100% 50%; /* highlights share the electric blue */
+  --accent-foreground: 0 0% 100%;
+
+  --border: 214 32% 91%; /* #E2E8F0 */
+  --input: 214 32% 91%;
+  --ring: 216 100% 50%;
+
+  /* font-display resolves through --font-fraunces (tailwind.config); inside the
+     marketing scope it becomes Instrument Serif without touching the dashboard. */
+  --font-fraunces: var(--font-instrument-serif);
+
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* Monospace for real code/schema artifacts on the public site only. */
+.marketing .font-code {
+  font-family: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  /* Reveal-on-scroll (Batch 15). Elements start hidden; the useReveal hook adds
+     `.is-visible` when they scroll into view. No animation library needed. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Animated connector paths in the workflow/architecture diagrams only start
+     flowing once their container is revealed, so nothing animates off-screen. */
+  .flow-active .flow-line {
+    animation: flow-dash 1.1s linear infinite;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .flow-active .flow-line,
+  .animate-flow-dash,
+  .animate-pulse-node {
+    animation: none !important;
+  }
+}

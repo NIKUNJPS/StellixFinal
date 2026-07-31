@@ -1,0 +1,72 @@
+# ---- Secrets (NEVER commit) ----
+.env
+.env.*
+!.env.example
+!*.env.example
+frontend/.env.local
+infra/.env
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.json
+coverage.xml
+htmlcov/
+*.log
+backend/var/
+
+# ---- Node / Next.js ----
+node_modules/
+.next/
+out/
+.turbo/
+next-env.d.ts
+*.tsbuildinfo
+
+# ---- Editors / OS ----
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ---- Docker / data volumes (if bind-mounted) ----
+infra/initdb/*.local.sql
+
+# ---- Local dev tooling (downloaded binaries, not source) ----
+# e.g. the native Neo4j Community server used to verify the knowledge graph
+# locally on this machine (Docker absent) — a ~150MB download, never committed.
+.tooling/
+
+# Local dev services installed by tooling (Neo4j server, etc.) — never committed.
+.local/
+
+# Celery Beat runtime state (shelve files created when the beat scheduler runs).
+# Local scheduling state, never source.
+celerybeat-schedule*
+celerybeat.pid
+
+# Keep env TEMPLATES tracked. The blanket "!*.env.example" above does not match
+# ".env.local.example" (it ends in ".local.example"), so name it explicitly.
+!frontend/.env.local.example
+!backend/.env.example
+
+# Share the VS Code run configs (tasks/launch/settings/extensions) with the team —
+# the setup guide references them. Personal per-user state stays ignored.
+!.vscode/
+.vscode/*.log
+
+# ---- Internal / academic-prep material (kept locally, never pushed) ----
+.claude/
+docs/LEARNING_GUIDE.md
+docs/AUDIT_REPORT.md
+docs/PROJECT_REPORT.md

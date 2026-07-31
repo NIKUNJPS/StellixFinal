@@ -1,0 +1,28 @@
+# Kustomize entrypoint — `kubectl apply -k infra/k8s` (or `kubectl kustomize
+# infra/k8s` to render + validate). The migration Job is intentionally NOT applied
+# by kustomize apply-all: it's a pre-deploy step the CD pipeline runs and waits on
+# explicitly (see migrate-job.yaml), so it stays out of the steady-state set here.
+# secret.example.yaml is likewise excluded — provide the real Secret out-of-band.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: stellix
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - backend-deployment.yaml
+  - celery-worker-deployment.yaml
+  - frontend-deployment.yaml
+  - services.yaml
+  - ingress.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: stellix-labs
+
+images:
+  # CD patches these tags to the immutable commit SHA at deploy time.
+  - name: ghcr.io/stellix-labs/stellix-backend
+    newTag: latest
+  - name: ghcr.io/stellix-labs/stellix-frontend
+    newTag: latest

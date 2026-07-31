@@ -1,0 +1,68 @@
+[project]
+name = "stellix-labs-backend"
+version = "0.1.0"
+description = "Stellix Labs — The Institutional Memory Layer for Quantitative Research (backend)"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-ra -q --strict-markers"
+markers = [
+    "integration: hits the network (yfinance) and a live Postgres; opt-in via RUN_INTEGRATION=1",
+]
+# Tests must exercise real behavior (PROJECT_CONSTITUTION §4). Treat unregistered
+# markers and skips-without-reason as smells surfaced in CI review.
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ASYNC"]
+ignore = [
+    # E501 (line length) is delegated to the formatter, not the linter: enabling it
+    # here only flags unsplittable docstrings/log strings/URLs a formatter can't wrap;
+    # the effective limit is `line-length` above. (Standard ruff guidance when the
+    # formatter owns wrapping.)
+    "E501",
+    # UP042: prefers `enum.StrEnum` over `(str, enum.Enum)`. The codebase deliberately
+    # uses `(str, enum.Enum)` throughout, and migrating ~20 enums to StrEnum changes
+    # str()/format() behaviour subtly — not worth the risk for a stylistic preference.
+    "UP042",
+    # ASYNC109/230/240: flag blocking file/path IO (and a forwarded `timeout` kwarg) in
+    # async functions. The real occurrences are tiny, bounded writes/reads (a 2 MB
+    # avatar, test fixture files) and post_webhook forwarding its timeout to httpx —
+    # negligible event-loop impact; not worth threadpool-wrapping.
+    "ASYNC109",
+    "ASYNC230",
+    "ASYNC240",
+]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency-injection markers are *called* in argument defaults by design
+# (`x = Depends(...)`, `Query(...)`, `File(...)`, `require_role(...)`, …). They are
+# effectively immutable sentinels/factories, so B008 ("do not perform function call in
+# default argument") is a false positive for them — the documented FastAPI + ruff
+# configuration.
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.Form",
+    "fastapi.File",
+    "fastapi.Header",
+    "fastapi.Cookie",
+    "fastapi.Security",
+    "app.api.deps.require_role",
+    "app.api.deps.require_scope",
+]
+
+[tool.mypy]
+python_version = "3.11"
+plugins = ["pydantic.mypy"]
+warn_unused_ignores = true
+disallow_untyped_defs = true
+ignore_missing_imports = true

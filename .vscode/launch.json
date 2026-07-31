@@ -1,0 +1,52 @@
+{
+  // Use these when you want BREAKPOINTS. For just running the stack, prefer the
+  // "▶ Run All (dev)" task instead (Terminal > Run Task).
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug backend (uvicorn)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app.main:app", "--reload", "--port", "8000"],
+      "cwd": "${workspaceFolder}/backend",
+      "python": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "Debug Celery worker",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "celery",
+      "args": [
+        "-A", "app.worker.celery_app.celery_app",
+        "worker", "--loglevel=INFO", "--pool=solo"
+      ],
+      "cwd": "${workspaceFolder}/backend",
+      "python": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "Debug current pytest file",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "-v"],
+      "cwd": "${workspaceFolder}/backend",
+      "python": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    }
+  ],
+  "compounds": [
+    {
+      // Launches backend + worker together under the debugger. Start the frontend
+      // separately with the "frontend: next dev" task (it's a Node process, not Python).
+      "name": "Debug backend + worker",
+      "configurations": ["Debug backend (uvicorn)", "Debug Celery worker"],
+      "stopAll": true
+    }
+  ]
+}

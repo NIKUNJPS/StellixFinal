@@ -1,0 +1,11 @@
+# Routes every alert (no per-alert routing tree needed for a solo-founder v1
+# with a single contact point) to the webhook above.
+apiVersion: 1
+
+policies:
+  - orgId: 1
+    receiver: stellix-webhook
+    group_by: ["alertname"]
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h

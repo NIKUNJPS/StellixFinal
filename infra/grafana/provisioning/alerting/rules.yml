@@ -1,0 +1,108 @@
+# The 3 Batch-13-required alert rules, evaluated directly against the
+# Prometheus datasource (Grafana's own built-in alerting, not a separate
+# Alertmanager — see docs/schemas.md "Judgment calls"). Each rule uses the
+# standard reduce (B) -> threshold (C) expression chain; C is the rule's
+# `condition`.
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: stellix-alerts
+    folder: Stellix Labs
+    interval: 1m
+    rules:
+      - uid: stellix-error-rate-high
+        title: "Error rate > 5% over 5 minutes"
+        condition: C
+        for: 5m
+        data:
+          - refId: A
+            datasourceUid: stellix-prometheus
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              expr: 'sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))'
+              instant: true
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0.05] }
+              refId: C
+        annotations:
+          summary: "5xx error rate has been above 5% for 5 minutes."
+        labels:
+          severity: critical
+
+      - uid: stellix-celery-queue-depth
+        title: "Celery queue depth > 100 pending for > 10 minutes"
+        condition: C
+        for: 10m
+        data:
+          - refId: A
+            datasourceUid: stellix-prometheus
+            relativeTimeRange: { from: 60, to: 0 }
+            model:
+              expr: "sum(celery_queue_pending_gauge)"
+              instant: true
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [100] }
+              refId: C
+        annotations:
+          summary: "More than 100 Celery tasks have been pending for over 10 minutes."
+        labels:
+          severity: warning
+
+      - uid: stellix-service-down
+        title: "Any service down for > 1 minute"
+        condition: C
+        for: 1m
+        data:
+          - refId: A
+            datasourceUid: stellix-prometheus
+            relativeTimeRange: { from: 60, to: 0 }
+            model:
+              expr: "min(service_health_gauge)"
+              instant: true
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+              refId: C
+        annotations:
+          summary: "At least one monitored service (see service_health_gauge labels) has been down for over 1 minute."
+        labels:
+          severity: critical

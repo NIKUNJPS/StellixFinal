@@ -1,0 +1,35 @@
+{
+  // Point VS Code at the backend virtualenv so "Run/Debug", the test runner,
+  // and IntelliSense all use the same interpreter your terminals do.
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+  "python.terminal.activateEnvironment": true,
+
+  // Pytest, rooted in backend/ (that's where conftest.py + pyproject live).
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.cwd": "${workspaceFolder}/backend",
+  "python.testing.pytestArgs": ["tests"],
+
+  // Ruff is the linter/formatter this repo uses (config in backend/pyproject.toml).
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": false
+  },
+
+  // Frontend: ESLint + Prettier already configured in frontend/.
+  "eslint.workingDirectories": ["frontend"],
+
+  // Keep the giant vendored dirs out of search/watch so VS Code stays fast.
+  "files.watcherExclude": {
+    "**/.venv/**": true,
+    "**/node_modules/**": true,
+    "**/.next/**": true,
+    "**/.local/**": true
+  },
+  "search.exclude": {
+    "**/.venv": true,
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/.local": true
+  }
+}

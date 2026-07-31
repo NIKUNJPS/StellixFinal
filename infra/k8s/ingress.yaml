@@ -1,0 +1,65 @@
+# External routing + TLS termination — Batch 17.
+# Assumes an ingress-nginx controller and cert-manager (ClusterIssuer
+# "letsencrypt-prod") are installed in the cluster. Swap the hosts/issuer for your
+# real domain. The API and web app are exposed on separate subdomains; the browser
+# reaches the API directly at api.* (the frontend's NEXT_PUBLIC_API_BASE_URL is
+# baked to that origin at image-build time).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stellix-frontend
+  namespace: stellix
+  labels:
+    app.kubernetes.io/part-of: stellix-labs
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - app.stellixlabs.example
+      secretName: stellix-frontend-tls
+  rules:
+    - host: app.stellixlabs.example
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: stellix-frontend
+                port:
+                  number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stellix-backend
+  namespace: stellix
+  labels:
+    app.kubernetes.io/part-of: stellix-labs
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Uploads (avatars) + large compliance-export downloads; raise the default 1m cap.
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    # CORS is handled by the app's own middleware (config.py BACKEND_CORS_ORIGINS),
+    # so the ingress does NOT add its own CORS annotations (would double-send headers).
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.stellixlabs.example
+      secretName: stellix-backend-tls
+  rules:
+    - host: api.stellixlabs.example
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: stellix-backend
+                port:
+                  number: 80
