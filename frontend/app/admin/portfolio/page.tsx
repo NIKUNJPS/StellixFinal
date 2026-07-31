@@ -125,16 +125,26 @@ function CorrelationHeatmap({ corr }: { corr: CorrelationMatrix }) {
                 >
                   {short(corr.labels[i]!)}
                 </td>
-                {row.map((v, j) => (
-                  <td
-                    key={j}
-                    className="h-9 w-14 rounded text-center font-mono text-[11px] text-slate-900"
-                    style={{ background: correlationColor(v) }}
-                    title={`${corr.labels[i]} × ${corr.labels[j]}: ${v.toFixed(2)}`}
-                  >
-                    {v.toFixed(2)}
-                  </td>
-                ))}
+                {row.map((v, j) =>
+                  v === null ? (
+                    <td
+                      key={j}
+                      className="h-9 w-14 rounded text-center font-mono text-[11px] text-muted-foreground"
+                      title={`${corr.labels[i]} × ${corr.labels[j]}: unavailable`}
+                    >
+                      —
+                    </td>
+                  ) : (
+                    <td
+                      key={j}
+                      className="h-9 w-14 rounded text-center font-mono text-[11px] text-slate-900"
+                      style={{ background: correlationColor(v) }}
+                      title={`${corr.labels[i]} × ${corr.labels[j]}: ${v.toFixed(2)}`}
+                    >
+                      {v.toFixed(2)}
+                    </td>
+                  ),
+                )}
               </tr>
             ))}
           </tbody>

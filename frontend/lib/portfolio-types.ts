@@ -36,7 +36,9 @@ export interface PortfolioOverview {
 
 export interface CorrelationMatrix {
   labels: string[];
-  matrix: number[][];
+  // A cell can be null if the backend ever has to report an undefined
+  // correlation (e.g. a numerical edge case) instead of fabricating a number.
+  matrix: (number | null)[][];
   excluded: string[];
   days_used: number;
 }

@@ -298,6 +298,21 @@ async def compute_correlation(
             days_used=len(frame),
         )
 
+    # A strategy with zero-variance returns over the window (flat equity curve —
+    # e.g. it hasn't traded) has an undefined correlation against anything:
+    # pandas reports NaN, which is neither a real number nor honestly "excluded"
+    # if left in — and the API must never emit it (FastAPI serializes NaN as JSON
+    # null, which crashes any consumer expecting a float). Drop it and recompute.
+    zero_variance = [col for col in frame.columns if frame[col].std(ddof=0) == 0]
+    if zero_variance:
+        excluded = excluded + [f"{c} (no return variance)" for c in zero_variance]
+        frame = frame.drop(columns=zero_variance)
+
+    if len(frame.columns) < 2:
+        return CorrelationResponse(
+            labels=list(frame.columns), matrix=[], excluded=excluded, days_used=len(frame)
+        )
+
     corr = frame.corr()
     labels = list(corr.columns)
     matrix = [
