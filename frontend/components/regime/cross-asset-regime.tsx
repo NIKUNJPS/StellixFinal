@@ -1,60 +1,115 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AlertTriangle, ArrowLeftRight, Layers } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  ArrowLeftRight,
+  Layers,
+  Activity,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getCrossAssetRegime, type CrossAssetRegime } from "@/lib/regime";
-import { REGIME_COLORS, type RegimeLabel } from "@/lib/regime-types";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  getCrossAssetRegime,
+  type CrossAssetRegime,
+} from "@/lib/regime";
+import {
+  REGIME_COLORS,
+  type RegimeLabel,
+} from "@/lib/regime-types";
 
 function relativeTime(iso: string): string {
   const then = new Date(iso).getTime();
   const days = Math.floor((Date.now() - then) / 86_400_000);
+
   if (days <= 0) return "today";
   if (days === 1) return "yesterday";
   if (days < 30) return `${days}d ago`;
+
   const months = Math.floor(days / 30);
-  return months < 12 ? `${months}mo ago` : `${Math.floor(months / 12)}y ago`;
+
+  return months < 12
+    ? `${months}mo ago`
+    : `${Math.floor(months / 12)}y ago`;
 }
 
-export function CrossAssetRegime() {
+type CrossAssetRegimeProps = {
+  activeSymbol?: string;
+  timelineLoaded?: boolean;
+};
+
+export function CrossAssetRegime({
+  activeSymbol = "",
+  timelineLoaded = false,
+}: CrossAssetRegimeProps) {
   const [data, setData] = useState<CrossAssetRegime | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getCrossAssetRegime()
       .then(setData)
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"));
+      .catch((e) =>
+        setError(
+          e instanceof Error ? e.message : "Failed to load",
+        ),
+      );
   }, []);
 
+  const normalizedActiveSymbol = activeSymbol.trim().toUpperCase();
+
+  const activeAsset = useMemo(() => {
+    if (!data || !normalizedActiveSymbol || !timelineLoaded) {
+      return null;
+    }
+
+    return data.assets[normalizedActiveSymbol] ?? null;
+  }, [data, normalizedActiveSymbol, timelineLoaded]);
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Layers className="h-5 w-5 text-stellix-highlight" />
+    <Card className="overflow-hidden border-[#d3dbdd]/10 bg-[#16232b]">
+      <CardHeader className="pb-5">
+        <CardTitle className="flex items-center gap-2 text-[#f2d17d]">
+          <Layers className="h-5 w-5 text-[#f2d17d]" />
           Cross-asset regimes
         </CardTitle>
-        <CardDescription>
-          The latest detected regime for each tracked asset, and any divergences between them.
+
+        <CardDescription className="max-w-2xl text-[#d3dbdd]/55">
+          The latest detected regime for each tracked asset, and any
+          divergences between them.
         </CardDescription>
       </CardHeader>
+
       <CardContent className="flex flex-col gap-5">
         {error && (
-          <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p className="rounded-xl border border-[#c40707]/30 bg-[#c40707]/10 px-4 py-3 text-sm text-[#ff8b8b]">
             {error}
           </p>
         )}
-        {!data && !error && <p className="text-sm text-muted-foreground">Loading…</p>}
+
+        {!data && !error && (
+          <p className="text-sm text-[#d3dbdd]/55">
+            Loading…
+          </p>
+        )}
 
         {data && data.insufficient_data && (
-          <p className="rounded-md border border-border bg-background/40 px-4 py-6 text-center text-sm text-muted-foreground">
-            Not enough stored regime data yet. Run detection on at least two symbols
-            {data.requested_symbols.length > 0 && (
-              <> (tried {data.requested_symbols.join(", ")})</>
-            )}{" "}
-            to compare them here.
-          </p>
+          <div className="rounded-xl border border-[#d3dbdd]/10 bg-[#0f1b22] px-4 py-7 text-center">
+            <p className="text-sm text-[#d3dbdd]/65">
+              Not enough stored regime data yet. Run detection on
+              at least two symbols
+              {data.requested_symbols.length > 0 && (
+                <> (tried {data.requested_symbols.join(", ")})</>
+              )}{" "}
+              to compare them here.
+            </p>
+          </div>
         )}
 
         {data && !data.insufficient_data && (
@@ -62,47 +117,189 @@ export function CrossAssetRegime() {
             {/* Asset cards */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {Object.entries(data.assets).map(([symbol, a]) => {
-                const color = REGIME_COLORS[a.regime as RegimeLabel] ?? "hsl(var(--muted-foreground))";
+                const color =
+                  REGIME_COLORS[
+                    a.regime as RegimeLabel
+                  ] ?? "#d3dbdd";
+
+                const isActive =
+                  timelineLoaded &&
+                  normalizedActiveSymbol === symbol.toUpperCase();
+
                 return (
-                  <div key={symbol} className="rounded-lg border border-border bg-background/40 p-4">
+                  <div
+                    key={symbol}
+                    className={`
+                      relative rounded-xl border p-4
+                      transition-all duration-500
+                      ease-[cubic-bezier(0.22,1,0.36,1)]
+                      ${
+                        isActive
+                          ? "z-10 scale-[1.035] border-[#074068] bg-[#042F34] shadow-[0_14px_40px_rgba(7,64,104,0.28)]"
+                          : "border-[#d3dbdd]/10 bg-[#0f1b22] hover:border-[#d3dbdd]/20 hover:bg-[#11232a]"
+                      }
+                    `}
+                  >
+                    {/* Active top indicator */}
+                    <div
+                      className={`
+                        absolute inset-x-4 -top-px h-[2px]
+                        rounded-full transition-all duration-500
+                        ${
+                          isActive
+                            ? "opacity-100"
+                            : "opacity-0"
+                        }
+                      `}
+                      style={{
+                        backgroundColor: color,
+                        boxShadow: isActive
+                          ? `0 0 16px ${color}`
+                          : "none",
+                      }}
+                    />
+
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold">{symbol}</span>
-                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+                      <span
+                        className={`
+                          font-semibold text-[#d3dbdd]
+                          transition-all duration-500
+                          ${isActive ? "text-base" : "text-sm"}
+                        `}
+                      >
+                        {symbol}
+                      </span>
+
+                      <span
+                        className={`
+                          rounded-full transition-all duration-500
+                          ${
+                            isActive
+                              ? "h-3 w-3"
+                              : "h-2.5 w-2.5"
+                          }
+                        `}
+                        style={{
+                          backgroundColor: color,
+                          boxShadow: isActive
+                            ? `0 0 12px ${color}`
+                            : "none",
+                        }}
+                      />
                     </div>
-                    <p className="mt-2 text-lg font-medium" style={{ color }}>
+
+                    <p
+                      className={`
+                        mt-2 font-medium
+                        transition-all duration-500
+                        ${
+                          isActive
+                            ? "text-xl"
+                            : "text-lg"
+                        }
+                      `}
+                      style={{ color }}
+                    >
                       {a.regime}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {(a.confidence * 100).toFixed(0)}% confident · {relativeTime(a.detected_at)}
+
+                    <p className="text-xs text-[#d3dbdd]/45">
+                      {(a.confidence * 100).toFixed(0)}%
+                      confident · {relativeTime(a.detected_at)}
                     </p>
+
+                    {/* Active timeline indicator */}
+                    <div
+                      className={`
+                        grid transition-all duration-500
+                        ${
+                          isActive
+                            ? "mt-3 grid-rows-[1fr] opacity-100"
+                            : "mt-0 grid-rows-[0fr] opacity-0"
+                        }
+                      `}
+                    >
+                      <div className="overflow-hidden">
+                        <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-[#d3dbdd]/55">
+                          <Activity className="h-3 w-3" />
+                          Loaded timeline
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
             </div>
 
-            {/* Synchronized note (not an alert) */}
-            {data.synchronized && (
-              <p className="flex items-center gap-2 rounded-md border border-border bg-background/40 px-3 py-2 text-sm text-muted-foreground">
-                <ArrowLeftRight className="h-4 w-4 shrink-0" />
-                All tracked assets are in the same regime — markets are synchronized.
-              </p>
-            )}
 
-            {/* Divergence alerts (only when there are real divergences) */}
+            {/* Divergence section */}
             {data.divergences.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <p className="text-sm font-medium">Divergences</p>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="
+                      flex h-7 w-7 items-center justify-center
+                      rounded-lg bg-[#fe5b05]/10
+                      border border-[#fe5b05]/20
+                    "
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5 text-[#fe5b05]" />
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold text-[#d3dbdd]">
+                      Regime divergences
+                    </p>
+
+                    <p className="text-xs text-[#d3dbdd]/40">
+                      Assets are behaving differently across the
+                      current market environment.
+                    </p>
+                  </div>
+                </div>
+
                 {data.divergences.map((d, i) => (
                   <div
                     key={i}
-                    className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-sm"
+                    className="
+                      rounded-xl border
+                      border-[#fe5b05]/20
+                      bg-[#fe5b05]/[0.035]
+                      px-4 py-3
+                      transition-all duration-200
+                      hover:border-[#fe5b05]/30
+                      hover:bg-[#fe5b05]/[0.055]
+                    "
                   >
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                    <div>
-                      <Badge variant="secondary" className="mr-2 capitalize">
-                        {d.type.replace("_", " ")}
-                      </Badge>
-                      <span className="text-muted-foreground">{d.message}</span>
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="
+                          mt-0.5 flex h-7 w-7 shrink-0
+                          items-center justify-center
+                          rounded-lg
+                          bg-[#fe5b05]/10
+                        "
+                      >
+                        <AlertTriangle className="h-3.5 w-3.5 text-[#fe5b05]" />
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="mb-1.5 flex items-center gap-2">
+                          <Badge
+                            className="
+                              border-0 bg-[#fe5b05]/10
+                              text-[#fe8a4d]
+                              hover:bg-[#fe5b05]/10
+                            "
+                          >
+                            {d.type.replace("_", " ")}
+                          </Badge>
+                        </div>
+
+                        <p className="text-sm leading-relaxed text-[#d3dbdd]/60">
+                          {d.message}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ))}
