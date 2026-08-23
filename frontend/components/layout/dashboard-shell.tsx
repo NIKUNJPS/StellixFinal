@@ -60,9 +60,10 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
   if (status !== "ready" || !user || !organization) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      </div>
+      // Loading state
+    <div className="flex min-h-screen items-center justify-center bg-black">
+      <p className="text-sm text-muted-foreground">Loading…</p>
+    </div>
     );
   }
 
@@ -74,7 +75,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       <TopNav />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto bg-background p-6">
+        <main className="flex-1 overflow-y-auto bg-black p-6">
           {/* A crash in a page component shows the branded fallback, not a blank shell. */}
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>

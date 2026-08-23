@@ -86,46 +86,92 @@ export default function StrategyBuilderPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="mx-auto w-full max-w-3xl text-[#d3dbdd]">
       <BackLink href="/admin/strategies" label="Back to strategies" />
-      <Card>
+
+      <Card className="border-[#075056]/40 bg-[#16232b] shadow-xl shadow-black/20">
         <CardHeader>
-          <CardTitle>Strategy Builder</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-[#fdf6e3]">
+            Strategy Builder
+          </CardTitle>
+
+          <CardDescription className="text-[#d3dbdd]/60">
             Step {step + 1} of {STEPS.length}: {STEPS[step]}
           </CardDescription>
+
           <div className="mt-3 flex gap-2">
             {STEPS.map((s, i) => (
               <div
                 key={s}
-                className={`h-1.5 flex-1 rounded-full ${i <= step ? "bg-stellix-highlight" : "bg-border"}`}
+                className={`h-1.5 flex-1 rounded-full ${
+                  i <= step
+                    ? "bg-[#f2d17d]"
+                    : "bg-[#d3dbdd]/15"
+                }`}
               />
             ))}
           </div>
         </CardHeader>
+
         <CardContent className="flex flex-col gap-6">
           {step === 0 && (
-            <div className="flex flex-col gap-4" data-testid="step-basic">
+            <div
+              className="flex flex-col gap-4"
+              data-testid="step-basic"
+            >
               <div className="flex flex-col gap-1.5">
-                <Label>Name</Label>
-                <Input name="name" value={name} onChange={(e) => setName(e.target.value)} />
+                <Label className="text-[#d3dbdd]">
+                  Name
+                </Label>
+
+                <Input
+                  name="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="border-[#d3dbdd]/20 bg-[#d3dbdd] text-[#16232b] placeholder:text-[#16232b]/50 focus-visible:ring-[#075056]"
+                />
               </div>
+
               <div className="flex flex-col gap-1.5">
-                <Label>Description</Label>
-                <Input value={description} onChange={(e) => setDescription(e.target.value)} />
+                <Label className="text-[#d3dbdd]">
+                  Description
+                </Label>
+
+                <Input
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="border-[#d3dbdd]/20 bg-[#d3dbdd] text-[#16232b] placeholder:text-[#16232b]/50 focus-visible:ring-[#075056]"
+                />
               </div>
             </div>
           )}
 
           {step === 1 && (
-            <div className="flex flex-col gap-4" data-testid="step-signals">
-              <RuleBuilder label="Entry rules" value={entryRule} onChange={setEntryRule} testId="entry-rules" />
-              <RuleBuilder label="Exit rules" value={exitRule} onChange={setExitRule} testId="exit-rules" />
+            <div
+              className="flex flex-col gap-4"
+              data-testid="step-signals"
+            >
+              <RuleBuilder
+                label="Entry rules"
+                value={entryRule}
+                onChange={setEntryRule}
+                testId="entry-rules"
+              />
+
+              <RuleBuilder
+                label="Exit rules"
+                value={exitRule}
+                onChange={setExitRule}
+                testId="exit-rules"
+              />
             </div>
           )}
 
           {step === 2 && (
-            <div className="grid grid-cols-3 gap-4" data-testid="step-risk">
+            <div
+              className="grid grid-cols-3 gap-4"
+              data-testid="step-risk"
+            >
               {(
                 [
                   ["max_drawdown_pct", "Max drawdown %"],
@@ -133,13 +179,25 @@ export default function StrategyBuilderPage() {
                   ["stop_loss_pct", "Stop loss %"],
                 ] as const
               ).map(([key, lbl]) => (
-                <div key={key} className="flex flex-col gap-1.5">
-                  <Label>{lbl}</Label>
+                <div
+                  key={key}
+                  className="flex flex-col gap-1.5"
+                >
+                  <Label className="text-[#d3dbdd]">
+                    {lbl}
+                  </Label>
+
                   <Input
                     type="number"
                     name={key}
                     value={risk[key]}
-                    onChange={(e) => setRisk({ ...risk, [key]: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setRisk({
+                        ...risk,
+                        [key]: Number(e.target.value),
+                      })
+                    }
+                    className="border-[#d3dbdd]/20 bg-[#d3dbdd] text-[#16232b] focus-visible:ring-[#075056]"
                   />
                 </div>
               ))}
@@ -147,21 +205,32 @@ export default function StrategyBuilderPage() {
           )}
 
           {step === 3 && (
-            <div className="flex flex-col gap-3" data-testid="step-review">
-              <div className="text-sm">
-                <span className="text-muted-foreground">Name:</span> {name}
+            <div
+              className="flex flex-col gap-3"
+              data-testid="step-review"
+            >
+              <div className="text-sm text-[#d3dbdd]">
+                <span className="text-[#d3dbdd]/50">
+                  Name:
+                </span>{" "}
+                {name}
               </div>
-              <pre className="max-h-72 overflow-auto rounded-md border border-border bg-card p-3 text-xs">
+
+              <pre className="max-h-72 overflow-auto rounded-md border border-[#075056]/30 bg-[#16232b] p-3 text-xs text-[#d3dbdd]">
                 {JSON.stringify(dslPreview, null, 2)}
               </pre>
+
               <div>
-                <CritiquePanel strategyId={draftId} getStrategyId={onGetCritique} />
+                <CritiquePanel
+                  strategyId={draftId}
+                  getStrategyId={onGetCritique}
+                />
               </div>
             </div>
           )}
 
           {error && (
-            <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p className="rounded-md border border-[#fe5b05]/40 bg-[#fe5b05]/10 px-3 py-2 text-sm text-[#fe5b05]">
               {error}
             </p>
           )}
@@ -170,17 +239,34 @@ export default function StrategyBuilderPage() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              onClick={() =>
+                setStep((s) => Math.max(0, s - 1))
+              }
               disabled={step === 0}
+              className="border-[#d3dbdd]/20 bg-transparent text-[#d3dbdd] hover:bg-[#d3dbdd]/10 hover:text-[#d3dbdd]"
             >
               Back
             </Button>
+
             {step < STEPS.length - 1 ? (
-              <Button type="button" data-testid="wizard-next" onClick={() => setStep((s) => s + 1)}>
+              <Button
+                type="button"
+                data-testid="wizard-next"
+                onClick={() =>
+                  setStep((s) => s + 1)
+                }
+                className="bg-[#075056] text-[#d3dbdd] hover:bg-[#075056]/85"
+              >
                 Next
               </Button>
             ) : (
-              <Button type="button" data-testid="wizard-create" onClick={onCreate} disabled={saving}>
+              <Button
+                type="button"
+                data-testid="wizard-create"
+                onClick={onCreate}
+                disabled={saving}
+                className="bg-[#fe5b05] text-white hover:bg-[#fe5b05]/85"
+              >
                 {saving ? "Creating…" : "Create strategy"}
               </Button>
             )}
