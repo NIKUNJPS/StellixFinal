@@ -12,26 +12,19 @@ import {
   Menu,
   ServerCog,
   ShieldAlert,
+  ShieldCheck,
+  Radio,
   Users,
+  ArrowLeft,
 } from "lucide-react";
 import { Toaster } from "sonner";
 
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import { loadMe, logout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
-
-/**
- * SUPERADMIN console shell (Batch 24).
- *
- * A deliberately separate chrome from the client dashboard: crimson accent, a
- * "SUPERADMIN CONSOLE" badge, and a red border-top so it is impossible to mistake
- * the founder's platform-wide surface for a tenant's own view. The gate is
- * defence-in-depth in front of the backend's require_super_admin — a non-superadmin
- * who reaches this route is bounced to the client dashboard rather than shown an
- * empty console. The real authorization lives server-side; this is just UX.
- */
 
 const SUPERADMIN_NAV = [
   { href: "/superadmin", label: "Command Center", icon: LayoutDashboard, exact: true },
@@ -68,91 +61,132 @@ export default function SuperadminLayout({ children }: { children: ReactNode }) 
 
   useEffect(() => {
     if (status === "unauthenticated") router.replace("/login");
-    // Non-superadmins are redirected to the client dashboard (this app's dashboard
-    // route is /dashboard; the spec's "/admin/dashboard" doesn't exist here).
     if (status === "denied") router.replace("/dashboard");
   }, [status, router]);
 
   if (status !== "ready" || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">
-          {status === "denied" ? "Redirecting…" : "Loading console…"}
-        </p>
+      <div className="flex min-h-screen items-center justify-center bg-[#16232B]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#FF5B04] border-t-transparent" />
+          <p className="font-mono text-xs uppercase tracking-widest text-[#E4EEF0]/60">
+            {status === "denied" ? "Redirecting to client workspace…" : "Authenticating Superadmin Console…"}
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen flex-col border-t-4 border-crimson">
-      {/* Top bar — crimson-accented, unmistakably the internal console. */}
-      <header className="flex h-16 shrink-0 items-center gap-4 border-b border-border bg-card px-4">
-        {/* Mobile nav drawer — the crimson sidebar is hidden below md. */}
-        <Sheet open={navOpen} onOpenChange={setNavOpen}>
-          <SheetTrigger aria-label="Open navigation" className="text-crimson md:hidden">
-            <Menu className="h-5 w-5" />
-          </SheetTrigger>
-          <SheetContent side="left" className="w-72 border-t-4 border-crimson p-0">
-            <SheetTitle className="px-4 pt-5 text-crimson">Superadmin Console</SheetTitle>
-            <nav className="mt-4 flex flex-col gap-1 px-2 pb-8">
-              {SUPERADMIN_NAV.map((link) => {
-                const active = link.exact
-                  ? pathname === link.href
-                  : pathname === link.href || pathname?.startsWith(`${link.href}/`);
-                const Icon = link.icon;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setNavOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium",
-                      active
-                        ? "bg-crimson/15 text-crimson"
-                        : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                    )}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    {link.label}
-                  </Link>
-                );
-              })}
-            </nav>
-          </SheetContent>
-        </Sheet>
-        <Link href="/superadmin" className="flex items-center gap-2 font-semibold text-crimson">
-          <ShieldAlert className="h-5 w-5" />
-          <span className="text-lg">Stellix Labs</span>
-        </Link>
-        <span className="rounded-md border border-crimson/50 bg-crimson/10 px-2 py-1 text-xs font-semibold uppercase tracking-wider text-crimson">
-          Superadmin Console
-        </span>
-        <div className="ml-auto flex items-center gap-3">
-          <span className="hidden text-sm text-muted-foreground sm:inline">{user.email}</span>
-          <Link
-            href="/dashboard"
-            className="text-sm text-muted-foreground hover:text-foreground"
-            title="Back to the client app"
-          >
-            Client app
+    <div className="flex h-screen flex-col bg-[#16232B] text-white antialiased selection:bg-[#FF5B04]/30 selection:text-white">
+      {/* Top Header Bar */}
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-[#E4EEF0]/10 bg-[#16232B] px-4 sm:px-6">
+        <div className="flex items-center gap-3 sm:gap-4">
+          {/* Mobile Nav Trigger */}
+          <Sheet open={navOpen} onOpenChange={setNavOpen}>
+            <SheetTrigger aria-label="Open navigation" className="rounded-lg p-1.5 text-[#E4EEF0]/80 hover:bg-[#16232B] hover:text-white md:hidden">
+              <Menu className="h-5 w-5 text-[#FF5B04]" />
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 border-r border-[#E4EEF0]/10 bg-[#16232B] p-0 text-white">
+              <SheetTitle className="border-b border-[#E4EEF0]/10 px-5 py-4 text-left font-mono text-xs font-bold uppercase tracking-wider text-white">
+                Superadmin Navigation
+              </SheetTitle>
+              <nav className="mt-3 flex flex-col gap-1 px-3">
+                {SUPERADMIN_NAV.map((link) => {
+                  const active = link.exact
+                    ? pathname === link.href
+                    : pathname === link.href || pathname?.startsWith(`${link.href}/`);
+                  const Icon = link.icon;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setNavOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+                        active
+                          ? "border border-[#FF5B04]/40 bg-[#042F34]/50 text-white"
+                          : "text-[#E4EEF0]/70 hover:bg-[#042F34]/30 hover:text-white",
+                      )}
+                    >
+                      <Icon className={cn("h-4 w-4 shrink-0", active ? "text-[#FF5B04]" : "text-[#E4EEF0]/60")} />
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </SheetContent>
+          </Sheet>
+
+          {/* Brand Logo & Console Tag */}
+          <Link href="/superadmin" className="group flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#FF5B04]/40 bg-[#FF5B04]/10 text-[#FF5B04] transition-all group-hover:bg-[#FF5B04]/20 group-hover:shadow-[0_0_16px_rgba(255,91,4,0.35)]">
+              <ShieldAlert className="h-4 w-4" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-bold tracking-tight text-white transition-colors group-hover:text-[#F4D47C]">
+                Stellix Labs
+              </span>
+              <span className="font-mono text-[9px] tracking-wider text-[#E4EEF0]/50 uppercase">
+                Control Plane
+              </span>
+            </div>
           </Link>
-          <button
-            type="button"
+
+          <div className="hidden h-5 w-px bg-[#E4EEF0]/10 sm:block" />
+
+          <div className="hidden items-center gap-2 rounded-md border border-[#FF5B04]/30 bg-[#FF5B04]/10 px-2 py-0.5 sm:flex">
+            <Radio className="h-3 w-3 text-[#FF5B04]" />
+            <span className="font-mono text-[10px] font-semibold tracking-wider text-[#FF5B04] uppercase">
+              Superadmin Mode
+            </span>
+          </div>
+        </div>
+
+        {/* Header Right Actions */}
+        <div className="flex items-center gap-3">
+          <span className="hidden font-mono text-xs text-[#F4D47C] md:inline">
+            {user.email}
+          </span>
+
+          <Link href="/dashboard">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 border-[#E4EEF0]/10 bg-[#16232B] font-mono text-xs text-[#E4EEF0]/80 hover:bg-[#042F34]/40 hover:text-white"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Client App</span>
+            </Button>
+          </Link>
+
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={async () => {
               await logout();
               router.replace("/login");
             }}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-crimson"
+            className="h-8 gap-1.5 p-2 text-xs text-[#E4EEF0]/70 hover:bg-[#FF5B04]/15 hover:text-[#FF5B04]"
+            title="Sign out"
           >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </button>
+            <LogOut className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Sign out</span>
+          </Button>
         </div>
       </header>
 
+      {/* Main Workspace Body */}
       <div className="flex flex-1 overflow-hidden">
-        <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card md:flex">
-          <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-4" data-testid="superadmin-nav">
+        {/* Desktop Sidebar (Matching Charcoal Teal #16232B) */}
+        <aside className="hidden w-64 shrink-0 flex-col border-r border-[#E4EEF0]/10 bg-[#16232B] md:flex">
+          {/* Navigation Section */}
+          <div className="px-4 pt-4 pb-2">
+            <p className="font-mono text-[10px] font-medium tracking-wider text-[#E4EEF0]/40 uppercase">
+              Management & Operations
+            </p>
+          </div>
+          <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2" data-testid="superadmin-nav">
             {SUPERADMIN_NAV.map((link) => {
               const active = link.exact
                 ? pathname === link.href
@@ -163,26 +197,57 @@ export default function SuperadminLayout({ children }: { children: ReactNode }) 
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    "group relative flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150",
                     active
-                      ? "bg-crimson/15 text-crimson"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                      ? "border border-[#FF5B04]/40 bg-[#042F34]/60 text-white shadow-sm"
+                      : "text-[#E4EEF0]/70 hover:border hover:border-[#E4EEF0]/10 hover:bg-[#042F34]/20 hover:text-white",
                   )}
                 >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{link.label}</span>
+                  <div className="flex items-center gap-3 truncate">
+                    <Icon
+                      className={cn(
+                        "h-4 w-4 shrink-0 transition-colors",
+                        active ? "text-[#FF5B04]" : "text-[#E4EEF0]/60 group-hover:text-[#F4D47C]",
+                      )}
+                    />
+                    <span className="truncate">{link.label}</span>
+                  </div>
+
+                  {active && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#FF5B04] shadow-[0_0_8px_rgba(255,91,4,0.8)]" />
+                    </div>
+                  )}
                 </Link>
               );
             })}
           </nav>
-          <div className="border-t border-border px-4 py-3 text-xs text-muted-foreground">
-            Platform-wide access. Every action is logged.
+
+          {/* Audit & Compliance Notice */}
+          <div className="border-t border-[#E4EEF0]/10 bg-[#16232B] p-3.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="h-3.5 w-3.5 text-[#F4D47C]" />
+                <span className="font-mono text-[10px] tracking-wider text-[#E4EEF0]/60 uppercase">
+                  SOC 2 Logging
+                </span>
+              </div>
+              <span className="font-mono text-[10px] text-[#F4D47C]">Enforced</span>
+            </div>
+            <p className="mt-1 font-mono text-[10px] text-[#E4EEF0]/50">
+              Platform-wide access. Every action is audited.
+            </p>
           </div>
         </aside>
-        <main className="flex-1 overflow-y-auto bg-background p-6">
-          <ErrorBoundary>{children}</ErrorBoundary>
+
+        {/* Page Content Viewport */}
+        <main className="flex-1 overflow-y-auto bg-[#16232B] p-6 sm:p-8">
+          <ErrorBoundary>
+            <div className="mx-auto max-w-6xl">{children}</div>
+          </ErrorBoundary>
         </main>
       </div>
+
       <Toaster position="top-right" theme="dark" richColors closeButton />
     </div>
   );
