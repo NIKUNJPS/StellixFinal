@@ -41,20 +41,20 @@ export function Sidebar() {
               href={link.href}
               title={sidebarOpen ? undefined : link.label}
               className={cn(
-                "group relative flex items-center gap-3 rounded-xl px-3 py-2.5",
+                "group relative flex items-center justify-between rounded-lg px-3 py-2.5",
                 "text-sm font-medium",
-                "transition-colors duration-200",
+                "transition-all duration-150",
                 !sidebarOpen && "justify-center px-0",
                 active
                   ? "text-[#d3dbdd]"
-                  : "text-[#d3dbdd]/75 hover:text-[#d3dbdd]",
+                  : "text-[#d3dbdd]/75 hover:text-white",
               )}
             >
-              {/* Sliding active background */}
+              {/* Selected background */}
               {active && (
                 <span
                   aria-hidden="true"
-                  className="absolute inset-0 rounded-xl bg-[#042F34]"
+                  className="absolute inset-0 rounded-lg border border-[#e6e3e3]/40 bg-[#042F34]/60 shadow-sm"
                   style={{
                     animation:
                       "sidebarActiveSlide 320ms cubic-bezier(0.22, 1, 0.36, 1)",
@@ -66,24 +66,44 @@ export function Sidebar() {
               {!active && (
                 <span
                   aria-hidden="true"
-                  className="absolute inset-0 rounded-xl bg-transparent transition-colors duration-200 group-hover:bg-[#042F34]/70"
+                  className="absolute inset-0 rounded-lg border border-transparent bg-transparent transition-all duration-150 group-hover:border-[#d3dbdd]/10 group-hover:bg-[#042F34]/20"
                 />
               )}
 
-              <Icon
+              <div
                 className={cn(
-                  "relative z-10 h-[18px] w-[18px] shrink-0",
-                  "transition-all duration-200",
-                  active
-                    ? "text-[#d3dbdd]"
-                    : "text-[#d3dbdd]/70 group-hover:text-[#d3dbdd]",
+                  "relative z-10 flex min-w-0 items-center gap-3",
+                  !sidebarOpen && "justify-center",
                 )}
-              />
+              >
+                <Icon
+                  className={cn(
+                    "h-4 w-4 shrink-0 transition-colors duration-150",
+                    active
+                      ? "text-[#e6e3e3]"
+                      : "text-[#d3dbdd]/60 group-hover:text-[#F4D47C]",
+                  )}
+                />
 
-              {sidebarOpen && (
-                <span className="relative z-10 truncate">
-                  {link.label}
-                </span>
+                {sidebarOpen && (
+                  <span className="truncate">
+                    {link.label}
+                  </span>
+                )}
+              </div>
+
+              {/* Selected page indicator */}
+              {active && (
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "relative z-10 h-1.5 w-1.5 shrink-0 rounded-full",
+                    "bg-[#e6e3e3]",
+                    "shadow-[0_0_9px_rgba(230,227,227,0.9)]",
+                    "transition-all duration-200",
+                    !sidebarOpen && "hidden",
+                  )}
+                />
               )}
             </Link>
           );
@@ -94,15 +114,15 @@ export function Sidebar() {
             href="/superadmin"
             title={sidebarOpen ? undefined : "Superadmin Console"}
             className={cn(
-              "group relative mt-2 flex items-center gap-3 rounded-xl",
+              "group relative mt-2 flex items-center gap-3 rounded-lg",
               "border border-crimson/40 px-3 py-2.5",
               "text-sm font-medium text-crimson",
-              "transition-colors duration-200",
+              "transition-all duration-150",
               "hover:bg-crimson/10",
               !sidebarOpen && "justify-center px-0",
             )}
           >
-            <ShieldAlert className="relative z-10 h-[18px] w-[18px] shrink-0" />
+            <ShieldAlert className="relative z-10 h-4 w-4 shrink-0" />
 
             {sidebarOpen && (
               <span className="relative z-10 truncate">
@@ -119,12 +139,12 @@ export function Sidebar() {
           type="button"
           onClick={toggleSidebar}
           className={cn(
-            "flex h-10 w-10 items-center justify-center rounded-xl",
+            "flex h-10 w-10 items-center justify-center rounded-lg",
             "border border-[#d3dbdd]/15",
             "bg-[#16232b]",
             "text-[#d3dbdd]/75",
-            "transition-all duration-200",
-            "hover:border-[#d3dbdd]/30",
+            "transition-all duration-150",
+            "hover:border-[#d3dbdd]/25",
             "hover:bg-[#042F34]",
             "hover:text-[#d3dbdd]",
             "active:scale-95",
@@ -141,7 +161,7 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* Smooth active navigation animation */}
+      {/* Smooth selected navigation animation */}
       <style jsx>{`
         @keyframes sidebarActiveSlide {
           0% {
