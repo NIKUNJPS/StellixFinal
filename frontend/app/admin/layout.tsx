@@ -25,6 +25,20 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       } else {
         router.replace("/compliance/governance");
       }
+    } else if (user?.role === "researcher") {
+      if (pathname?.startsWith("/admin/strategies")) {
+        router.replace(pathname.replace("/admin/strategies", "/researcher/strategies"));
+      } else if (pathname?.startsWith("/admin/failures")) {
+        router.replace(pathname.replace("/admin/failures", "/researcher/failures"));
+      } else if (pathname?.startsWith("/admin/assistant")) {
+        router.replace(pathname.replace("/admin/assistant", "/researcher/assistant"));
+      } else if (pathname?.startsWith("/admin/research")) {
+        router.replace(pathname.replace("/admin/research", "/researcher/research"));
+      } else if (pathname?.startsWith("/admin/graph")) {
+        router.replace(pathname.replace("/admin/graph", "/researcher/graph"));
+      } else {
+        router.replace("/researcher/strategies");
+      }
     }
   }, [user, pathname, router]);
 

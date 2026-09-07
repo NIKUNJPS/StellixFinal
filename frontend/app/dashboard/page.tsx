@@ -204,6 +204,8 @@ export default function DashboardPage() {
   useEffect(() => {
     if (user?.role === "compliance_officer") {
       router.replace("/compliance/governance");
+    } else if (user?.role === "researcher") {
+      router.replace("/researcher/strategies");
     }
   }, [user, router]);
 

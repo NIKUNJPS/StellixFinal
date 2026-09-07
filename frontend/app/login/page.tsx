@@ -27,6 +27,7 @@ function postLoginPath(): string {
   const user = useAuthStore.getState().user;
   if (user?.is_super_admin) return "/superadmin";
   if (user?.role === "compliance_officer") return "/compliance/governance";
+  if (user?.role === "researcher") return "/researcher/strategies";
   return "/dashboard";
 }
 
