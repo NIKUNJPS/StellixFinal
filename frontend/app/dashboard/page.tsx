@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   CartesianGrid,
   Cell,
@@ -194,10 +195,17 @@ function KpiCard({
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { user, organization } = useAuthStore();
   const { subscribe } = useWebSocket();
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user?.role === "compliance_officer") {
+      router.replace("/compliance/governance");
+    }
+  }, [user, router]);
 
   const symbol = useMemo(
     () =>

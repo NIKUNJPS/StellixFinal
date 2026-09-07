@@ -12,9 +12,10 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { NAV_LINKS } from "@/components/layout/nav-config";
+import { getNavLinks } from "@/components/layout/nav-config";
 import { listStrategies } from "@/lib/strategy";
 import type { StrategyListItem } from "@/lib/strategy-types";
+import { useAuthStore } from "@/store/auth-store";
 
 /** Cmd+K global search (Page 10, Batch 12): real nav destinations + a live
  * strategy lookup (no mock data — listStrategies() is the same call the
@@ -23,6 +24,8 @@ export function GlobalSearch() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [strategies, setStrategies] = useState<StrategyListItem[]>([]);
+  const user = useAuthStore((s) => s.user);
+  const navLinks = getNavLinks(user?.role);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -37,10 +40,11 @@ export function GlobalSearch() {
 
   useEffect(() => {
     if (!open) return;
+    if (user?.role === "compliance_officer") return;
     listStrategies()
       .then((res) => setStrategies(res.items))
       .catch(() => setStrategies([]));
-  }, [open]);
+  }, [open, user]);
 
   function go(href: string) {
     setOpen(false);
@@ -63,7 +67,7 @@ export function GlobalSearch() {
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Pages">
-            {NAV_LINKS.map((link) => (
+            {navLinks.map((link) => (
               <CommandItem key={link.href} value={link.label} onSelect={() => go(link.href)}>
                 <link.icon className="mr-2 h-4 w-4" />
                 {link.label}

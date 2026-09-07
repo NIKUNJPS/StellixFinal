@@ -7,15 +7,17 @@ import { ChevronLeft, ChevronRight, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/store/ui-store";
 import { useAuthStore } from "@/store/auth-store";
-import { NAV_LINKS } from "@/components/layout/nav-config";
+import { getNavLinks } from "@/components/layout/nav-config";
 
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar } = useUiStore();
   const pathname = usePathname();
+  const user = useAuthStore((s) => s.user);
 
   // Batch 24: the console link appears only for platform superadmins.
   // The route itself is gated server-side too — this just avoids showing a dead link.
-  const isSuperAdmin = useAuthStore((s) => s.user?.is_super_admin ?? false);
+  const isSuperAdmin = user?.is_super_admin ?? false;
+  const navLinks = getNavLinks(user?.role);
 
   return (
     <aside
@@ -28,7 +30,7 @@ export function Sidebar() {
         className="flex-1 space-y-1 overflow-y-auto px-2 py-4"
         data-testid="sidebar-nav"
       >
-        {NAV_LINKS.map((link) => {
+        {navLinks.map((link) => {
           const active =
             pathname === link.href ||
             pathname?.startsWith(`${link.href}/`);

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, ShieldAlert } from "lucide-react";
 
-import { NAV_LINKS } from "@/components/layout/nav-config";
+import { getNavLinks } from "@/components/layout/nav-config";
 import {
   Sheet,
   SheetContent,
@@ -24,9 +24,9 @@ import { useAuthStore } from "@/store/auth-store";
 export function MobileNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const isSuperAdmin = useAuthStore(
-    (s) => s.user?.is_super_admin ?? false,
-  );
+  const user = useAuthStore((s) => s.user);
+  const isSuperAdmin = user?.is_super_admin ?? false;
+  const navLinks = getNavLinks(user?.role);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -56,7 +56,7 @@ export function MobileNav() {
         </SheetTitle>
 
         <nav className="mt-5 flex flex-col gap-1 overflow-y-auto px-2 pb-8">
-          {NAV_LINKS.map((link) => {
+          {navLinks.map((link) => {
             const active =
               pathname === link.href ||
               pathname?.startsWith(`${link.href}/`);

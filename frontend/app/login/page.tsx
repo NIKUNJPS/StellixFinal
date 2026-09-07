@@ -22,9 +22,12 @@ import { completeMfaLogin, loginUser, resendVerification } from "@/lib/auth";
 import type { LoginError } from "@/lib/auth-types";
 import { useAuthStore } from "@/store/auth-store";
 
-/** Batch 24: superadmins land on the founder console; everyone else on the dashboard. */
+/** Superadmins land on founder console; compliance officers land on compliance governance; others on dashboard. */
 function postLoginPath(): string {
-  return useAuthStore.getState().user?.is_super_admin ? "/superadmin" : "/dashboard";
+  const user = useAuthStore.getState().user;
+  if (user?.is_super_admin) return "/superadmin";
+  if (user?.role === "compliance_officer") return "/compliance/governance";
+  return "/dashboard";
 }
 
 const schema = z.object({

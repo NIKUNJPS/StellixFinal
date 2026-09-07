@@ -43,10 +43,24 @@ export const NAV_LINKS: NavLink[] = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
+export const COMPLIANCE_NAV_LINKS: NavLink[] = [
+  { href: "/compliance/governance", label: "Governance & Compliance", icon: ShieldCheck },
+  { href: "/compliance/llm-audit", label: "LLM Audit Log", icon: ScrollText },
+  { href: "/compliance/graph", label: "Knowledge Graph", icon: Share2 },
+];
+
+export function getNavLinks(role?: string): NavLink[] {
+  if (role === "compliance_officer") {
+    return COMPLIANCE_NAV_LINKS;
+  }
+  return NAV_LINKS;
+}
+
 /** Label lookup for the breadcrumb — includes non-sidebar path segments too. */
 export const BREADCRUMB_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
   admin: "Admin",
+  compliance: "Compliance",
   strategies: "Strategies",
   portfolio: "Portfolio",
   failures: "Failures",
@@ -75,4 +89,4 @@ export const BREADCRUMB_LABELS: Record<string, string> = {
  *                                 [id]/backtest-results exist (UUIDs are caught by
  *                                 the UUID test in breadcrumb.tsx, not listed here)
  */
-export const NON_NAVIGABLE_SEGMENTS = new Set(["admin"]);
+export const NON_NAVIGABLE_SEGMENTS = new Set(["admin", "compliance"]);
