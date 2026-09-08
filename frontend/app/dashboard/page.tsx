@@ -206,6 +206,8 @@ export default function DashboardPage() {
       router.replace("/compliance/governance");
     } else if (user?.role === "researcher") {
       router.replace("/researcher/strategies");
+    } else if (user?.role === "risk_manager") {
+      router.replace("/risk-manager/failures");
     }
   }, [user, router]);
 

@@ -28,6 +28,7 @@ function postLoginPath(): string {
   if (user?.is_super_admin) return "/superadmin";
   if (user?.role === "compliance_officer") return "/compliance/governance";
   if (user?.role === "researcher") return "/researcher/strategies";
+  if (user?.role === "risk_manager") return "/risk-manager/failures";
   return "/dashboard";
 }
 
