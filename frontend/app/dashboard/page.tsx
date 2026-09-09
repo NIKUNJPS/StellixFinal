@@ -208,6 +208,8 @@ export default function DashboardPage() {
       router.replace("/researcher/strategies");
     } else if (user?.role === "risk_manager") {
       router.replace("/risk-manager/failures");
+    } else if (user?.role === "cio") {
+      router.replace("/cio/failures");
     }
   }, [user, router]);
 

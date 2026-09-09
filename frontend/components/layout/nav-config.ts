@@ -62,6 +62,11 @@ export const RISK_MANAGER_NAV_LINKS: NavLink[] = [
   { href: "/risk-manager/graph", label: "Knowledge Graph", icon: Share2 },
 ];
 
+export const CIO_NAV_LINKS: NavLink[] = [
+  { href: "/cio/failures", label: "Failure Intelligence", icon: AlertTriangle },
+  { href: "/cio/graph", label: "Knowledge Graph", icon: Share2 },
+];
+
 export function getNavLinks(role?: string): NavLink[] {
   if (role === "compliance_officer") {
     return COMPLIANCE_NAV_LINKS;
@@ -71,6 +76,9 @@ export function getNavLinks(role?: string): NavLink[] {
   }
   if (role === "risk_manager") {
     return RISK_MANAGER_NAV_LINKS;
+  }
+  if (role === "cio") {
+    return CIO_NAV_LINKS;
   }
   return NAV_LINKS;
 }
@@ -82,6 +90,7 @@ export const BREADCRUMB_LABELS: Record<string, string> = {
   compliance: "Compliance",
   researcher: "Researcher",
   "risk-manager": "Risk Manager",
+  cio: "CIO",
   strategies: "Strategies",
   portfolio: "Portfolio",
   failures: "Failures",
@@ -110,4 +119,4 @@ export const BREADCRUMB_LABELS: Record<string, string> = {
  *                                 [id]/backtest-results exist (UUIDs are caught by
  *                                 the UUID test in breadcrumb.tsx, not listed here)
  */
-export const NON_NAVIGABLE_SEGMENTS = new Set(["admin", "compliance", "researcher", "risk-manager"]);
+export const NON_NAVIGABLE_SEGMENTS = new Set(["admin", "compliance", "researcher", "risk-manager", "cio"]);

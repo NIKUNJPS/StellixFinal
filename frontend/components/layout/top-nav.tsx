@@ -13,7 +13,7 @@ import { useAuthStore } from "@/store/auth-store";
 
 export function TopNav() {
   const user = useAuthStore((s) => s.user);
-  const homeHref = user?.role === "compliance_officer" ? "/compliance/governance" : user?.role === "researcher" ? "/researcher/strategies" : user?.role === "risk_manager" ? "/risk-manager/failures" : "/dashboard";
+  const homeHref = user?.role === "compliance_officer" ? "/compliance/governance" : user?.role === "researcher" ? "/researcher/strategies" : user?.role === "risk_manager" ? "/risk-manager/failures" : user?.role === "cio" ? "/cio/failures" : "/dashboard";
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-4 border-b border-border bg-card px-4">

@@ -29,6 +29,7 @@ function postLoginPath(): string {
   if (user?.role === "compliance_officer") return "/compliance/governance";
   if (user?.role === "researcher") return "/researcher/strategies";
   if (user?.role === "risk_manager") return "/risk-manager/failures";
+  if (user?.role === "cio") return "/cio/failures";
   return "/dashboard";
 }
 

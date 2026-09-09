@@ -45,6 +45,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       } else {
         router.replace("/risk-manager/failures");
       }
+    } else if (user?.role === "cio") {
+      if (pathname?.startsWith("/admin/graph")) {
+        router.replace(pathname.replace("/admin/graph", "/cio/graph"));
+      } else {
+        router.replace("/cio/failures");
+      }
     }
   }, [user, pathname, router]);
 
