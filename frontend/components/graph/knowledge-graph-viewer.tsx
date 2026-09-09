@@ -71,7 +71,7 @@ export function KnowledgeGraphViewer({ seed }: KnowledgeGraphViewerProps) {
             "background-color": "data(color)",
             label: "data(label)",
             "font-size": 9,
-            color: "#e2e8f0",
+            color: "#F5F5F7",
             "text-valign": "bottom",
             "text-margin-y": 4,
             width: 28,
@@ -82,18 +82,18 @@ export function KnowledgeGraphViewer({ seed }: KnowledgeGraphViewerProps) {
           selector: "edge",
           style: {
             width: 1.5,
-            "line-color": "#475569",
-            "target-arrow-color": "#475569",
+            "line-color": "#4B4B70",
+            "target-arrow-color": "#4B4B70",
             "target-arrow-shape": "triangle",
             "curve-style": "bezier",
             label: "data(label)",
             "font-size": 7,
-            color: "#94a3b8",
+            color: "#9A9DA8",
           },
         },
         {
           selector: "node:selected",
-          style: { "border-width": 3, "border-color": "#f8fafc" },
+          style: { "border-width": 3, "border-color": "#F5F5F7" },
         },
       ],
       wheelSensitivity: 0.2,
@@ -120,7 +120,7 @@ export function KnowledgeGraphViewer({ seed }: KnowledgeGraphViewerProps) {
           const otherId = `${otherType}:${key}`;
           if (cy.getElementById(otherId).empty()) {
             newElements.push({
-              data: { id: otherId, key, type: otherType, label: nodeLabel(otherType, props), color: NODE_COLORS[otherType as NodeType] ?? "#94a3b8" },
+              data: { id: otherId, key, type: otherType, label: nodeLabel(otherType, props), color: NODE_COLORS[otherType as NodeType] ?? "#9A9DA8" },
             });
           }
           const edgeId = direction === "out" ? `${n.id()}->${otherId}:${edgeType}` : `${otherId}->${n.id()}:${edgeType}`;
@@ -162,7 +162,7 @@ export function KnowledgeGraphViewer({ seed }: KnowledgeGraphViewerProps) {
       if (seenNodes.has(id)) continue;
       seenNodes.add(id);
       elements.push({
-        data: { id, key: node.id, type: node.type, label: nodeLabel(node.type, node.properties), color: NODE_COLORS[node.type as NodeType] ?? "#94a3b8" },
+        data: { id, key: node.id, type: node.type, label: nodeLabel(node.type, node.properties), color: NODE_COLORS[node.type as NodeType] ?? "#9A9DA8" },
       });
     }
     for (const [i, edge] of seed.edges.entries()) {
@@ -227,7 +227,7 @@ export function KnowledgeGraphViewer({ seed }: KnowledgeGraphViewerProps) {
         const id = `${item.node_type}:${key}`;
         if (cy.getElementById(id).empty()) {
           elements.push({
-            data: { id, key, type: item.node_type, label: nodeLabel(item.node_type, item.properties), color: NODE_COLORS[item.node_type as NodeType] ?? "#94a3b8" },
+            data: { id, key, type: item.node_type, label: nodeLabel(item.node_type, item.properties), color: NODE_COLORS[item.node_type as NodeType] ?? "#9A9DA8" },
           });
         }
       }
@@ -242,7 +242,7 @@ export function KnowledgeGraphViewer({ seed }: KnowledgeGraphViewerProps) {
   function exportPng() {
     const cy = cyRef.current;
     if (!cy) return;
-    const uri = cy.png({ full: true, scale: 2, bg: "#0f172a" });
+    const uri = cy.png({ full: true, scale: 2, bg: "#08090B" });
     const a = document.createElement("a");
     a.href = uri;
     a.download = "knowledge-graph.png";
@@ -250,17 +250,23 @@ export function KnowledgeGraphViewer({ seed }: KnowledgeGraphViewerProps) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 text-[#9A9DA8]">
       <div className="flex flex-wrap items-center gap-2">
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && runSearch()}
           placeholder="Search by name..."
-          className="h-8 w-48"
+          className="h-8 w-48 border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] placeholder:text-[#666A76]"
           data-testid="graph-search-input"
         />
-        <Button size="sm" variant="outline" onClick={runSearch} data-testid="graph-search-button">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={runSearch}
+          data-testid="graph-search-button"
+          className="border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] hover:border-white/[0.12] hover:bg-[#14161B]/80"
+        >
           Search
         </Button>
         <div className="ml-2 flex gap-1">
@@ -271,26 +277,37 @@ export function KnowledgeGraphViewer({ seed }: KnowledgeGraphViewerProps) {
               variant={layout === key ? "default" : "outline"}
               onClick={() => runLayout(key)}
               data-testid={`layout-${key}`}
+              className={
+                layout === key
+                  ? "border border-white/[0.15] bg-[#14161B] text-xs text-[#F5F5F7] shadow-sm"
+                  : "border-white/[0.06] bg-transparent text-xs text-[#9A9DA8] hover:border-white/[0.12] hover:bg-[#14161B]/50 hover:text-[#F5F5F7]"
+              }
             >
               {key}
             </Button>
           ))}
         </div>
-        <Button size="sm" variant="outline" className="ml-auto" onClick={exportPng} data-testid="export-png">
+        <Button
+          size="sm"
+          variant="outline"
+          className="ml-auto border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] hover:border-white/[0.12] hover:bg-[#14161B]/80"
+          onClick={exportPng}
+          data-testid="export-png"
+        >
           Export PNG
         </Button>
       </div>
-      {searchError && <p className="text-xs text-destructive">{searchError}</p>}
+      {searchError && <p className="text-xs text-[#E45B5B]">{searchError}</p>}
 
       <div className="flex flex-wrap gap-3 text-xs">
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-muted-foreground">Nodes:</span>
+          <span className="text-[#666A76]">Nodes:</span>
           {NODE_TYPES.map((t) => (
             <button
               key={t}
               onClick={() => toggleNodeType(t)}
               data-testid={`node-filter-${t}`}
-              className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5"
+              className="flex items-center gap-1 rounded-full border border-white/[0.06] bg-[#14161B] px-2 py-0.5 text-[#F5F5F7] transition-opacity"
               style={{ opacity: visibleNodeTypes.has(t) ? 1 : 0.35 }}
             >
               <span className="inline-block h-2 w-2 rounded-full" style={{ background: NODE_COLORS[t] }} />
@@ -299,13 +316,13 @@ export function KnowledgeGraphViewer({ seed }: KnowledgeGraphViewerProps) {
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-muted-foreground">Edges:</span>
+          <span className="text-[#666A76]">Edges:</span>
           {EDGE_TYPES.map((t) => (
             <button
               key={t}
               onClick={() => toggleEdgeType(t)}
               data-testid={`edge-filter-${t}`}
-              className="rounded-full border border-border px-2 py-0.5"
+              className="rounded-full border border-white/[0.06] bg-[#14161B] px-2 py-0.5 text-[#F5F5F7] transition-opacity"
               style={{ opacity: visibleEdgeTypes.has(t) ? 1 : 0.35 }}
             >
               {t}
@@ -317,32 +334,32 @@ export function KnowledgeGraphViewer({ seed }: KnowledgeGraphViewerProps) {
       <div className="relative">
         <div
           ref={containerRef}
-          className="h-[480px] w-full rounded-md border border-border bg-slate-950"
+          className="h-[480px] w-full rounded-md border border-white/[0.06] bg-[#08090B]"
           data-testid="cytoscape-canvas"
         />
         {selected && (
-          <div className="absolute right-0 top-0 h-full w-72 overflow-y-auto border-l border-border bg-card p-4 shadow-lg">
+          <div className="absolute right-0 top-0 h-full w-72 overflow-y-auto border-l border-white/[0.06] bg-[#0F1115] p-4 text-[#F5F5F7] shadow-2xl">
             <div className="mb-2 flex items-center justify-between">
-              <Badge>{selected.nodeType}</Badge>
-              <button className="text-xs text-muted-foreground" onClick={() => setSelected(null)} data-testid="close-detail-panel">
+              <Badge className="border border-white/[0.08] bg-[#14161B] text-xs text-[#F5F5F7]">{selected.nodeType}</Badge>
+              <button className="text-xs text-[#666A76] hover:text-[#F5F5F7]" onClick={() => setSelected(null)} data-testid="close-detail-panel">
                 close
               </button>
             </div>
-            <h4 className="mb-2 text-sm font-medium">{nodeLabel(selected.nodeType, selected.props)}</h4>
+            <h4 className="mb-2 text-sm font-medium text-[#F5F5F7]">{nodeLabel(selected.nodeType, selected.props)}</h4>
             <dl className="space-y-1 text-xs">
               {Object.entries(selected.props)
                 .filter(([k]) => k !== "organization_id")
                 .map(([k, v]) => (
                   <div key={k} className="flex justify-between gap-2">
-                    <dt className="text-muted-foreground">{k}</dt>
-                    <dd className="truncate text-right">{String(v)}</dd>
+                    <dt className="text-[#666A76]">{k}</dt>
+                    <dd className="truncate text-right text-[#9A9DA8]">{String(v)}</dd>
                   </div>
                 ))}
             </dl>
             {selectedEdges.length > 0 && (
-              <div className="mt-3">
-                <h5 className="mb-1 text-xs font-medium text-muted-foreground">Edges</h5>
-                <ul className="space-y-1 text-xs">
+              <div className="mt-3 border-t border-white/[0.06] pt-2">
+                <h5 className="mb-1 text-xs font-medium text-[#666A76]">Edges</h5>
+                <ul className="space-y-1 text-xs text-[#9A9DA8]">
                   {selectedEdges.map((e, i) => (
                     <li key={i} className="truncate">
                       {e.direction === "out" ? "→" : "←"} {e.edge_type} {e.otherLabels[0]}

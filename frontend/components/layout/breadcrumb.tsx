@@ -8,6 +8,12 @@ import { BREADCRUMB_LABELS, NON_NAVIGABLE_SEGMENTS } from "@/components/layout/n
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const PALETTE = {
+  textPrimary: "#F5F5F7",
+  textSecondary: "#9A9DA8",
+  textMuted: "#666A76",
+};
+
 function labelFor(segment: string): string {
   if (BREADCRUMB_LABELS[segment]) return BREADCRUMB_LABELS[segment];
   if (UUID_RE.test(segment)) return segment.slice(0, 8);
@@ -31,19 +37,37 @@ export function Breadcrumb() {
   if (segments.length === 0) return null;
 
   return (
-    <nav className="flex items-center gap-1.5 text-sm text-muted-foreground" aria-label="Breadcrumb">
+    <nav
+      className="flex items-center gap-1.5 text-xs font-medium tracking-tight"
+      aria-label="Breadcrumb"
+      style={{ color: PALETTE.textSecondary }}
+    >
       {segments.map((segment, i) => {
         const href = `/${segments.slice(0, i + 1).join("/")}`;
         const isLast = i === segments.length - 1;
         return (
           <span key={href} className="flex items-center gap-1.5">
-            {i > 0 && <ChevronRight className="h-3.5 w-3.5" />}
+            {i > 0 && (
+              <ChevronRight
+                className="h-3 w-3 shrink-0"
+                style={{ color: PALETTE.textMuted }}
+              />
+            )}
             {isLast || !isNavigable(segment) ? (
-              <span className={isLast ? "font-medium text-foreground" : undefined}>
+              <span
+                className={isLast ? "font-semibold" : undefined}
+                style={{
+                  color: isLast ? PALETTE.textPrimary : PALETTE.textSecondary,
+                }}
+              >
                 {labelFor(segment)}
               </span>
             ) : (
-              <Link href={href} className="hover:text-foreground">
+              <Link
+                href={href}
+                className="transition-colors duration-150 hover:text-white"
+                style={{ color: PALETTE.textSecondary }}
+              >
                 {labelFor(segment)}
               </Link>
             )}

@@ -16,6 +16,18 @@ import { NOTIFICATION_TYPE_LABELS, type NotificationRead } from "@/lib/notificat
 
 const POLL_MS = 30_000;
 
+const PALETTE = {
+  cardBg: "#0F1115",
+  elevatedBg: "#14161B",
+  borderSubtle: "rgba(255, 255, 255, 0.06)",
+  borderHover: "rgba(255, 255, 255, 0.12)",
+  textPrimary: "#F5F5F7",
+  textSecondary: "#9A9DA8",
+  textMuted: "#666A76",
+  glowLavender: "#6F6B9B",
+  danger: "#E45B5B",
+};
+
 function relativeTime(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diffMs / 60_000);
@@ -78,49 +90,106 @@ export function NotificationBell() {
   return (
     <DropdownMenu open={open} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative" aria-label="Notifications" data-testid="notification-bell">
-          <Bell className="h-5 w-5" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative h-9 w-9 rounded-xl border transition-all duration-150 hover:bg-[#14161B] hover:text-[#F5F5F7] active:scale-95"
+          style={{
+            backgroundColor: PALETTE.elevatedBg,
+            borderColor: PALETTE.borderSubtle,
+            color: PALETTE.textSecondary,
+          }}
+          aria-label="Notifications"
+          data-testid="notification-bell"
+        >
+          <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground">
+            <span
+              className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-mono text-[9px] font-semibold text-white shadow-sm"
+              style={{
+                backgroundColor: PALETTE.danger,
+                boxShadow: "0 0 8px rgba(228, 91, 91, 0.6)",
+              }}
+            >
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 p-0">
-        <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-sm font-semibold">Notifications</span>
+      <DropdownMenuContent
+        align="end"
+        className="w-80 overflow-hidden rounded-2xl border p-0 backdrop-blur-xl"
+        style={{
+          backgroundColor: PALETTE.cardBg,
+          borderColor: PALETTE.borderSubtle,
+          boxShadow: "0 24px 60px -10px rgba(0, 0, 0, 0.85)",
+        }}
+      >
+        <div
+          className="flex items-center justify-between border-b px-3.5 py-3"
+          style={{ borderColor: PALETTE.borderSubtle }}
+        >
+          <span
+            className="text-xs font-semibold tracking-tight"
+            style={{ color: PALETTE.textPrimary }}
+          >
+            Notifications
+          </span>
           {unreadCount > 0 && (
             <button
               type="button"
               onClick={onMarkAllRead}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              className="flex items-center gap-1 font-mono text-[11px] transition-colors hover:text-white"
+              style={{ color: PALETTE.textSecondary }}
             >
               <CheckCheck className="h-3.5 w-3.5" /> Mark all read
             </button>
           )}
         </div>
-        <DropdownMenuSeparator />
         <div className="max-h-96 overflow-y-auto">
           {items.length === 0 ? (
-            <p className="px-3 py-6 text-center text-sm text-muted-foreground">No notifications yet.</p>
+            <p
+              className="px-3 py-8 text-center font-mono text-xs"
+              style={{ color: PALETTE.textMuted }}
+            >
+              No notifications yet.
+            </p>
           ) : (
             items.map((n) => {
               const row = (
                 <div
-                  className={`flex gap-2 border-b border-border px-3 py-2.5 text-sm last:border-b-0 hover:bg-secondary ${
-                    n.read_at ? "" : "bg-accent/10"
-                  }`}
+                  className="flex gap-2.5 border-b px-3.5 py-3 text-xs transition-colors duration-150 last:border-b-0 hover:bg-[#14161B]"
+                  style={{
+                    borderColor: "rgba(255, 255, 255, 0.03)",
+                    backgroundColor: n.read_at ? "transparent" : "rgba(111, 107, 155, 0.06)",
+                  }}
                 >
                   <span
-                    className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${n.read_at ? "bg-transparent" : "bg-accent"}`}
+                    className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full transition-colors"
+                    style={{
+                      backgroundColor: n.read_at ? "transparent" : PALETTE.glowLavender,
+                      boxShadow: n.read_at ? "none" : "0 0 6px rgba(111, 107, 155, 0.8)",
+                    }}
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <p
+                      className="font-mono text-[10px] font-semibold uppercase tracking-wider"
+                      style={{ color: PALETTE.textMuted }}
+                    >
                       {NOTIFICATION_TYPE_LABELS[n.type]}
                     </p>
-                    <p className="truncate">{n.message}</p>
-                    <p className="text-xs text-muted-foreground">{relativeTime(n.created_at)}</p>
+                    <p
+                      className="truncate font-medium"
+                      style={{ color: PALETTE.textPrimary }}
+                    >
+                      {n.message}
+                    </p>
+                    <p
+                      className="mt-0.5 font-mono text-[10px]"
+                      style={{ color: PALETTE.textSecondary }}
+                    >
+                      {relativeTime(n.created_at)}
+                    </p>
                   </div>
                 </div>
               );

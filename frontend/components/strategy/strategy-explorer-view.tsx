@@ -2,34 +2,35 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { Plus, ArrowUpDown, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
-import { REGIME_COLORS, type RegimeLabel } from "@/lib/regime-types";
-import {
-  listStrategies,
-} from "@/lib/strategy";
-import {
-  STATUS_COLORS,
-  type StrategyListItem,
-  type StrategyStatus,
-} from "@/lib/strategy-types";
+import { listStrategies } from "@/lib/strategy";
+import type { StrategyListItem, StrategyStatus } from "@/lib/strategy-types";
 
 type SortKey = "name" | "robustness_score" | "created_at";
 
-const COLORS = {
-  charcoal: "#16232b",
-  teal: "#075056",
-  orange: "#c40707",
-  sand: "#f2d17d",
-  silver: "#d3dbdd",
-  blue: "#074068"
+const PALETTE = {
+  mainBg: "#08090B",
+  sidebarBg: "#0B1017",
+  cardBg: "#0F1115",
+  elevatedBg: "#14161B",
+  borderSubtle: "rgba(255, 255, 255, 0.06)",
+  borderHover: "rgba(255, 255, 255, 0.12)",
+  textPrimary: "#F5F5F7",
+  textSecondary: "#9A9DA8",
+  textMuted: "#666A76",
+  glowPurple: "#4B4B70",
+  glowLavender: "#6F6B9B",
+  success: "#35C77A",
+  danger: "#E45B5B",
+  warning: "#E5A84B",
 };
 
 function robustnessColor(v: number | null): string {
-  if (v === null) return "rgba(211, 219, 221, 0.45)";
-  if (v >= 0.7) return COLORS.teal;
-  if (v >= 0.4) return COLORS.sand;
-  return COLORS.orange;
+  if (v === null) return PALETTE.textMuted;
+  if (v >= 0.7) return PALETTE.success;
+  if (v >= 0.4) return PALETTE.warning;
+  return PALETTE.danger;
 }
 
 function robustnessWidth(v: number | null): string {
@@ -41,21 +42,16 @@ export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: strin
   const [rows, setRows] = useState<StrategyListItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] =
-    useState<StrategyStatus | "all">("all");
-  const [sortKey, setSortKey] =
-    useState<SortKey>("created_at");
-  const [sortDir, setSortDir] =
-    useState<"asc" | "desc">("desc");
+  const [statusFilter, setStatusFilter] = useState<StrategyStatus | "all">("all");
+  const [sortKey, setSortKey] = useState<SortKey>("created_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
     listStrategies()
       .then((data) => setRows(data.items))
       .catch((e) =>
         setError(
-          e instanceof Error
-            ? e.message
-            : "Failed to load",
+          e instanceof Error ? e.message : "Failed to load strategies",
         ),
       )
       .finally(() => setLoading(false));
@@ -65,9 +61,7 @@ export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: strin
     let items = rows;
 
     if (statusFilter !== "all") {
-      items = items.filter(
-        (r) => r.status === statusFilter,
-      );
+      items = items.filter((r) => r.status === statusFilter);
     }
 
     const dir = sortDir === "asc" ? 1 : -1;
@@ -79,30 +73,19 @@ export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: strin
 
       if (sortKey === "robustness_score") {
         return (
-          ((a.robustness_score ?? -1) -
-            (b.robustness_score ?? -1)) *
-          dir
+          ((a.robustness_score ?? -1) - (b.robustness_score ?? -1)) * dir
         );
       }
 
       return (
-        (+new Date(a.created_at) -
-          +new Date(b.created_at)) *
-        dir
+        (+new Date(a.created_at) - +new Date(b.created_at)) * dir
       );
     });
-  }, [
-    rows,
-    statusFilter,
-    sortKey,
-    sortDir,
-  ]);
+  }, [rows, statusFilter, sortKey, sortDir]);
 
   function sortBy(key: SortKey) {
     if (key === sortKey) {
-      setSortDir((d) =>
-        d === "asc" ? "desc" : "asc",
-      );
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
       setSortDir("desc");
@@ -110,94 +93,118 @@ export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: strin
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1320px]">
-      <section
-        className="overflow-hidden rounded-[22px] border"
+    <div className="relative mx-auto w-full max-w-[1340px]">
+      {/* Cinematic Ambient Atmosphere Glow Inspired by Reference */}
+      <div
+        className="pointer-events-none absolute -top-32 left-1/4 h-[420px] w-[580px] -translate-x-1/2 rounded-full opacity-35 blur-[140px]"
         style={{
-          backgroundColor: COLORS.charcoal,
-          borderColor:
-            "rgba(211, 219, 221, 0.10)",
-          boxShadow:
-            "0 20px 60px rgba(0,0,0,0.24)",
+          background: "radial-gradient(circle, rgba(111, 107, 155, 0.35) 0%, rgba(75, 75, 112, 0.18) 50%, transparent 80%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute -top-24 right-12 h-[340px] w-[460px] rounded-full opacity-20 blur-[150px]"
+        style={{
+          background: "radial-gradient(circle, rgba(75, 75, 112, 0.4) 0%, rgba(15, 17, 21, 0.2) 65%, transparent 80%)",
+        }}
+      />
+
+      {/* Main Graphite Card Container */}
+      <section
+        className="relative overflow-hidden rounded-[20px] border transition-all duration-200"
+        style={{
+          backgroundColor: PALETTE.cardBg,
+          borderColor: PALETTE.borderSubtle,
+          boxShadow: "0 24px 70px -15px rgba(0, 0, 0, 0.8), 0 1px 2px rgba(255, 255, 255, 0.02) inset",
         }}
       >
-        <div className="px-7 pb-5 pt-7 md:px-9 md:pt-8">
+        {/* Header Strip */}
+        <div
+          className="relative border-b px-7 pb-6 pt-7 md:px-9 md:pt-8"
+          style={{ borderColor: PALETTE.borderSubtle }}
+        >
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p
-                className="mb-2 text-[11px] font-medium uppercase tracking-[0.18em]"
-                style={{
-                  color:
-                    "rgba(211, 219, 221, 0.52)",
-                }}
-              >
-                Research Environment
-              </p>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{
+                    backgroundColor: PALETTE.glowLavender,
+                    boxShadow: "0 0 8px rgba(111, 107, 155, 0.8)",
+                  }}
+                />
+                <p
+                  className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em]"
+                  style={{ color: PALETTE.textMuted }}
+                >
+                  Research Environment
+                </p>
+              </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3 pt-0.5">
                 <h1
-                  className="text-[28px] font-semibold tracking-[-0.025em]"
-                  style={{ color: "#fdf6e3" }}
+                  className="text-[30px] font-bold tracking-[-0.03em]"
+                  style={{ color: PALETTE.textPrimary }}
                 >
                   Strategy Explorer
                 </h1>
 
                 <span
-                  className="rounded-full px-2.5 py-1 text-[11px] font-medium"
+                  className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[11px] font-medium"
                   style={{
-                    backgroundColor:
-                      "rgba(7, 80, 86, 0.55)",
-                    color: COLORS.silver,
+                    backgroundColor: PALETTE.elevatedBg,
+                    borderColor: PALETTE.borderSubtle,
+                    color: PALETTE.textSecondary,
                   }}
                 >
-                  {rows.length} strategies
+                  <span
+                    className="h-1.5 w-1.5 rounded-full"
+                    style={{ backgroundColor: PALETTE.success }}
+                  />
+                  {rows.length} {rows.length === 1 ? "strategy" : "strategies"}
                 </span>
               </div>
 
               <p
-                className="mt-1.5 text-sm"
-                style={{
-                  color:
-                    "rgba(211, 219, 221, 0.62)",
-                }}
+                className="text-sm font-normal"
+                style={{ color: PALETTE.textSecondary }}
               >
-                Explore, compare and evaluate
-                research strategies.
+                Explore, compare, stress-test, and evaluate institutional quantitative models.
               </p>
             </div>
 
+            {/* + New Strategy Action Button */}
             <Link
               href={`${basePath}/strategies/new`}
-              className="inline-flex h-10 shrink-0 items-center justify-center rounded-[11px] px-4 text-sm font-semibold transition-all duration-200 hover:-translate-y-px"
+              className="group relative inline-flex h-10 shrink-0 items-center justify-center gap-2 overflow-hidden rounded-[12px] border px-5 text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
               style={{
-                backgroundColor: COLORS.blue,
-                color: "#ffffff",
-                boxShadow:
-                  "0 6px 18px rgba(7, 64, 104, 0.22)",
+                backgroundColor: PALETTE.elevatedBg,
+                borderColor: "rgba(255, 255, 255, 0.12)",
+                color: PALETTE.textPrimary,
+                boxShadow: "0 8px 24px -6px rgba(0, 0, 0, 0.6), 0 0 12px -2px rgba(111, 107, 155, 0.2)",
               }}
             >
-              + New strategy
+              <Plus
+                className="h-4 w-4 transition-transform duration-200 group-hover:rotate-90"
+                style={{ color: PALETTE.glowLavender }}
+              />
+              <span>New strategy</span>
             </Link>
           </div>
         </div>
 
+        {/* Filter Navigation Bar */}
         <div
-          className="border-y px-7 py-4 md:px-9"
+          className="border-b px-7 py-3.5 md:px-9"
           style={{
-            borderColor:
-              "rgba(211, 219, 221, 0.08)",
-            backgroundColor:
-              "rgba(0, 0, 0, 0.10)",
+            borderColor: PALETTE.borderSubtle,
+            backgroundColor: "rgba(11, 16, 23, 0.4)",
           }}
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               <span
-                className="mr-1 text-[11px] font-medium uppercase tracking-[0.12em]"
-                style={{
-                  color:
-                    "rgba(211, 219, 221, 0.45)",
-                }}
+                className="mr-2 font-mono text-[10px] font-semibold uppercase tracking-[0.14em]"
+                style={{ color: PALETTE.textMuted }}
               >
                 Status
               </span>
@@ -210,8 +217,7 @@ export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: strin
                 "failed",
                 "retired",
               ].map((status) => {
-                const selected =
-                  statusFilter === status;
+                const selected = statusFilter === status;
 
                 return (
                   <button
@@ -219,24 +225,25 @@ export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: strin
                     type="button"
                     onClick={() =>
                       setStatusFilter(
-                        status as
-                          | StrategyStatus
-                          | "all",
+                        status as StrategyStatus | "all",
                       )
                     }
-                    className="rounded-full px-3 py-1.5 text-xs font-medium capitalize transition-all duration-150"
+                    className="relative rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-all duration-150 hover:-translate-y-px active:translate-y-0"
                     style={{
                       backgroundColor: selected
-                        ? COLORS.teal
-                        : "rgba(211, 219, 221, 0.055)",
+                        ? PALETTE.elevatedBg
+                        : "transparent",
                       color: selected
-                        ? "#fdf6e3"
-                        : "rgba(211, 219, 221, 0.62)",
+                        ? PALETTE.textPrimary
+                        : PALETTE.textSecondary,
                       border: `1px solid ${
                         selected
-                          ? "rgba(211, 219, 221, 0.10)"
-                          : "rgba(211, 219, 221, 0.07)"
+                          ? "rgba(255, 255, 255, 0.12)"
+                          : "transparent"
                       }`,
+                      boxShadow: selected
+                        ? "0 4px 16px -2px rgba(0, 0, 0, 0.5)"
+                        : "none",
                     }}
                   >
                     {status}
@@ -245,28 +252,24 @@ export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: strin
               })}
             </div>
 
-            <span
-              className="text-xs"
-              style={{
-                color:
-                  "rgba(211, 219, 221, 0.40)",
-              }}
+            <div
+              className="font-mono text-xs"
+              style={{ color: PALETTE.textMuted }}
             >
-              {view.length} shown
-            </span>
+              Showing <span style={{ color: PALETTE.textPrimary }}>{view.length}</span> of {rows.length}
+            </div>
           </div>
         </div>
 
+        {/* Error Alert */}
         {error && (
           <div className="px-7 pt-5 md:px-9">
             <p
-              className="rounded-xl border px-4 py-3 text-sm"
+              className="rounded-xl border px-4 py-3 text-sm font-medium"
               style={{
-                borderColor:
-                  "rgba(254, 91, 5, 0.25)",
-                backgroundColor:
-                  "rgba(254, 91, 5, 0.08)",
-                color: COLORS.orange,
+                borderColor: "rgba(228, 91, 91, 0.3)",
+                backgroundColor: "rgba(228, 91, 91, 0.08)",
+                color: PALETTE.danger,
               }}
             >
               {error}
@@ -274,250 +277,222 @@ export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: strin
           </div>
         )}
 
+        {/* Loading State */}
         {loading ? (
-          <div className="flex min-h-[360px] items-center justify-center">
+          <div className="flex min-h-[380px] items-center justify-center">
             <div className="text-center">
               <div
-                className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-2 border-t-transparent"
+                className="mx-auto mb-3.5 h-7 w-7 animate-spin rounded-full border-2 border-t-transparent"
                 style={{
-                  borderColor:
-                    "rgba(211, 219, 221, 0.20)",
-                  borderTopColor:
-                    COLORS.silver,
+                  borderColor: PALETTE.borderSubtle,
+                  borderTopColor: PALETTE.glowLavender,
                 }}
               />
-
               <p
-                className="text-sm"
-                style={{
-                  color:
-                    "rgba(211, 219, 221, 0.48)",
-                }}
+                className="font-mono text-xs uppercase tracking-wider"
+                style={{ color: PALETTE.textMuted }}
               >
                 Loading strategies…
               </p>
             </div>
           </div>
         ) : view.length === 0 ? (
-          <div className="flex min-h-[360px] flex-col items-center justify-center px-6 text-center">
+          /* Empty State */
+          <div className="flex min-h-[380px] flex-col items-center justify-center px-6 py-12 text-center">
             <div
-              className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl"
+              className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border"
               style={{
-                backgroundColor:
-                  "rgba(7, 80, 86, 0.45)",
-                color: COLORS.silver,
+                backgroundColor: PALETTE.elevatedBg,
+                borderColor: PALETTE.borderSubtle,
+                color: PALETTE.glowLavender,
               }}
             >
-              +
+              <Plus className="h-6 w-6" />
             </div>
 
             <p
-              className="text-sm font-medium"
-              style={{ color: "#fdf6e3" }}
+              className="text-base font-semibold"
+              style={{ color: PALETTE.textPrimary }}
             >
               No strategies yet
             </p>
 
             <p
-              className="mt-1 max-w-sm text-xs"
-              style={{
-                color:
-                  "rgba(211, 219, 221, 0.48)",
-              }}
+              className="mt-1.5 max-w-sm text-xs leading-relaxed"
+              style={{ color: PALETTE.textSecondary }}
             >
-              Build your first strategy to
-              start evaluating performance
-              across market regimes.
+              Build your first strategy to start evaluating performance across market regimes.
             </p>
 
             <Link
               href={`${basePath}/strategies/new`}
-              className="mt-5 inline-flex h-9 items-center rounded-[10px] px-4 text-sm font-medium"
+              className="mt-6 inline-flex h-9 items-center gap-2 rounded-[10px] border px-4 text-xs font-semibold shadow-md transition-all duration-200 hover:-translate-y-0.5"
               style={{
-                backgroundColor: COLORS.orange,
-                color: "#ffffff",
+                backgroundColor: PALETTE.elevatedBg,
+                borderColor: "rgba(255, 255, 255, 0.12)",
+                color: PALETTE.textPrimary,
               }}
             >
+              <Plus className="h-3.5 w-3.5" />
               Build a strategy →
             </Link>
           </div>
         ) : (
+          /* Strategy Data Table */
           <div className="overflow-x-auto">
             <table
-              className="w-full min-w-[1120px] text-sm"
+              className="w-full min-w-[1140px] text-left text-sm"
               data-testid="strategy-table"
             >
               <thead>
                 <tr
                   className="border-b"
                   style={{
-                    borderColor:
-                      "rgba(211, 219, 221, 0.08)",
+                    borderColor: PALETTE.borderSubtle,
+                    backgroundColor: "rgba(11, 16, 23, 0.3)",
                   }}
                 >
                   <Th
                     onClick={() => sortBy("name")}
+                    active={sortKey === "name"}
+                    direction={sortDir}
                   >
                     Name
                   </Th>
 
                   <th
-                    className="px-4 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.13em]"
-                    style={{
-                      color:
-                        "rgba(211, 219, 221, 0.42)",
-                    }}
+                    className="px-5 py-4 font-mono text-[10px] font-semibold uppercase tracking-[0.14em]"
+                    style={{ color: PALETTE.textMuted }}
                   >
                     Status
                   </th>
 
                   <th
-                    className="px-4 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.13em]"
-                    style={{
-                      color:
-                        "rgba(211, 219, 221, 0.42)",
-                    }}
+                    className="px-5 py-4 font-mono text-[10px] font-semibold uppercase tracking-[0.14em]"
+                    style={{ color: PALETTE.textMuted }}
                   >
                     Version
                   </th>
 
                   <Th
-                    onClick={() =>
-                      sortBy(
-                        "robustness_score",
-                      )
-                    }
+                    onClick={() => sortBy("robustness_score")}
+                    active={sortKey === "robustness_score"}
+                    direction={sortDir}
                   >
                     Robustness
                   </Th>
 
                   <th
-                    className="px-4 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.13em]"
-                    style={{
-                      color:
-                        "rgba(211, 219, 221, 0.42)",
-                    }}
+                    className="px-5 py-4 font-mono text-[10px] font-semibold uppercase tracking-[0.14em]"
+                    style={{ color: PALETTE.textMuted }}
                   >
                     Regime compatibility
                   </th>
 
                   <th
-                    className="px-4 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.13em]"
-                    style={{
-                      color:
-                        "rgba(211, 219, 221, 0.42)",
-                    }}
+                    className="px-5 py-4 text-right font-mono text-[10px] font-semibold uppercase tracking-[0.14em]"
+                    style={{ color: PALETTE.textMuted }}
                   >
                     Actions
                   </th>
                 </tr>
               </thead>
 
-              <tbody>
+              <tbody className="divide-y" style={{ borderColor: "rgba(255, 255, 255, 0.03)" }}>
                 {view.map((s) => {
-                  const robustness =
-                    s.robustness_score;
+                  const robustness = s.robustness_score;
 
                   return (
                     <tr
                       key={s.id}
-                      className="group border-b transition-colors duration-150 hover:bg-white/[0.025]"
-                      style={{
-                        borderColor:
-                          "rgba(211, 219, 221, 0.065)",
-                      }}
+                      className="group transition-all duration-150 hover:bg-white/[0.02]"
                     >
-                      <td className="min-w-[520px] max-w-[620px] px-4 py-5">
+                      {/* Name Column */}
+                      <td className="min-w-[420px] max-w-[560px] px-5 py-4">
                         <Link
                           href={`${basePath}/strategies/${s.id}/validation`}
-                          className="block"
+                          className="group/link block"
                         >
                           <div
-                            className="whitespace-normal break-words text-sm font-semibold leading-6 transition-colors"
-                            style={{
-                              color: "#fdf6e3",
-                            }}
+                            className="whitespace-normal break-words text-[15px] font-semibold tracking-[-0.015em] transition-colors duration-150 group-hover/link:text-white"
+                            style={{ color: PALETTE.textPrimary }}
                           >
                             {s.name}
                           </div>
 
                           <div
-                            className="mt-1 text-[11px]"
-                            style={{
-                              color:
-                                "rgba(211, 219, 221, 0.38)",
-                            }}
+                            className="mt-0.5 flex items-center gap-2 font-mono text-[11px]"
+                            style={{ color: PALETTE.textMuted }}
                           >
-                            Strategy research
-                            artifact
+                            <span>Strategy research artifact</span>
+                            <span>•</span>
+                            <span>ID: {s.id.slice(0, 8)}</span>
                           </div>
                         </Link>
                       </td>
 
-                      <td className="px-4 py-5">
-                        <StatusPill
-                          status={s.status}
-                        />
+                      {/* Status Column */}
+                      <td className="px-5 py-4">
+                        <StatusPill status={s.status} />
                       </td>
 
+                      {/* Version Column */}
                       <td
-                        className="px-4 py-5 text-xs"
-                        style={{
-                          color:
-                            "rgba(211, 219, 221, 0.62)",
-                        }}
+                        className="px-5 py-4 font-mono text-xs"
+                        style={{ color: PALETTE.textSecondary }}
                       >
-                        v{s.version}
+                        <span
+                          className="rounded-md border px-2 py-1"
+                          style={{
+                            backgroundColor: PALETTE.elevatedBg,
+                            borderColor: PALETTE.borderSubtle,
+                          }}
+                        >
+                          v{s.version}
+                        </span>
                       </td>
 
-                      <td className="w-[180px] px-4 py-5">
+                      {/* Robustness Score Column */}
+                      <td className="w-[210px] px-5 py-4">
                         <div className="flex items-center gap-3">
                           <span
-                            className="w-9 text-sm font-semibold"
+                            className="w-10 font-mono text-xs font-semibold"
                             style={{
-                              color:
-                                robustnessColor(
-                                  robustness,
-                                ),
+                              color: robustnessColor(robustness),
                             }}
                           >
                             {robustness === null
                               ? "—"
-                              : robustness.toFixed(
-                                  2,
-                                )}
+                              : robustness.toFixed(2)}
                           </span>
 
                           <div
-                            className="h-1.5 w-20 overflow-hidden rounded-full"
+                            className="h-1.5 w-24 overflow-hidden rounded-full border"
                             style={{
-                              backgroundColor:
-                                "rgba(211, 219, 221, 0.10)",
+                              backgroundColor: PALETTE.elevatedBg,
+                              borderColor: PALETTE.borderSubtle,
                             }}
                           >
                             <div
-                              className="h-full rounded-full transition-all"
+                              className="h-full rounded-full transition-all duration-300"
                               style={{
-                                width:
-                                  robustnessWidth(
-                                    robustness,
-                                  ),
-                                backgroundColor:
-                                  robustnessColor(
-                                    robustness,
-                                  ),
+                                width: robustnessWidth(robustness),
+                                backgroundColor: robustnessColor(robustness),
+                                boxShadow:
+                                  robustness !== null && robustness >= 0.4
+                                    ? `0 0 8px ${robustnessColor(robustness)}`
+                                    : "none",
                               }}
                             />
                           </div>
                         </div>
                       </td>
 
-                      <td className="px-4 py-5">
+                      {/* Regime Compatibility Column */}
+                      <td className="px-5 py-4">
                         <div className="flex max-w-[420px] flex-wrap gap-1.5">
                           {s.regime_compatibility ? (
-                            Object.entries(
-                              s.regime_compatibility,
-                            ).map(
+                            Object.entries(s.regime_compatibility).map(
                               ([regime, sharpe]) => (
                                 <RegimePill
                                   key={regime}
@@ -528,11 +503,8 @@ export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: strin
                             )
                           ) : (
                             <span
-                              className="text-xs"
-                              style={{
-                                color:
-                                  "rgba(211, 219, 221, 0.38)",
-                              }}
+                              className="font-mono text-xs"
+                              style={{ color: PALETTE.textMuted }}
                             >
                               Not backtested
                             </span>
@@ -540,16 +512,18 @@ export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: strin
                         </div>
                       </td>
 
-                      <td className="px-4 py-5">
+                      {/* Delete Action Column */}
+                      <td className="px-5 py-4 text-right">
                         <button
                           type="button"
-                          className="text-xs font-medium transition-colors hover:underline"
+                          className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150 hover:bg-red-500/10 hover:text-[#E45B5B]"
                           style={{
-                            color: COLORS.orange,
+                            color: PALETTE.textMuted,
                           }}
                           title="Delete strategy"
                         >
-                          Delete
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span>Delete</span>
                         </button>
                       </td>
                     </tr>
@@ -567,73 +541,72 @@ export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: strin
 function Th({
   children,
   onClick,
+  active = false,
+  direction = "desc",
 }: {
   children: React.ReactNode;
   onClick: () => void;
+  active?: boolean;
+  direction?: "asc" | "desc";
 }) {
   return (
     <th
-      className="cursor-pointer px-4 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.13em] transition-colors"
+      className="cursor-pointer px-5 py-4 text-left font-mono text-[10px] font-semibold uppercase tracking-[0.14em] transition-colors hover:text-white"
       style={{
-        color: "rgba(211, 219, 221, 0.42)",
+        color: active ? PALETTE.textPrimary : PALETTE.textMuted,
       }}
       onClick={onClick}
     >
-      <span className="inline-flex items-center gap-1.5 hover:text-[#d3dbdd]">
+      <span className="inline-flex items-center gap-1.5">
         {children}
-        <span
-          className="text-[9px]"
-          style={{
-            color:
-              "rgba(211, 219, 221, 0.28)",
-          }}
-        >
-          ↕
-        </span>
+        {active ? (
+          direction === "asc" ? (
+            <ArrowUp className="h-3 w-3 text-white" />
+          ) : (
+            <ArrowDown className="h-3 w-3 text-white" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3 w-3 opacity-30" />
+        )}
       </span>
     </th>
   );
 }
 
-function StatusPill({
-  status,
-}: {
-  status: StrategyStatus;
-}) {
-  let background = "rgba(211, 219, 221, 0.10)";
-  let color = COLORS.silver;
+function StatusPill({ status }: { status: StrategyStatus }) {
+  let bg = "rgba(255, 255, 255, 0.04)";
+  let text = PALETTE.textSecondary;
+  let border = PALETTE.borderSubtle;
 
   if (status === "active") {
-    background = "rgba(7, 80, 86, 0.85)";
-    color = "#fdf6e3";
-  }
-
-  if (status === "candidate") {
-    background = "rgba(242, 209, 125, 0.18)";
-    color = COLORS.sand;
-  }
-
-  if (status === "failed") {
-    background = "rgba(254, 91, 5, 0.16)";
-    color = "#c40707";
-  }
-
-  if (status === "draft") {
-    background = "rgba(211, 219, 221, 0.10)";
-    color = COLORS.silver;
-  }
-
-  if (status === "retired") {
-    background = "rgba(22, 35, 43, 0.95)";
-    color = "rgba(211, 219, 221, 0.58)";
+    bg = "rgba(53, 199, 122, 0.12)";
+    text = PALETTE.success;
+    border = "rgba(53, 199, 122, 0.25)";
+  } else if (status === "candidate") {
+    bg = "rgba(229, 168, 75, 0.12)";
+    text = PALETTE.warning;
+    border = "rgba(229, 168, 75, 0.22)";
+  } else if (status === "failed") {
+    bg = "rgba(228, 91, 91, 0.12)";
+    text = PALETTE.danger;
+    border = "rgba(228, 91, 91, 0.25)";
+  } else if (status === "draft") {
+    bg = PALETTE.elevatedBg;
+    text = PALETTE.textSecondary;
+    border = PALETTE.borderSubtle;
+  } else if (status === "retired") {
+    bg = "rgba(255, 255, 255, 0.02)";
+    text = PALETTE.textMuted;
+    border = "rgba(255, 255, 255, 0.04)";
   }
 
   return (
     <span
-      className="inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold capitalize"
+      className="inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider transition-colors"
       style={{
-        backgroundColor: background,
-        color,
+        backgroundColor: bg,
+        color: text,
+        borderColor: border,
       }}
     >
       {status}
@@ -648,54 +621,49 @@ function RegimePill({
   regime: string;
   sharpe: number | null;
 }) {
-  let background =
-    "rgba(211, 219, 221, 0.08)";
-  let color =
-    "rgba(211, 219, 221, 0.72)";
+  let bg = PALETTE.elevatedBg;
+  let text = PALETTE.textSecondary;
+  let border = PALETTE.borderSubtle;
 
-  const normalized =
-    regime.toLowerCase();
+  const normalized = regime.toLowerCase();
 
   if (
     normalized.includes("low-volatility") ||
-    normalized.includes("low volatility")
+    normalized.includes("low volatility") ||
+    normalized === "bull"
   ) {
-    background = "rgba(7, 80, 86, 0.48)";
-    color = "#7fd9d2";
+    bg = "rgba(53, 199, 122, 0.08)";
+    text = PALETTE.success;
+    border = "rgba(53, 199, 122, 0.18)";
   } else if (
     normalized.includes("high-volatility") ||
     normalized.includes("high volatility")
   ) {
-    background = "rgba(242, 209, 125, 0.16)";
-    color = COLORS.sand;
-  } else if (normalized === "bear") {
-    background = "rgba(254, 91, 5, 0.15)";
-    color = "#c40707";
-  } else if (normalized === "bull") {
-    background = "rgba(7, 80, 86, 0.48)";
-    color = "#82d8d1";
-  } else if (normalized === "crisis") {
-    background = "rgba(211, 219, 221, 0.12)";
-    color = COLORS.silver;
-  } else if (normalized === "sideways") {
-    background = "rgba(211, 219, 221, 0.10)";
-    color = "rgba(211, 219, 221, 0.72)";
+    bg = "rgba(229, 168, 75, 0.08)";
+    text = PALETTE.warning;
+    border = "rgba(229, 168, 75, 0.18)";
+  } else if (normalized === "bear" || normalized === "crisis") {
+    bg = "rgba(228, 91, 91, 0.08)";
+    text = PALETTE.danger;
+    border = "rgba(228, 91, 91, 0.18)";
   }
 
   return (
     <span
-      title={`Sharpe ${
-        sharpe === null
-          ? "n/a"
-          : sharpe.toFixed(2)
-      }`}
-      className="rounded-md px-2 py-1 text-[10px] font-medium"
+      title={`Sharpe: ${sharpe === null ? "n/a" : sharpe.toFixed(2)}`}
+      className="inline-flex items-center gap-1 rounded-[6px] border px-2 py-0.5 font-mono text-[10px] font-medium transition-colors"
       style={{
-        backgroundColor: background,
-        color,
+        backgroundColor: bg,
+        color: text,
+        borderColor: border,
       }}
     >
-      {regime}
+      <span>{regime}</span>
+      {sharpe !== null && (
+        <span style={{ color: PALETTE.textMuted }}>
+          {sharpe.toFixed(1)}
+        </span>
+      )}
     </span>
   );
 }

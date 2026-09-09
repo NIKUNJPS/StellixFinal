@@ -9,6 +9,20 @@ import { useUiStore } from "@/store/ui-store";
 import { useAuthStore } from "@/store/auth-store";
 import { getNavLinks } from "@/components/layout/nav-config";
 
+const PALETTE = {
+  mainBg: "#08090B",
+  sidebarBg: "#0B1017",
+  cardBg: "#0F1115",
+  elevatedBg: "#14161B",
+  borderSubtle: "rgba(255, 255, 255, 0.06)",
+  borderHover: "rgba(255, 255, 255, 0.12)",
+  textPrimary: "#F5F5F7",
+  textSecondary: "#9A9DA8",
+  textMuted: "#666A76",
+  glowLavender: "#6F6B9B",
+  danger: "#E45B5B",
+};
+
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar } = useUiStore();
   const pathname = usePathname();
@@ -22,12 +36,16 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "hidden shrink-0 flex-col border-r border-[#d3dbdd]/10 bg-[#16232b] transition-[width] duration-300 md:flex",
+        "hidden shrink-0 flex-col border-r transition-[width] duration-300 md:flex",
         sidebarOpen ? "w-60" : "w-16",
       )}
+      style={{
+        backgroundColor: PALETTE.sidebarBg,
+        borderColor: PALETTE.borderSubtle,
+      }}
     >
       <nav
-        className="flex-1 space-y-1 overflow-y-auto px-2 py-4"
+        className="flex-1 space-y-1 overflow-y-auto px-2.5 py-4"
         data-testid="sidebar-nav"
       >
         {navLinks.map((link) => {
@@ -43,23 +61,26 @@ export function Sidebar() {
               href={link.href}
               title={sidebarOpen ? undefined : link.label}
               className={cn(
-                "group relative flex items-center justify-between rounded-lg px-3 py-2.5",
+                "group relative flex items-center justify-between rounded-xl px-3 py-2.5",
                 "text-sm font-medium",
                 "transition-all duration-150",
                 !sidebarOpen && "justify-center px-0",
                 active
-                  ? "text-[#d3dbdd]"
-                  : "text-[#d3dbdd]/75 hover:text-white",
+                  ? "text-[#F5F5F7]"
+                  : "text-[#9A9DA8] hover:text-[#F5F5F7]",
               )}
             >
               {/* Selected background */}
               {active && (
                 <span
                   aria-hidden="true"
-                  className="absolute inset-0 rounded-lg border border-[#e6e3e3]/40 bg-[#042F34]/60 shadow-sm"
+                  className="absolute inset-0 rounded-xl border shadow-sm"
                   style={{
+                    backgroundColor: PALETTE.elevatedBg,
+                    borderColor: "rgba(255, 255, 255, 0.12)",
+                    boxShadow: "0 4px 18px -2px rgba(0, 0, 0, 0.5)",
                     animation:
-                      "sidebarActiveSlide 320ms cubic-bezier(0.22, 1, 0.36, 1)",
+                      "sidebarActiveSlide 280ms cubic-bezier(0.22, 1, 0.36, 1)",
                   }}
                 />
               )}
@@ -68,7 +89,7 @@ export function Sidebar() {
               {!active && (
                 <span
                   aria-hidden="true"
-                  className="absolute inset-0 rounded-lg border border-transparent bg-transparent transition-all duration-150 group-hover:border-[#d3dbdd]/10 group-hover:bg-[#042F34]/20"
+                  className="absolute inset-0 rounded-xl border border-transparent bg-transparent transition-all duration-150 group-hover:border-white/[0.06] group-hover:bg-[#14161B]/60"
                 />
               )}
 
@@ -82,13 +103,13 @@ export function Sidebar() {
                   className={cn(
                     "h-4 w-4 shrink-0 transition-colors duration-150",
                     active
-                      ? "text-[#e6e3e3]"
-                      : "text-[#d3dbdd]/60 group-hover:text-[#F4D47C]",
+                      ? "text-[#F5F5F7]"
+                      : "text-[#666A76] group-hover:text-[#F5F5F7]",
                   )}
                 />
 
                 {sidebarOpen && (
-                  <span className="truncate">
+                  <span className="truncate tracking-[-0.01em]">
                     {link.label}
                   </span>
                 )}
@@ -100,11 +121,13 @@ export function Sidebar() {
                   aria-hidden="true"
                   className={cn(
                     "relative z-10 h-1.5 w-1.5 shrink-0 rounded-full",
-                    "bg-[#e6e3e3]",
-                    "shadow-[0_0_9px_rgba(230,227,227,0.9)]",
                     "transition-all duration-200",
                     !sidebarOpen && "hidden",
                   )}
+                  style={{
+                    backgroundColor: PALETTE.glowLavender,
+                    boxShadow: "0 0 8px rgba(111, 107, 155, 0.9)",
+                  }}
                 />
               )}
             </Link>
@@ -116,13 +139,17 @@ export function Sidebar() {
             href="/superadmin"
             title={sidebarOpen ? undefined : "Superadmin Console"}
             className={cn(
-              "group relative mt-2 flex items-center gap-3 rounded-lg",
-              "border border-crimson/40 px-3 py-2.5",
-              "text-sm font-medium text-crimson",
+              "group relative mt-2 flex items-center gap-3 rounded-xl",
+              "border px-3 py-2.5",
+              "text-sm font-medium",
               "transition-all duration-150",
-              "hover:bg-crimson/10",
               !sidebarOpen && "justify-center px-0",
             )}
+            style={{
+              borderColor: "rgba(228, 91, 91, 0.3)",
+              backgroundColor: "rgba(228, 91, 91, 0.08)",
+              color: PALETTE.danger,
+            }}
           >
             <ShieldAlert className="relative z-10 h-4 w-4 shrink-0" />
 
@@ -136,29 +163,31 @@ export function Sidebar() {
       </nav>
 
       {/* Sidebar collapse control */}
-      <div className="flex items-center justify-center border-t border-[#d3dbdd]/10 px-2 py-3">
+      <div
+        className="flex items-center justify-center border-t px-2 py-3"
+        style={{ borderColor: PALETTE.borderSubtle }}
+      >
         <button
           type="button"
           onClick={toggleSidebar}
           className={cn(
-            "flex h-10 w-10 items-center justify-center rounded-lg",
-            "border border-[#d3dbdd]/15",
-            "bg-[#16232b]",
-            "text-[#d3dbdd]/75",
+            "flex h-9 w-9 items-center justify-center rounded-lg border",
             "transition-all duration-150",
-            "hover:border-[#d3dbdd]/25",
-            "hover:bg-[#042F34]",
-            "hover:text-[#d3dbdd]",
             "active:scale-95",
           )}
+          style={{
+            backgroundColor: PALETTE.elevatedBg,
+            borderColor: PALETTE.borderSubtle,
+            color: PALETTE.textSecondary,
+          }}
           aria-label={
             sidebarOpen ? "Collapse sidebar" : "Expand sidebar"
           }
         >
           {sidebarOpen ? (
-            <ChevronLeft className="h-[18px] w-[18px]" />
+            <ChevronLeft className="h-4 w-4" />
           ) : (
-            <ChevronRight className="h-[18px] w-[18px]" />
+            <ChevronRight className="h-4 w-4" />
           )}
         </button>
       </div>
@@ -171,9 +200,9 @@ export function Sidebar() {
             transform: scaleY(0.72);
           }
 
-          55% {
-            opacity: 0.9;
-            transform: scaleY(1.04);
+          60% {
+            opacity: 0.95;
+            transform: scaleY(1.03);
           }
 
           100% {
