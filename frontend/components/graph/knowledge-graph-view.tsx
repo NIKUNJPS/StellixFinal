@@ -15,7 +15,7 @@ const KnowledgeGraphViewer = dynamic(
     ssr: false,
     loading: () => (
       <div
-        className="h-[520px] animate-pulse rounded-lg border border-border bg-muted/30"
+        className="h-[520px] animate-pulse rounded-lg border border-white/[0.06] bg-[#14161B]/50"
         aria-label="Loading knowledge graph"
       />
     ),
@@ -161,45 +161,85 @@ export function KnowledgeGraphView() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <div className="mx-auto w-full max-w-6xl text-[#9A9DA8]">
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Research Queries</CardTitle>
-            <CardDescription>The 5 named graph queries (SRC report {"§"}5.4)</CardDescription>
+        <Card className="border border-white/[0.06] bg-[#0F1115] text-[#F5F5F7]">
+          <CardHeader className="border-b border-white/[0.06]">
+            <CardTitle className="text-lg font-semibold text-[#F5F5F7]">Research Queries</CardTitle>
+            <CardDescription className="text-xs text-[#666A76]">The 5 named graph queries (SRC report {"§"}5.4)</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3">
+          <CardContent className="flex flex-col gap-3 pt-4">
             <div className="flex flex-col gap-1.5">
-              <Input value={regime} onChange={(e) => setRegime(e.target.value)} className="h-8" placeholder="Regime (e.g. Bear)" />
-              <Button size="sm" variant="outline" onClick={runFailedByRegime} data-testid="query-failed-by-regime">
+              <Input
+                value={regime}
+                onChange={(e) => setRegime(e.target.value)}
+                className="h-8 border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] placeholder:text-[#666A76]"
+                placeholder="Regime (e.g. Bear)"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={runFailedByRegime}
+                data-testid="query-failed-by-regime"
+                className="border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] hover:border-white/[0.12] hover:bg-[#14161B]/80"
+              >
                 Failed strategies by regime
               </Button>
             </div>
             <div className="flex flex-col gap-1.5">
-              <Input value={lineageId} onChange={(e) => setLineageId(e.target.value)} className="h-8" placeholder="Strategy ID" />
-              <Button size="sm" variant="outline" onClick={runLineage} data-testid="query-lineage">
+              <Input
+                value={lineageId}
+                onChange={(e) => setLineageId(e.target.value)}
+                className="h-8 border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] placeholder:text-[#666A76]"
+                placeholder="Strategy ID"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={runLineage}
+                data-testid="query-lineage"
+                className="border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] hover:border-white/[0.12] hover:bg-[#14161B]/80"
+              >
                 Evolutionary lineage
               </Button>
             </div>
-            <Button size="sm" variant="outline" onClick={runRobustAcrossRegimes} data-testid="query-robust-across-regimes">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={runRobustAcrossRegimes}
+              data-testid="query-robust-across-regimes"
+              className="border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] hover:border-white/[0.12] hover:bg-[#14161B]/80"
+            >
               Robust across regimes
             </Button>
-            <Button size="sm" variant="outline" onClick={runRecurringFailureModes} data-testid="query-recurring-failure-modes">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={runRecurringFailureModes}
+              data-testid="query-recurring-failure-modes"
+              className="border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] hover:border-white/[0.12] hover:bg-[#14161B]/80"
+            >
               Recurring failure modes
             </Button>
-            <Button size="sm" variant="outline" onClick={runHypothesesLeadingToActive} data-testid="query-hypotheses-active">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={runHypothesesLeadingToActive}
+              data-testid="query-hypotheses-active"
+              className="border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] hover:border-white/[0.12] hover:bg-[#14161B]/80"
+            >
               Hypotheses {"→"} Active strategies
             </Button>
-            {error && <p className="text-xs text-destructive">{error}</p>}
+            {error && <p className="text-xs text-[#E45B5B]">{error}</p>}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Knowledge Graph Viewer</CardTitle>
-            <CardDescription>{summary}</CardDescription>
+        <Card className="border border-white/[0.06] bg-[#0F1115] text-[#F5F5F7]">
+          <CardHeader className="border-b border-white/[0.06]">
+            <CardTitle className="text-lg font-semibold text-[#F5F5F7]">Knowledge Graph Viewer</CardTitle>
+            <CardDescription className="text-xs text-[#666A76]">{summary}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <KnowledgeGraphViewer seed={elements} />
           </CardContent>
         </Card>

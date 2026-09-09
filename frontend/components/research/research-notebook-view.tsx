@@ -278,102 +278,122 @@ export function ResearchNotebookView({ basePath = "/admin" }: { basePath?: strin
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl">
+    <div className="mx-auto w-full max-w-7xl text-[#9A9DA8]">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr_320px]">
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle className="text-lg">Research Notebook</CardTitle>
-            <CardDescription>{total} notes</CardDescription>
+        {/* LEFT COLUMN: NOTES LIST */}
+        <Card className="h-fit border border-white/[0.06] bg-[#0F1115] text-[#F5F5F7]">
+          <CardHeader className="border-b border-white/[0.06] pb-4">
+            <CardTitle className="text-lg font-semibold text-[#F5F5F7]">Research Notebook</CardTitle>
+            <CardDescription className="text-xs text-[#666A76]">{total} notes</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <Button size="sm" onClick={startNewNote} data-testid="new-note">
+          <CardContent className="flex flex-col gap-3 pt-4">
+            <Button
+              size="sm"
+              onClick={startNewNote}
+              data-testid="new-note"
+              className="border border-white/[0.06] bg-[#14161B] text-[#F5F5F7] hover:border-white/[0.12] hover:bg-[#14161B]/80"
+            >
               + New note
             </Button>
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search title/content/hypothesis..."
-              className="h-8"
+              className="h-8 border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] placeholder:text-[#666A76]"
               data-testid="search-notes"
             />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as ResearchNoteStatus | "")}
-              className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+              className="h-8 rounded-md border border-white/[0.06] bg-[#14161B] px-2 text-xs text-[#9A9DA8] focus:outline-none"
             >
-              <option value="">All statuses</option>
+              <option value="" className="bg-[#14161B] text-[#F5F5F7]">All statuses</option>
               {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>
+                <option key={s} value={s} className="bg-[#14161B] text-[#F5F5F7]">
                   {s}
                 </option>
               ))}
             </select>
-            <div className="flex flex-col gap-1" data-testid="note-list">
+            <div className="flex flex-col gap-1.5" data-testid="note-list">
               {notes.map((n) => (
                 <button
                   key={n.id}
                   onClick={() => selectNote(n.id)}
-                  className={`rounded-md border p-2 text-left text-sm ${selectedId === n.id ? "border-primary bg-accent/40" : "border-border"}`}
+                  className={`rounded-md border p-2.5 text-left text-sm transition-colors ${
+                    selectedId === n.id
+                      ? "border-white/[0.15] bg-[#14161B] text-[#F5F5F7]"
+                      : "border-white/[0.04] bg-transparent text-[#9A9DA8] hover:border-white/[0.08] hover:bg-[#14161B]/50 hover:text-[#F5F5F7]"
+                  }`}
                   data-testid={`note-item-${n.id}`}
                 >
                   <div className="font-medium">{n.title || "(untitled)"}</div>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant="outline">{n.status}</Badge>
+                  <div className="mt-1.5 flex items-center gap-2 text-xs text-[#666A76]">
+                    <Badge variant="outline" className="border-white/[0.08] bg-[#14161B] text-[10px] text-[#9A9DA8]">
+                      {n.status}
+                    </Badge>
                     <span>{n.updated_at.slice(0, 10)}</span>
                   </div>
                 </button>
               ))}
-              {notes.length === 0 && <p className="text-xs text-muted-foreground">No notes yet.</p>}
+              {notes.length === 0 && <p className="py-4 text-center text-xs text-[#666A76]">No notes yet.</p>}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        {/* MIDDLE COLUMN: EDITOR */}
+        <Card className="border border-white/[0.06] bg-[#0F1115] text-[#F5F5F7]">
+          <CardHeader className="border-b border-white/[0.06]">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">{selectedId ? "Edit note" : "New note"}</CardTitle>
+              <CardTitle className="text-lg font-semibold text-[#F5F5F7]">{selectedId ? "Edit note" : "New note"}</CardTitle>
               <SaveIndicator state={saveState} />
             </div>
-            {error && <CardDescription className="text-destructive">{error}</CardDescription>}
+            {error && <CardDescription className="text-xs text-[#E45B5B]">{error}</CardDescription>}
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
+          <CardContent className="flex flex-col gap-4 pt-5">
             <div>
-              <Label htmlFor="note-title">Title</Label>
+              <Label htmlFor="note-title" className="text-xs text-[#9A9DA8]">Title</Label>
               <Input
                 id="note-title"
                 value={draft.title ?? ""}
                 onChange={(e) => updateDraft({ title: e.target.value })}
+                className="mt-1 border-white/[0.06] bg-[#14161B] text-[#F5F5F7]"
                 data-testid="note-title"
               />
             </div>
 
             <div data-color-mode="dark">
-              <Label>Content (markdown)</Label>
-              <MDEditor
-                value={draft.content ?? ""}
-                onChange={(v) => updateDraft({ content: v ?? "" })}
-                height={280}
-              />
+              <Label className="text-xs text-[#9A9DA8]">Content (markdown)</Label>
+              <div className="mt-1 overflow-hidden rounded-md border border-white/[0.06]">
+                <MDEditor
+                  value={draft.content ?? ""}
+                  onChange={(v) => updateDraft({ content: v ?? "" })}
+                  height={280}
+                  style={{
+                    backgroundColor: "#14161B",
+                    color: "#F5F5F7",
+                  }}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="note-hypothesis">Hypothesis</Label>
+                <Label htmlFor="note-hypothesis" className="text-xs text-[#9A9DA8]">Hypothesis</Label>
                 <textarea
                   id="note-hypothesis"
                   value={draft.hypothesis ?? ""}
                   onChange={(e) => updateDraft({ hypothesis: e.target.value })}
-                  className="w-full rounded-md border border-input bg-transparent p-2 text-sm"
+                  className="mt-1 w-full rounded-md border border-white/[0.06] bg-[#14161B] p-2 text-sm text-[#F5F5F7] focus:outline-none"
                   rows={3}
                 />
               </div>
               <div>
-                <Label htmlFor="note-method">Method</Label>
+                <Label htmlFor="note-method" className="text-xs text-[#9A9DA8]">Method</Label>
                 <textarea
                   id="note-method"
                   value={draft.method ?? ""}
                   onChange={(e) => updateDraft({ method: e.target.value })}
-                  className="w-full rounded-md border border-input bg-transparent p-2 text-sm"
+                  className="mt-1 w-full rounded-md border border-white/[0.06] bg-[#14161B] p-2 text-sm text-[#F5F5F7] focus:outline-none"
                   rows={3}
                 />
               </div>
@@ -381,30 +401,40 @@ export function ResearchNotebookView({ basePath = "/admin" }: { basePath?: strin
 
             <div className="flex items-end gap-3">
               <div>
-                <Label htmlFor="note-status">Status</Label>
+                <Label htmlFor="note-status" className="text-xs text-[#9A9DA8]">Status</Label>
                 <select
                   id="note-status"
                   value={draft.status ?? "in_progress"}
                   onChange={(e) => updateDraft({ status: e.target.value as ResearchNoteStatus })}
-                  className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
+                  className="mt-1 h-9 rounded-md border border-white/[0.06] bg-[#14161B] px-2 text-sm text-[#F5F5F7] focus:outline-none"
                 >
                   {STATUS_OPTIONS.map((s) => (
-                    <option key={s} value={s}>
+                    <option key={s} value={s} className="bg-[#14161B] text-[#F5F5F7]">
                       {s}
                     </option>
                   ))}
                 </select>
               </div>
-              <Button size="sm" onClick={saveNow} data-testid="save-note">
+              <Button
+                size="sm"
+                onClick={saveNow}
+                data-testid="save-note"
+                className="border border-white/[0.06] bg-[#14161B] text-[#F5F5F7] hover:border-white/[0.12] hover:bg-[#14161B]/80"
+              >
                 {selectedId ? "Save" : "Create note"}
               </Button>
             </div>
 
             <div>
-              <Label>Tags</Label>
-              <div className="mb-2 flex flex-wrap gap-1.5" data-testid="note-tags">
+              <Label className="text-xs text-[#9A9DA8]">Tags</Label>
+              <div className="mb-2 mt-1 flex flex-wrap gap-1.5" data-testid="note-tags">
                 {(draft.tags ?? []).map((t) => (
-                  <Badge key={t} variant="secondary" className="cursor-pointer" onClick={() => removeTag(t)}>
+                  <Badge
+                    key={t}
+                    variant="secondary"
+                    className="cursor-pointer border border-white/[0.06] bg-[#14161B] text-xs text-[#9A9DA8] hover:bg-[#14161B]/80 hover:text-[#F5F5F7]"
+                    onClick={() => removeTag(t)}
+                  >
                     {t} &times;
                   </Badge>
                 ))}
@@ -420,21 +450,29 @@ export function ResearchNotebookView({ basePath = "/admin" }: { basePath?: strin
                     }
                   }}
                   placeholder="Add a tag and press Enter"
-                  className="h-8"
+                  className="h-8 border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] placeholder:text-[#666A76]"
                   data-testid="tag-input"
                 />
-                <Button size="sm" variant="outline" onClick={addTag}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={addTag}
+                  className="border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] hover:border-white/[0.12] hover:bg-[#14161B]/80"
+                >
                   Add
                 </Button>
               </div>
             </div>
 
             <div>
-              <Label>Linked strategies</Label>
-              <div className="mb-2 flex flex-wrap gap-1.5" data-testid="linked-strategies">
+              <Label className="text-xs text-[#9A9DA8]">Linked strategies</Label>
+              <div className="mb-2 mt-1 flex flex-wrap gap-1.5" data-testid="linked-strategies">
                 {(draft.related_strategy_ids ?? []).map((id) => (
                   <a key={id} href={`${basePath}/strategies`} className="inline-block" data-testid={`strategy-chip-${id}`}>
-                    <Badge variant="outline" className="cursor-pointer hover:bg-accent/60">
+                    <Badge
+                      variant="outline"
+                      className="cursor-pointer border-white/[0.06] bg-[#14161B] text-xs text-[#9A9DA8] hover:bg-[#14161B]/80 hover:text-[#F5F5F7]"
+                    >
                       {id.slice(0, 8)}
                       <span
                         onClick={(e) => {
@@ -455,21 +493,29 @@ export function ResearchNotebookView({ basePath = "/admin" }: { basePath?: strin
                   value={strategyIdInput}
                   onChange={(e) => setStrategyIdInput(e.target.value)}
                   placeholder="Strategy id"
-                  className="h-8"
+                  className="h-8 border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] placeholder:text-[#666A76]"
                   data-testid="strategy-id-input"
                 />
-                <Button size="sm" variant="outline" onClick={addStrategyId}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={addStrategyId}
+                  className="border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] hover:border-white/[0.12] hover:bg-[#14161B]/80"
+                >
                   Link
                 </Button>
               </div>
             </div>
 
             <div>
-              <Label>Linked failures</Label>
-              <div className="mb-2 flex flex-wrap gap-1.5" data-testid="linked-failures">
+              <Label className="text-xs text-[#9A9DA8]">Linked failures</Label>
+              <div className="mb-2 mt-1 flex flex-wrap gap-1.5" data-testid="linked-failures">
                 {(draft.related_failure_ids ?? []).map((id) => (
                   <a key={id} href={`${basePath}/failures`} className="inline-block" data-testid={`failure-chip-${id}`}>
-                    <Badge variant="outline" className="cursor-pointer hover:bg-accent/60">
+                    <Badge
+                      variant="outline"
+                      className="cursor-pointer border-white/[0.06] bg-[#14161B] text-xs text-[#9A9DA8] hover:bg-[#14161B]/80 hover:text-[#F5F5F7]"
+                    >
                       {id.slice(0, 8)}
                       <span
                         onClick={(e) => {
@@ -490,10 +536,15 @@ export function ResearchNotebookView({ basePath = "/admin" }: { basePath?: strin
                   value={failureIdInput}
                   onChange={(e) => setFailureIdInput(e.target.value)}
                   placeholder="Failure id"
-                  className="h-8"
+                  className="h-8 border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] placeholder:text-[#666A76]"
                   data-testid="failure-id-input"
                 />
-                <Button size="sm" variant="outline" onClick={addFailureId}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={addFailureId}
+                  className="border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] hover:border-white/[0.12] hover:bg-[#14161B]/80"
+                >
                   Link
                 </Button>
               </div>
@@ -501,22 +552,29 @@ export function ResearchNotebookView({ basePath = "/admin" }: { basePath?: strin
           </CardContent>
         </Card>
 
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle className="text-lg">AI Assistant</CardTitle>
-            <CardDescription>Wired to Batch 9&apos;s hypothesis/critique endpoints.</CardDescription>
+        {/* RIGHT COLUMN: AI ASSISTANT */}
+        <Card className="h-fit border border-white/[0.06] bg-[#0F1115] text-[#F5F5F7]">
+          <CardHeader className="border-b border-white/[0.06]">
+            <CardTitle className="text-lg font-semibold text-[#F5F5F7]">AI Assistant</CardTitle>
+            <CardDescription className="text-xs text-[#666A76]">Wired to Batch 9&apos;s hypothesis/critique endpoints.</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
+          <CardContent className="flex flex-col gap-4 pt-4">
             <div>
-              <Label htmlFor="llm-symbol">Symbol</Label>
-              <div className="flex gap-2">
+              <Label htmlFor="llm-symbol" className="text-xs text-[#9A9DA8]">Symbol</Label>
+              <div className="mt-1 flex gap-2">
                 <Input
                   id="llm-symbol"
                   value={llmSymbol}
                   onChange={(e) => setLlmSymbol(e.target.value)}
-                  className="h-8"
+                  className="h-8 border-white/[0.06] bg-[#14161B] text-xs uppercase text-[#F5F5F7]"
                 />
-                <Button size="sm" onClick={runHypothesis} disabled={llmLoading} data-testid="run-hypothesis-docked">
+                <Button
+                  size="sm"
+                  onClick={runHypothesis}
+                  disabled={llmLoading}
+                  data-testid="run-hypothesis-docked"
+                  className="border border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] hover:border-white/[0.12] hover:bg-[#14161B]/80"
+                >
                   Hypothesis
                 </Button>
               </div>
@@ -527,29 +585,30 @@ export function ResearchNotebookView({ basePath = "/admin" }: { basePath?: strin
               onClick={runCritique}
               disabled={llmLoading}
               data-testid="run-critique-docked"
+              className="border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] hover:border-white/[0.12] hover:bg-[#14161B]/80"
             >
               Critique linked strategy
             </Button>
-            {llmError && <p className="text-sm text-destructive">{llmError}</p>}
-            {llmLoading && <p className="text-sm text-muted-foreground">Thinking...</p>}
+            {llmError && <p className="text-xs text-[#E45B5B]">{llmError}</p>}
+            {llmLoading && <p className="text-xs text-[#666A76]">Thinking...</p>}
             {hypothesisResult && (
-              <div className="text-sm" data-testid="docked-hypothesis-result">
-                <h4 className="mb-1 font-medium">Hypothesis</h4>
-                <p className="mb-2 text-muted-foreground">{hypothesisResult.hypothesis.hypothesis_text}</p>
-                <h4 className="mb-1 font-medium">Rationale</h4>
-                <p className="text-muted-foreground">{hypothesisResult.hypothesis.rationale}</p>
+              <div className="rounded-md border border-white/[0.06] bg-[#14161B] p-3 text-xs" data-testid="docked-hypothesis-result">
+                <h4 className="mb-1 font-medium text-[#F5F5F7]">Hypothesis</h4>
+                <p className="mb-2 text-[#9A9DA8]">{hypothesisResult.hypothesis.hypothesis_text}</p>
+                <h4 className="mb-1 font-medium text-[#F5F5F7]">Rationale</h4>
+                <p className="text-[#9A9DA8]">{hypothesisResult.hypothesis.rationale}</p>
               </div>
             )}
             {critiqueResult && (
-              <div className="text-sm" data-testid="docked-critique-result">
-                <h4 className="mb-1 font-medium">Strengths</h4>
-                <ul className="mb-2 list-inside list-disc text-muted-foreground">
+              <div className="rounded-md border border-white/[0.06] bg-[#14161B] p-3 text-xs" data-testid="docked-critique-result">
+                <h4 className="mb-1 font-medium text-[#35C77A]">Strengths</h4>
+                <ul className="mb-2 list-inside list-disc text-[#9A9DA8]">
                   {critiqueResult.critique.strengths.map((s, i) => (
                     <li key={i}>{s}</li>
                   ))}
                 </ul>
-                <h4 className="mb-1 font-medium">Weaknesses</h4>
-                <ul className="list-inside list-disc text-muted-foreground">
+                <h4 className="mb-1 font-medium text-[#E45B5B]">Weaknesses</h4>
+                <ul className="list-inside list-disc text-[#9A9DA8]">
                   {critiqueResult.critique.weaknesses.map((s, i) => (
                     <li key={i}>{s}</li>
                   ))}
@@ -567,20 +626,20 @@ function SaveIndicator({ state }: { state: SaveState }) {
   if (state === "idle") return null;
   if (state === "saving") {
     return (
-      <span className="text-xs text-muted-foreground" data-testid="save-indicator">
+      <span className="text-xs text-[#9A9DA8]" data-testid="save-indicator">
         Saving...
       </span>
     );
   }
   if (state === "error") {
     return (
-      <span className="text-xs text-destructive" data-testid="save-indicator">
+      <span className="text-xs text-[#E45B5B]" data-testid="save-indicator">
         Save failed
       </span>
     );
   }
   return (
-    <span className="text-xs text-emerald-500" data-testid="save-indicator">
+    <span className="text-xs text-[#35C77A]" data-testid="save-indicator">
       Saved
     </span>
   );
