@@ -50,6 +50,7 @@ export const COMPLIANCE_NAV_LINKS: NavLink[] = [
 ];
 
 export const RESEARCHER_NAV_LINKS: NavLink[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/researcher/strategies", label: "Strategy Explorer", icon: FlaskConical },
   { href: "/researcher/failures", label: "Failure Intelligence", icon: AlertTriangle },
   { href: "/researcher/assistant", label: "Research Assistant", icon: Sparkles },
@@ -113,10 +114,5 @@ export const BREADCRUMB_LABELS: Record<string, string> = {
 /**
  * Path segments that are namespaces, not pages. The breadcrumb renders these as
  * plain text instead of links, because navigating to them 404s:
- *
- *   /admin                      — no page.tsx; every admin feature lives a level deeper
- *   /admin/strategies/<uuid>    — no [id]/page.tsx; only [id]/validation and
- *                                 [id]/backtest-results exist (UUIDs are caught by
- *                                 the UUID test in breadcrumb.tsx, not listed here)
  */
 export const NON_NAVIGABLE_SEGMENTS = new Set(["admin", "compliance", "researcher", "risk-manager", "cio"]);

@@ -105,7 +105,6 @@ function KpiCard({
         boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)",
       }}
     >
-      {/* Top Card Gradient Glow */}
       <div
         className="pointer-events-none absolute -top-16 left-1/2 h-24 w-3/4 -translate-x-1/2 rounded-full opacity-20 blur-2xl transition-opacity duration-300 group-hover:opacity-40"
         style={{ backgroundColor: accentColor }}
@@ -153,8 +152,6 @@ export default function DashboardPage() {
   useEffect(() => {
     if (user?.role === "compliance_officer") {
       router.replace("/compliance/governance");
-    } else if (user?.role === "researcher") {
-      router.replace("/researcher/strategies");
     } else if (user?.role === "risk_manager") {
       router.replace("/risk-manager/failures");
     } else if (user?.role === "cio") {
@@ -342,7 +339,6 @@ export default function DashboardPage() {
   return (
     <DashboardShell>
       <div className="relative min-h-full bg-[#07080B] px-1 py-1 text-[#F5F5F7]">
-        {/* Ambient Top Glow Orbs */}
         <div className="pointer-events-none absolute -top-24 left-1/4 h-80 w-80 rounded-full bg-[#5C568E]/10 blur-[120px]" />
         <div className="pointer-events-none absolute top-40 right-10 h-72 w-72 rounded-full bg-[#38BDF8]/5 blur-[100px]" />
 
@@ -358,13 +354,12 @@ export default function DashboardPage() {
           </p>
         )}
 
-        {/* Dashboard Header Banner */}
         <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#38BDF8] opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#38BDF8]" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8E88C7] opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#8E88C7]" />
               </span>
               <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[#808495]">
                 Quantix Intelligence • Research Mode
@@ -394,7 +389,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* KPI Grid */}
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <KpiCard
             icon={Activity}
@@ -447,9 +441,7 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* 2 × 2 Analytics Cards */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          {/* Equity Curve Card */}
           <Card
             className={cardClass}
             style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
@@ -525,7 +517,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Strategy Distribution Card */}
           <Card
             className={cardClass}
             style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
@@ -588,7 +579,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Regime Timeline Card */}
           <Card
             className={cardClass}
             style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
@@ -616,7 +606,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Failure Heatmap Card */}
           <Card
             className={cardClass}
             style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
