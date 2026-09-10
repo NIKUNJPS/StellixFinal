@@ -86,16 +86,24 @@ export function NewStrategyView({ basePath = "/admin" }: { basePath?: string }) 
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl text-[#d3dbdd]">
+    <div className="mx-auto w-full max-w-3xl text-[#9A9DA8]">
       <BackLink href={`${basePath}/strategies`} label="Back to strategies" />
 
-      <Card className="border-[#075056]/40 bg-[#16232b] shadow-xl shadow-black/20">
-        <CardHeader>
-          <CardTitle className="text-[#fdf6e3]">
+      <Card
+        className="rounded-2xl p-2 shadow-2xl backdrop-blur-xl transition-all duration-200"
+        style={{
+          backgroundColor: "rgba(15, 17, 21, 0.65)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          boxShadow:
+            "0 24px 70px -15px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(255, 255, 255, 0.04)",
+        }}
+      >
+        <CardHeader className="border-b border-white/[0.06] pb-4">
+          <CardTitle className="text-xl font-bold tracking-tight text-[#F5F5F7]">
             Strategy Builder
           </CardTitle>
 
-          <CardDescription className="text-[#d3dbdd]/60">
+          <CardDescription className="text-xs text-[#9A9DA8]">
             Step {step + 1} of {STEPS.length}: {STEPS[step]}
           </CardDescription>
 
@@ -103,24 +111,24 @@ export function NewStrategyView({ basePath = "/admin" }: { basePath?: string }) 
             {STEPS.map((s, i) => (
               <div
                 key={s}
-                className={`h-1.5 flex-1 rounded-full ${
-                  i <= step
-                    ? "bg-[#f2d17d]"
-                    : "bg-[#d3dbdd]/15"
-                }`}
+                className="h-1 flex-1 rounded-full transition-all duration-300"
+                style={{
+                  backgroundColor: i <= step ? "#5C568E" : "rgba(255, 255, 255, 0.08)",
+                  boxShadow: i <= step ? "0 0 8px rgba(92, 86, 142, 0.6)" : "none",
+                }}
               />
             ))}
           </div>
         </CardHeader>
 
-        <CardContent className="flex flex-col gap-6">
+        <CardContent className="flex flex-col gap-6 pt-6">
           {step === 0 && (
             <div
               className="flex flex-col gap-4"
               data-testid="step-basic"
             >
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-[#d3dbdd]">
+              <div className="flex flex-col gap-2">
+                <Label className="text-sm font-semibold text-[#F5F5F7]">
                   Name
                 </Label>
 
@@ -128,19 +136,31 @@ export function NewStrategyView({ basePath = "/admin" }: { basePath?: string }) 
                   name="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="border-[#d3dbdd]/20 bg-[#d3dbdd] text-[#16232b] placeholder:text-[#16232b]/50 focus-visible:ring-[#075056]"
+                  className="h-11 rounded-xl text-sm text-[#F5F5F7] placeholder:text-[#666A76] transition-all duration-150 focus:border-white focus:outline-none focus:ring-0 focus-visible:border-white focus-visible:ring-0"
+                  style={{
+                    backgroundColor: "rgba(20, 22, 27, 0.45)",
+                    border: name
+                      ? "1px solid rgba(255, 255, 255, 0.75)"
+                      : "1px solid rgba(255, 255, 255, 0.12)",
+                  }}
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-[#d3dbdd]">
+              <div className="flex flex-col gap-2">
+                <Label className="text-sm font-semibold text-[#F5F5F7]">
                   Description
                 </Label>
 
                 <Input
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="border-[#d3dbdd]/20 bg-[#d3dbdd] text-[#16232b] placeholder:text-[#16232b]/50 focus-visible:ring-[#075056]"
+                  className="h-11 rounded-xl text-sm text-[#F5F5F7] placeholder:text-[#666A76] transition-all duration-150 focus:border-white focus:outline-none focus:ring-0 focus-visible:border-white focus-visible:ring-0"
+                  style={{
+                    backgroundColor: "rgba(20, 22, 27, 0.45)",
+                    border: description
+                      ? "1px solid rgba(255, 255, 255, 0.75)"
+                      : "1px solid rgba(255, 255, 255, 0.12)",
+                  }}
                 />
               </div>
             </div>
@@ -181,9 +201,9 @@ export function NewStrategyView({ basePath = "/admin" }: { basePath?: string }) 
               ).map(([key, lbl]) => (
                 <div
                   key={key}
-                  className="flex flex-col gap-1.5"
+                  className="flex flex-col gap-2"
                 >
-                  <Label className="text-[#d3dbdd]">
+                  <Label className="text-xs font-semibold text-[#F5F5F7]">
                     {lbl}
                   </Label>
 
@@ -197,7 +217,13 @@ export function NewStrategyView({ basePath = "/admin" }: { basePath?: string }) 
                         [key]: Number(e.target.value),
                       })
                     }
-                    className="border-[#d3dbdd]/20 bg-[#d3dbdd] text-[#16232b] focus-visible:ring-[#075056]"
+                    className="h-11 rounded-xl font-mono text-sm text-[#F5F5F7] transition-all duration-150 focus:border-white focus:outline-none focus:ring-0 focus-visible:border-white focus-visible:ring-0"
+                    style={{
+                      backgroundColor: "rgba(20, 22, 27, 0.45)",
+                      border: risk[key] !== undefined && risk[key] !== null
+                        ? "1px solid rgba(255, 255, 255, 0.75)"
+                        : "1px solid rgba(255, 255, 255, 0.12)",
+                    }}
                   />
                 </div>
               ))}
@@ -209,14 +235,20 @@ export function NewStrategyView({ basePath = "/admin" }: { basePath?: string }) 
               className="flex flex-col gap-3"
               data-testid="step-review"
             >
-              <div className="text-sm text-[#d3dbdd]">
-                <span className="text-[#d3dbdd]/50">
+              <div className="text-sm font-medium text-[#F5F5F7]">
+                <span className="text-[#666A76]">
                   Name:
                 </span>{" "}
                 {name}
               </div>
 
-              <pre className="max-h-72 overflow-auto rounded-md border border-[#075056]/30 bg-[#16232b] p-3 text-xs text-[#d3dbdd]">
+              <pre
+                className="max-h-72 overflow-auto rounded-xl p-3 font-mono text-xs text-[#F5F5F7]"
+                style={{
+                  backgroundColor: "rgba(20, 22, 27, 0.55)",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                }}
+              >
                 {JSON.stringify(dslPreview, null, 2)}
               </pre>
 
@@ -230,12 +262,18 @@ export function NewStrategyView({ basePath = "/admin" }: { basePath?: string }) 
           )}
 
           {error && (
-            <p className="rounded-md border border-[#fe5b05]/40 bg-[#fe5b05]/10 px-3 py-2 text-sm text-[#fe5b05]">
+            <p
+              className="rounded-xl border p-3 text-xs font-medium text-[#E45B5B]"
+              style={{
+                backgroundColor: "rgba(228, 91, 91, 0.1)",
+                borderColor: "rgba(228, 91, 91, 0.3)",
+              }}
+            >
               {error}
             </p>
           )}
 
-          <div className="flex justify-between">
+          <div className="flex justify-between border-t border-white/[0.06] pt-4">
             <Button
               type="button"
               variant="outline"
@@ -243,7 +281,10 @@ export function NewStrategyView({ basePath = "/admin" }: { basePath?: string }) 
                 setStep((s) => Math.max(0, s - 1))
               }
               disabled={step === 0}
-              className="border-[#d3dbdd]/20 bg-transparent text-[#d3dbdd] hover:bg-[#d3dbdd]/10 hover:text-[#d3dbdd]"
+              className="h-10 rounded-xl text-xs font-medium text-[#9A9DA8] transition-all hover:bg-white/[0.05] hover:text-[#F5F5F7] disabled:opacity-30"
+              style={{
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+              }}
             >
               Back
             </Button>
@@ -255,7 +296,12 @@ export function NewStrategyView({ basePath = "/admin" }: { basePath?: string }) 
                 onClick={() =>
                   setStep((s) => s + 1)
                 }
-                className="bg-[#075056] text-[#d3dbdd] hover:bg-[#075056]/85"
+                className="h-10 rounded-xl px-5 text-xs font-semibold tracking-wide text-white shadow-sm transition-all duration-200 hover:brightness-110 active:scale-[0.99]"
+                style={{
+                  backgroundColor: "#5C568E",
+                  border: "1px solid rgba(255, 255, 255, 0.18)",
+                  boxShadow: "0 4px 18px rgba(92, 86, 142, 0.4)",
+                }}
               >
                 Next
               </Button>
@@ -265,7 +311,12 @@ export function NewStrategyView({ basePath = "/admin" }: { basePath?: string }) 
                 data-testid="wizard-create"
                 onClick={onCreate}
                 disabled={saving}
-                className="bg-[#fe5b05] text-white hover:bg-[#fe5b05]/85"
+                className="h-10 rounded-xl px-5 text-xs font-semibold tracking-wide text-white shadow-sm transition-all duration-200 hover:brightness-110 active:scale-[0.99] disabled:opacity-40"
+                style={{
+                  backgroundColor: "#5C568E",
+                  border: "1px solid rgba(255, 255, 255, 0.18)",
+                  boxShadow: "0 4px 20px rgba(92, 86, 142, 0.5)",
+                }}
               >
                 {saving ? "Creating…" : "Create strategy"}
               </Button>
