@@ -13,8 +13,8 @@ function Section({ title, items }: { title: string; items: string[] }) {
   if (items.length === 0) return null;
   return (
     <div className="mb-4">
-      <h4 className="mb-1 text-sm font-medium">{title}</h4>
-      <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
+      <h4 className="mb-1 text-sm font-medium text-[#F5F5F7]">{title}</h4>
+      <ul className="list-inside list-disc space-y-1 text-sm text-[#9A9DA8]">
         {items.map((item, i) => (
           <li key={i}>{item}</li>
         ))}
@@ -57,16 +57,40 @@ export function CritiquePanel({ strategyId, getStrategyId }: CritiquePanelProps)
 
   return (
     <>
-      <Button type="button" variant="outline" onClick={runCritique} data-testid="get-ai-critique">
+      <Button
+        type="button"
+        onClick={runCritique}
+        data-testid="get-ai-critique"
+        className="h-10 rounded-xl px-4 text-xs font-semibold tracking-wide text-white shadow-sm transition-all duration-200 hover:brightness-110 active:scale-[0.99]"
+        style={{
+          backgroundColor: "#5C568E",
+          border: "1px solid rgba(255, 255, 255, 0.18)",
+          boxShadow: "0 4px 18px rgba(92, 86, 142, 0.4)",
+        }}
+      >
         Get AI Critique
       </Button>
       <SlideOutPanel open={open} onClose={() => setOpen(false)} title="Strategy Critique">
-        {loading && <p className="text-sm text-muted-foreground">Analyzing strategy...</p>}
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {loading && <p className="text-sm text-[#9A9DA8]">Analyzing strategy...</p>}
+        {error && (
+          <p
+            className="rounded-xl border p-3 text-xs font-medium text-[#E45B5B]"
+            style={{
+              backgroundColor: "rgba(228, 91, 91, 0.1)",
+              borderColor: "rgba(228, 91, 91, 0.3)",
+            }}
+          >
+            {error}
+          </p>
+        )}
         {result && (
           <div>
             {result.numeric_validation_passed === false && (
-              <Badge variant="destructive" className="mb-3" data-testid="numeric-validation-warning">
+              <Badge
+                variant="destructive"
+                className="mb-3 border border-[#E45B5B]/30 bg-[#E45B5B]/15 text-xs text-[#E45B5B]"
+                data-testid="numeric-validation-warning"
+              >
                 Warning: a numeric claim in this critique could not be verified against real data
               </Badge>
             )}
