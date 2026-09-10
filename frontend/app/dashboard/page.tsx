@@ -18,6 +18,7 @@ import {
 import {
   Activity,
   AlertTriangle,
+  ArrowUpRight,
   Dna,
   FlaskConical,
   NotebookText,
@@ -43,10 +44,7 @@ import { listResearchNotes } from "@/lib/research-note";
 import { getCurrentRegime, getRegimeHistory } from "@/lib/regime";
 import type { RegimeObject, RegimePoint } from "@/lib/regime-types";
 import { listStrategies } from "@/lib/strategy";
-import {
-  STATUS_COLORS,
-  type StrategyListItem,
-} from "@/lib/strategy-types";
+import { STATUS_COLORS, type StrategyListItem } from "@/lib/strategy-types";
 import { useAuthStore } from "@/store/auth-store";
 import { useWebSocket, type WSEvent } from "@/hooks/useWebSocket";
 
@@ -61,26 +59,14 @@ interface DashboardData {
   heatmapCells: FailureHeatmapCell[];
 }
 
-const COLORS = {
-  background: "#000000",
-  surface: "#16232b",
-  surfaceSoft: "#233038",
-  silver: "#d3dbdd",
-  ivory: "#fdf6e3",
-  midnightGreen: "#075056",
-  orange: "#ff5b04",
-  sandYellow: "#f4d47c",
-  teal: "#42f3e4",
-  green: "#9bcf53",
-  purple: "#8b72d9",
-  red: "#ef4444",
-};
-
 const chartTooltipStyle = {
-  background: COLORS.surface,
-  border: `1px solid ${COLORS.surfaceSoft}`,
-  borderRadius: "0.525rem",
-  color: COLORS.ivory,
+  background: "rgba(13, 15, 20, 0.95)",
+  border: "1px solid rgba(255, 255, 255, 0.12)",
+  borderRadius: "0.875rem",
+  color: "#F5F5F7",
+  boxShadow: "0 20px 40px -10px rgba(0, 0, 0, 0.8), 0 0 15px rgba(111, 107, 155, 0.15)",
+  backdropFilter: "blur(12px)",
+  padding: "10px 14px",
 };
 
 function KpiCard({
@@ -96,95 +82,58 @@ function KpiCard({
 }) {
   const isFailure = label === "Failure Alerts";
   const isRegime = label === "Current Market Regime";
-  const isStrategies = label === "Active Strategies";
-  const isPerformance = label === "Avg Strategy Performance";
-  const isResearch = label === "Research Activity";
-  const isEvolution = label === "Evolution Updates";
 
-  let background = COLORS.surface;
-  let foreground = COLORS.ivory;
-  let muted = COLORS.silver;
-  let iconBackground = COLORS.surfaceSoft;
-  let iconColor = COLORS.silver;
+  let accentColor = "#8E88C7";
+  let iconBg = "rgba(142, 136, 199, 0.12)";
+  let borderGlow = "rgba(142, 136, 199, 0.25)";
 
   if (isFailure) {
-    background = COLORS.orange;
-    foreground = "#ffffff";
-    muted = "#fff1e8";
-    iconBackground = "rgba(22, 35, 43, 0.18)";
-    iconColor = "#ffffff";
-  } else if (isStrategies) {
-    background = COLORS.midnightGreen;
-    foreground = "#ffffff";
-    muted = "#b7e4df";
-    iconBackground = "rgba(255, 255, 255, 0.12)";
-    iconColor = COLORS.teal;
-  } else if (isPerformance) {
-    background = COLORS.sandYellow;
-    foreground = COLORS.surface;
-    muted = "#4b4b3d";
-    iconBackground = "rgba(255, 255, 255, 0.28)";
-    iconColor = COLORS.surface;
+    accentColor = "#F87171";
+    iconBg = "rgba(248, 113, 113, 0.12)";
+    borderGlow = "rgba(248, 113, 113, 0.25)";
   } else if (isRegime) {
-    background = COLORS.surfaceSoft;
-    foreground = COLORS.ivory;
-    muted = COLORS.silver;
-    iconBackground = COLORS.midnightGreen;
-    iconColor = COLORS.teal;
-  } else if (isResearch) {
-    background = "#2b273b";
-    foreground = "#ffffff";
-    muted = "#d8d0ee";
-    iconBackground = "rgba(139, 114, 217, 0.2)";
-    iconColor = "#b9a8ff";
-  } else if (isEvolution) {
-    background = "#15363a";
-    foreground = "#ffffff";
-    muted = "#b8dddd";
-    iconBackground = "rgba(66, 243, 228, 0.12)";
-    iconColor = COLORS.teal;
+    accentColor = "#38BDF8";
+    iconBg = "rgba(56, 189, 248, 0.12)";
+    borderGlow = "rgba(56, 189, 248, 0.25)";
   }
 
   return (
     <Card
       data-testid={`kpi-${label.toLowerCase().replace(/\s+/g, "-")}`}
-      className="rounded-[0.525rem] border-0 shadow-none"
+      className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 p-0 shadow-[0_8px_30px_rgb(0,0,0,0.4)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-white/[0.18] hover:shadow-[0_16px_40px_rgba(0,0,0,0.6)]"
       style={{
-        backgroundColor: background,
-        color: foreground,
+        boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)",
       }}
     >
-      <CardContent className="flex min-h-[118px] items-center gap-4 p-5">
-        <div
-          className="shrink-0 rounded-[0.525rem] p-2.5"
-          style={{
-            backgroundColor: iconBackground,
-            color: iconColor,
-          }}
-        >
-          <Icon className="h-5 w-5" />
+      {/* Top Card Gradient Glow */}
+      <div
+        className="pointer-events-none absolute -top-16 left-1/2 h-24 w-3/4 -translate-x-1/2 rounded-full opacity-20 blur-2xl transition-opacity duration-300 group-hover:opacity-40"
+        style={{ backgroundColor: accentColor }}
+      />
+
+      <CardContent className="flex min-h-[125px] flex-col justify-between p-5">
+        <div className="flex items-start justify-between gap-2">
+          <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-[#808495]">
+            {label}
+          </span>
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110"
+            style={{
+              backgroundColor: iconBg,
+              color: accentColor,
+              border: `1px solid ${borderGlow}`,
+            }}
+          >
+            <Icon className="h-4 w-4" />
+          </div>
         </div>
 
-        <div className="min-w-0">
-          <p
-            className="text-[11px] font-medium uppercase tracking-[0.04em]"
-            style={{ color: muted }}
-          >
-            {label}
-          </p>
-
-          <p
-            className="mt-2 truncate text-[27px] font-semibold tracking-tight"
-            style={{ color: foreground }}
-          >
+        <div>
+          <p className="truncate text-[26px] font-bold tracking-tight text-[#F5F5F7]">
             {value}
           </p>
-
           {sub && (
-            <p
-              className="mt-1 truncate text-xs"
-              style={{ color: muted }}
-            >
+            <p className="mt-0.5 truncate text-[11px] font-medium text-[#9A9DA8]">
               {sub}
             </p>
           )}
@@ -275,8 +224,6 @@ export default function DashboardPage() {
     };
   }, [user, organization, symbol]);
 
-  // Batch 19: the dashboard fetches once on mount (it never polled).
-  // Realtime updates remain unchanged.
   useEffect(() => {
     const unsubRegime = subscribe(
       "regime_update",
@@ -382,68 +329,80 @@ export default function DashboardPage() {
   }, [data?.topPerformers]);
 
   const lineColors = [
-    COLORS.teal,
-    COLORS.green,
-    COLORS.sandYellow,
-    "#9b7bea",
-    "#ff5b5b",
+    "#8B5CF6",
+    "#38BDF8",
+    "#34D399",
+    "#FBBF24",
+    "#F43F5E",
   ];
 
   const cardClass =
-    "rounded-[0.525rem] border border-[#233038] bg-[#16232b] shadow-none";
+    "relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 p-0 shadow-[0_8px_30px_rgb(0,0,0,0.4)] backdrop-blur-xl";
 
   return (
     <DashboardShell>
-      <div
-        className="min-h-full bg-black text-[#fdf6e3]"
-        style={{
-          color: COLORS.ivory,
-        }}
-      >
+      <div className="relative min-h-full bg-[#07080B] px-1 py-1 text-[#F5F5F7]">
+        {/* Ambient Top Glow Orbs */}
+        <div className="pointer-events-none absolute -top-24 left-1/4 h-80 w-80 rounded-full bg-[#5C568E]/10 blur-[120px]" />
+        <div className="pointer-events-none absolute top-40 right-10 h-72 w-72 rounded-full bg-[#38BDF8]/5 blur-[100px]" />
+
         {error && (
-          <p className="mb-4 rounded-[0.525rem] border border-[#ff5b04]/40 bg-[#ff5b04]/10 px-4 py-3 text-sm text-[#ff9a68]">
+          <p
+            className="mb-6 rounded-2xl border p-4 text-xs font-medium text-[#F87171] shadow-lg backdrop-blur-md"
+            style={{
+              backgroundColor: "rgba(248, 113, 113, 0.08)",
+              borderColor: "rgba(248, 113, 113, 0.25)",
+            }}
+          >
             {error}
           </p>
         )}
 
-        {/* Dashboard header */}
-        <div className="mb-6 flex items-center justify-between gap-4">
+        {/* Dashboard Header Banner */}
+        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.08em] text-[#d3dbdd]/60">
-              Research Environment
-            </p>
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#38BDF8] opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#38BDF8]" />
+              </span>
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[#808495]">
+                Quantix Intelligence • Research Mode
+              </p>
+            </div>
 
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#fdf6e3]">
+            <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight text-[#F5F5F7]">
               Dashboard
             </h1>
 
-            <p className="mt-1 text-sm text-[#d3dbdd]/65">
-              Monitor regimes, strategies, failures and
-              research activity.
+            <p className="mt-1 text-xs text-[#9A9DA8]">
+              Live monitoring for regimes, autonomous strategies, and failure density.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="rounded-[0.525rem] border border-[#233038] bg-[#d3dbdd] px-4 py-2 text-sm font-medium text-[#16232b]">
+          <div className="flex items-center gap-3">
+            <div
+              className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-[#0F1117]/80 px-4 py-2 font-mono text-xs font-semibold text-[#F5F5F7] shadow-inner backdrop-blur-md"
+              style={{
+                boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)",
+              }}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-[#34D399]" />
               {symbol}
+              <span className="text-[10px] text-[#666A76]">BENCHMARK</span>
             </div>
           </div>
         </div>
 
-        {/* KPI row */}
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        {/* KPI Grid */}
+        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <KpiCard
             icon={Activity}
             label="Current Market Regime"
-            value={
-              data?.regime?.regime_label ?? "—"
-            }
+            value={data?.regime?.regime_label ?? "—"}
             sub={
               data?.regime
-                ? `${symbol} · ${(
-                    data.regime.confidence_score *
-                    100
-                  ).toFixed(0)}% confidence`
+                ? `${symbol} • ${(data.regime.confidence_score * 100).toFixed(0)}% conf`
                 : symbol
             }
           />
@@ -451,226 +410,176 @@ export default function DashboardPage() {
           <KpiCard
             icon={FlaskConical}
             label="Active Strategies"
-            value={String(
-              activeStrategies.length,
-            )}
-            sub="active research strategies"
+            value={String(activeStrategies.length)}
+            sub="live research threads"
           />
 
           <KpiCard
             icon={TrendingUp}
             label="Avg Strategy Performance"
             value={
-              avgRobustness !== null &&
-              !Number.isNaN(avgRobustness)
+              avgRobustness !== null && !Number.isNaN(avgRobustness)
                 ? avgRobustness.toFixed(2)
                 : "—"
             }
-            sub="robustness score"
+            sub="mean robustness score"
           />
 
           <KpiCard
             icon={AlertTriangle}
             label="Failure Alerts"
-            value={String(
-              data?.failureCount ?? "—",
-            )}
-            sub="recorded failures"
+            value={String(data?.failureCount ?? "—")}
+            sub="logged constraint breaches"
           />
 
           <KpiCard
             icon={NotebookText}
             label="Research Activity"
-            value={String(
-              data?.researchCount ?? "—",
-            )}
-            sub="notes"
+            value={String(data?.researchCount ?? "—")}
+            sub="active quant logs"
           />
 
           <KpiCard
             icon={Dna}
             label="Evolution Updates"
-            value={String(
-              data?.evolutionCount ?? "—",
-            )}
-            sub="runs"
+            value={String(data?.evolutionCount ?? "—")}
+            sub="genetic optimizer runs"
           />
         </div>
 
-        {/* Main analytics grid — intentionally 2 × 2 */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {/* Equity Curve */}
-          <Card className={cardClass}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-[#fdf6e3]">
-                Equity Curve — Top 5 Strategies
-              </CardTitle>
-
-              <CardDescription className="text-xs text-[#d3dbdd]/55">
-                Overlaid by bar index (each strategy&apos;s
-                own backtest window)
-              </CardDescription>
+        {/* 2 × 2 Analytics Cards */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          {/* Equity Curve Card */}
+          <Card
+            className={cardClass}
+            style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+          >
+            <CardHeader className="flex flex-row items-start justify-between border-b border-white/[0.06] p-5">
+              <div>
+                <CardTitle className="text-sm font-semibold tracking-wide text-[#F5F5F7]">
+                  Equity Curve • Top 5 Strategies
+                </CardTitle>
+                <CardDescription className="mt-0.5 text-xs text-[#808495]">
+                  Normalized overlay indexed to individual backtest windows
+                </CardDescription>
+              </div>
+              <ArrowUpRight className="h-4 w-4 text-[#808495]" />
             </CardHeader>
 
-            <CardContent>
+            <CardContent className="p-5">
               {equityCurveData.length === 0 ? (
-                <p className="py-16 text-center text-sm text-[#d3dbdd]/55">
+                <p className="py-16 text-center text-xs text-[#666A76]">
                   No backtested strategies yet.
                 </p>
               ) : (
-                <ResponsiveContainer
-                  width="100%"
-                  height={280}
-                >
+                <ResponsiveContainer width="100%" height={290}>
                   <LineChart
                     data={equityCurveData}
-                    margin={{
-                      top: 8,
-                      right: 8,
-                      left: -12,
-                      bottom: 4,
-                    }}
+                    margin={{ top: 12, right: 10, left: -14, bottom: 4 }}
                   >
                     <CartesianGrid
                       strokeDasharray="3 3"
-                      stroke="#233038"
+                      stroke="rgba(255, 255, 255, 0.04)"
                       vertical={false}
                     />
-
                     <XAxis
                       dataKey="bar"
-                      tick={{
-                        fontSize: 10,
-                        fill: "#d3dbdd",
-                      }}
-                      stroke="#233038"
+                      tick={{ fontSize: 10, fill: "#808495" }}
+                      stroke="#808495"
                       tickLine={false}
                       axisLine={false}
                     />
-
                     <YAxis
-                      tick={{
-                        fontSize: 10,
-                        fill: "#d3dbdd",
-                      }}
-                      stroke="#233038"
+                      tick={{ fontSize: 10, fill: "#808495" }}
+                      stroke="#808495"
                       tickLine={false}
                       axisLine={false}
-                      domain={[
-                        "auto",
-                        "auto",
-                      ]}
+                      domain={["auto", "auto"]}
                     />
-
                     <Tooltip
-                      contentStyle={
-                        chartTooltipStyle
-                      }
-                      labelStyle={{
-                        color: COLORS.silver,
-                      }}
-                      wrapperStyle={{
-                        transform: "translateY(-40px)",
-                      }}
+                      contentStyle={chartTooltipStyle}
+                      labelStyle={{ color: "#808495" }}
+                      wrapperStyle={{ transform: "translateY(-40px)" }}
                     />
-
                     <Legend
                       wrapperStyle={{
                         fontSize: 11,
-                        color: COLORS.silver,
-                        paddingTop: "8px",
+                        color: "#9A9DA8",
+                        paddingTop: "12px",
                       }}
                     />
-
-                    {(data?.topPerformers ?? []).map(
-                      (p, i) => (
-                        <Line
-                          key={p.strategy_id}
-                          type="monotone"
-                          dataKey={p.name}
-                          stroke={
-                            lineColors[
-                              i %
-                                lineColors.length
-                            ]
-                          }
-                          strokeWidth={2}
-                          dot={false}
-                          connectNulls
-                        />
-                      ),
-                    )}
+                    {(data?.topPerformers ?? []).map((p, i) => (
+                      <Line
+                        key={p.strategy_id}
+                        type="monotone"
+                        dataKey={p.name}
+                        stroke={lineColors[i % lineColors.length]}
+                        strokeWidth={2.2}
+                        dot={false}
+                        connectNulls
+                      />
+                    ))}
                   </LineChart>
                 </ResponsiveContainer>
               )}
             </CardContent>
           </Card>
 
-          {/* Strategy Distribution */}
-          <Card className={cardClass}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-[#fdf6e3]">
-                Strategy Distribution
-              </CardTitle>
-
-              <CardDescription className="text-xs text-[#d3dbdd]/55">
-                By lifecycle status
-              </CardDescription>
+          {/* Strategy Distribution Card */}
+          <Card
+            className={cardClass}
+            style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+          >
+            <CardHeader className="flex flex-row items-start justify-between border-b border-white/[0.06] p-5">
+              <div>
+                <CardTitle className="text-sm font-semibold tracking-wide text-[#F5F5F7]">
+                  Strategy Distribution
+                </CardTitle>
+                <CardDescription className="mt-0.5 text-xs text-[#808495]">
+                  Breakdown by lifecycle status
+                </CardDescription>
+              </div>
+              <ArrowUpRight className="h-4 w-4 text-[#808495]" />
             </CardHeader>
 
-            <CardContent>
+            <CardContent className="p-5">
               {statusCounts.length === 0 ? (
-                <p className="py-16 text-center text-sm text-[#d3dbdd]/55">
+                <p className="py-16 text-center text-xs text-[#666A76]">
                   No strategies yet.
                 </p>
               ) : (
-                <ResponsiveContainer
-                  width="100%"
-                  height={280}
-                >
+                <ResponsiveContainer width="100%" height={290}>
                   <PieChart>
                     <Pie
                       data={statusCounts}
                       dataKey="count"
                       nameKey="status"
-                      innerRadius={62}
-                      outerRadius={96}
-                      paddingAngle={3}
+                      innerRadius={68}
+                      outerRadius={100}
+                      paddingAngle={4}
                       stroke="none"
                     >
-                      {statusCounts.map(
-                        (entry) => (
-                          <Cell
-                            key={entry.status}
-                            fill={
-                              STATUS_COLORS[
-                                entry.status as keyof typeof STATUS_COLORS
-                              ]
-                            }
-                          />
-                        ),
-                      )}
+                      {statusCounts.map((entry) => (
+                        <Cell
+                          key={entry.status}
+                          fill={
+                            STATUS_COLORS[
+                              entry.status as keyof typeof STATUS_COLORS
+                            ]
+                          }
+                        />
+                      ))}
                     </Pie>
-
                     <Tooltip
-                    contentStyle={{
-                      background: "#fdf6e3",
-                      border: "1px solid #d3dbdd",
-                      borderRadius: "0.525rem",
-                      color: "#16232b",
-                    }}
-                    itemStyle={{
-                      color: "#16232b",
-                    }}
-                    labelStyle={{
-                      color: "#16232b",
-                    }}
-                  />
-
+                      contentStyle={chartTooltipStyle}
+                      itemStyle={{ color: "#F5F5F7" }}
+                      labelStyle={{ color: "#808495" }}
+                    />
                     <Legend
                       wrapperStyle={{
                         fontSize: 11,
-                        color: COLORS.silver,
+                        color: "#9A9DA8",
+                        paddingTop: "12px",
                       }}
                     />
                   </PieChart>
@@ -679,52 +588,53 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Regime Timeline */}
-          <Card className={cardClass}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-[#fdf6e3]">
-                Regime Timeline
-              </CardTitle>
-
-              <CardDescription className="text-xs text-[#d3dbdd]/55">
-                {symbol} · 12-month ensemble history
-              </CardDescription>
+          {/* Regime Timeline Card */}
+          <Card
+            className={cardClass}
+            style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+          >
+            <CardHeader className="flex flex-row items-start justify-between border-b border-white/[0.06] p-5">
+              <div>
+                <CardTitle className="text-sm font-semibold tracking-wide text-[#F5F5F7]">
+                  Regime Timeline
+                </CardTitle>
+                <CardDescription className="mt-0.5 text-xs text-[#808495]">
+                  {symbol} • 12-month ensemble history
+                </CardDescription>
+              </div>
+              <ArrowUpRight className="h-4 w-4 text-[#808495]" />
             </CardHeader>
 
-            <CardContent>
+            <CardContent className="p-5">
               {data?.regimeHistory.length ? (
-                <RegimeTimeline
-                  points={
-                    data.regimeHistory
-                  }
-                />
+                <RegimeTimeline points={data.regimeHistory} />
               ) : (
-                <p className="py-16 text-center text-sm text-[#d3dbdd]/55">
-                  No regime history for{" "}
-                  {symbol} yet.
+                <p className="py-16 text-center text-xs text-[#666A76]">
+                  No regime history for {symbol} yet.
                 </p>
               )}
             </CardContent>
           </Card>
 
-          {/* Failure Heatmap */}
-          <Card className={cardClass}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-[#fdf6e3]">
-                Failure Heatmap
-              </CardTitle>
-
-              <CardDescription className="text-xs text-[#d3dbdd]/55">
-                Strategy × regime failure density
-              </CardDescription>
+          {/* Failure Heatmap Card */}
+          <Card
+            className={cardClass}
+            style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+          >
+            <CardHeader className="flex flex-row items-start justify-between border-b border-white/[0.06] p-5">
+              <div>
+                <CardTitle className="text-sm font-semibold tracking-wide text-[#F5F5F7]">
+                  Failure Heatmap
+                </CardTitle>
+                <CardDescription className="mt-0.5 text-xs text-[#808495]">
+                  Strategy × regime failure density matrix
+                </CardDescription>
+              </div>
+              <ArrowUpRight className="h-4 w-4 text-[#808495]" />
             </CardHeader>
 
-            <CardContent>
-              <FailureHeatmap
-                cells={
-                  data?.heatmapCells ?? []
-                }
-              />
+            <CardContent className="p-5">
+              <FailureHeatmap cells={data?.heatmapCells ?? []} />
             </CardContent>
           </Card>
         </div>
