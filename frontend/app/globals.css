@@ -146,3 +146,37 @@
     animation: none !important;
   }
 }
+
+/* --- Stellix Lavender Dot Theme Scrollbar --- */
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #6f6b9b #08090b;
+}
+
+/* Chrome, Edge, Safari, Brave */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #08090b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #6f6b9b;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 8px rgba(111, 107, 155, 0.4);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8a85bf;
+  box-shadow: 0 0 12px rgba(138, 133, 191, 0.7);
+}
+
+::-webkit-scrollbar-corner {
+  background: #08090b;
+}
