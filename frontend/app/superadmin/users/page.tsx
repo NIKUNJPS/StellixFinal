@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { KeyRound, Search, UserCog, Users, ShieldAlert, MoreHorizontal, ShieldCheck } from "lucide-react";
+import { KeyRound, Search, UserCog, Users, ShieldAlert, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -67,20 +67,36 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 text-white">
+    <div className="relative mx-auto max-w-6xl space-y-6 text-[#F5F5F7]">
+      {/* Ambient Background Glow Orbs */}
+      <div className="pointer-events-none absolute -top-24 left-1/4 h-80 w-80 rounded-full bg-[#5C568E]/10 blur-[120px]" />
+      <div className="pointer-events-none absolute top-40 right-10 h-72 w-72 rounded-full bg-[#38BDF8]/5 blur-[100px]" />
+
       {/* Header */}
-      <div className="flex flex-col gap-1 border-b border-[#E4EEF0]/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 border-b border-white/[0.06] pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8E88C7] opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#8E88C7]" />
+            </span>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[#808495]">
+              Quantix Intelligence • Control Plane
+            </p>
+          </div>
+          <h1 className="mt-1.5 text-2xl font-extrabold tracking-tight text-[#F5F5F7] sm:text-3xl">
             Users
           </h1>
-          <p className="mt-1 text-sm text-[#E4EEF0]/70">
+          <p className="mt-1 text-xs text-[#9A9DA8]">
             Cross-tenant identity management, RBAC assignments, and operator access controls.
           </p>
         </div>
         <div className="mt-3 flex items-center gap-2 sm:mt-0">
-          <div className="flex items-center gap-2 rounded-lg border border-[#E4EEF0]/10 bg-[#042F34]/50 px-3 py-1.5 font-mono text-xs text-[#E4EEF0]/80">
-            <Users className="h-3.5 w-3.5 text-[#F4D47C]" />
+          <div
+            className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-[#0F1117]/80 px-4 py-2 font-mono text-xs font-semibold text-[#F5F5F7] shadow-inner backdrop-blur-md"
+            style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+          >
+            <Users className="h-3.5 w-3.5 text-[#8E88C7]" />
             <span>Total Accounts: {data?.total ?? "—"}</span>
           </div>
         </div>
@@ -95,16 +111,18 @@ export default function UsersPage() {
             load();
           }}
         >
-          <Input
-            placeholder="Search by email address…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-72 border-[#E4EEF0]/10 bg-[#042F34]/60 font-mono text-xs text-white placeholder:text-[#E4EEF0]/40 focus:border-[#FF5B04]/50 focus:ring-1 focus:ring-[#FF5B04]/50"
-          />
+          <div className="relative">
+            <Input
+              placeholder="Search by email address…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-72 rounded-xl border-white/[0.08] bg-[#0D0F14]/70 font-mono text-xs text-[#F5F5F7] placeholder:text-[#666A76] backdrop-blur-md transition-colors focus:border-[#8E88C7]/50 focus:ring-1 focus:ring-[#8E88C7]/50"
+            />
+          </div>
           <Button
             type="submit"
             size="icon"
-            className="border border-[#E4EEF0]/10 bg-[#16232B] text-[#FF5B04] hover:border-[#FF5B04]/40 hover:bg-[#FF5B04]/10"
+            className="rounded-xl border border-white/[0.08] bg-[#0D0F14]/80 text-[#8E88C7] transition-all hover:border-white/[0.18] hover:bg-[#1A1D24] hover:text-[#F5F5F7] active:scale-95"
           >
             <Search className="h-4 w-4" />
           </Button>
@@ -112,34 +130,43 @@ export default function UsersPage() {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2.5 rounded-lg border border-[#FF5B04]/40 bg-[#FF5B04]/10 px-4 py-3 text-sm text-[#FF5B04]">
+        <div
+          className="flex items-center gap-2.5 rounded-2xl border p-4 text-xs font-medium text-[#F87171] shadow-lg backdrop-blur-md"
+          style={{
+            backgroundColor: "rgba(248, 113, 113, 0.08)",
+            borderColor: "rgba(248, 113, 113, 0.25)",
+          }}
+        >
           <ShieldAlert className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {/* Table Card */}
-      <Card className="overflow-hidden border border-[#E4EEF0]/10 bg-[#042F34]/40 shadow-xl shadow-black/20 backdrop-blur-md">
+      <Card
+        className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 shadow-[0_8px_30px_rgb(0,0,0,0.4)] backdrop-blur-xl"
+        style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+      >
         <CardContent className="p-0">
           <Table>
-            <TableHeader className="border-b border-[#E4EEF0]/10 bg-[#16232B]/70">
-              <TableRow className="border-b border-[#E4EEF0]/10 hover:bg-transparent">
-                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#E4EEF0]/60">
+            <TableHeader className="border-b border-white/[0.06] bg-[#0F1115]/80">
+              <TableRow className="border-b border-white/[0.06] hover:bg-transparent">
+                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#808495]">
                   User Account
                 </TableHead>
-                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#E4EEF0]/60">
+                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#808495]">
                   Organization
                 </TableHead>
-                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#E4EEF0]/60">
+                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#808495]">
                   Role
                 </TableHead>
-                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#E4EEF0]/60">
+                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#808495]">
                   Status
                 </TableHead>
-                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#E4EEF0]/60">
+                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#808495]">
                   Last Login
                 </TableHead>
-                <TableHead className="text-right font-mono text-xs uppercase tracking-wider text-[#E4EEF0]/60">
+                <TableHead className="text-right font-mono text-xs uppercase tracking-wider text-[#808495]">
                   Actions
                 </TableHead>
               </TableRow>
@@ -148,36 +175,36 @@ export default function UsersPage() {
               {data?.items.map((u) => (
                 <TableRow
                   key={u.id}
-                  className="group border-b border-[#E4EEF0]/5 transition-colors hover:bg-[#16232B]/50"
+                  className="group border-b border-white/[0.04] transition-colors hover:bg-white/[0.03]"
                 >
                   <TableCell className="py-3.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-medium text-white">{u.email}</span>
+                      <span className="font-mono text-xs font-medium text-[#F5F5F7]">{u.email}</span>
                       {u.is_super_admin && (
-                        <Badge className="border-[#FF5B04]/40 bg-[#FF5B04]/15 px-1.5 py-0 font-mono text-[9px] text-[#FF5B04] uppercase">
+                        <Badge className="border border-[#8E88C7]/40 bg-[#8E88C7]/15 px-1.5 py-0 font-mono text-[9px] text-[#8E88C7] uppercase">
                           Root
                         </Badge>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="py-3.5 font-mono text-xs text-[#E4EEF0]/80">
+                  <TableCell className="py-3.5 font-mono text-xs text-[#9A9DA8]">
                     {u.company}
                   </TableCell>
-                  <TableCell className="py-3.5 font-mono text-xs capitalize text-[#F4D47C]">
+                  <TableCell className="py-3.5 font-mono text-xs capitalize text-[#8E88C7]">
                     {u.role.replace("_", " ")}
                   </TableCell>
                   <TableCell className="py-3.5">
                     {u.is_active ? (
-                      <Badge className="border-[#F4D47C]/30 bg-[#F4D47C]/10 font-mono text-[10px] text-[#F4D47C] uppercase">
+                      <Badge className="border border-[#34D399]/30 bg-[#34D399]/10 font-mono text-[10px] text-[#34D399] uppercase">
                         Active
                       </Badge>
                     ) : (
-                      <Badge className="border-[#FF5B04]/30 bg-[#FF5B04]/10 font-mono text-[10px] text-[#FF5B04] uppercase">
+                      <Badge className="border border-[#F87171]/30 bg-[#F87171]/10 font-mono text-[10px] text-[#F87171] uppercase">
                         Suspended
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="py-3.5 font-mono text-xs text-[#E4EEF0]/60">
+                  <TableCell className="py-3.5 font-mono text-xs text-[#808495]">
                     {shortDate(u.last_login_at)}
                   </TableCell>
                   <TableCell className="py-3.5 text-right">
@@ -187,20 +214,21 @@ export default function UsersPage() {
                           variant="ghost"
                           size="sm"
                           disabled={u.is_super_admin}
-                          className="h-7 w-7 p-0 text-[#E4EEF0]/70 hover:bg-[#16232B] hover:text-[#F4D47C] disabled:opacity-30"
+                          className="h-7 w-7 rounded-lg p-0 text-[#9A9DA8] hover:bg-white/[0.06] hover:text-[#F5F5F7] disabled:opacity-30"
                         >
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
                         align="end"
-                        className="border border-[#E4EEF0]/10 bg-[#042F34] text-white shadow-2xl backdrop-blur-xl"
+                        className="rounded-xl border border-white/[0.08] bg-[#0D0F14]/95 p-1 text-[#F5F5F7] shadow-2xl backdrop-blur-2xl"
+                        style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
                       >
                         <DropdownMenuItem
                           onClick={() => setImpersonating(u)}
-                          className="font-mono text-xs hover:bg-[#16232B] focus:bg-[#16232B] focus:text-[#F4D47C]"
+                          className="rounded-lg font-mono text-xs text-[#9A9DA8] hover:bg-white/[0.05] hover:text-[#F5F5F7] focus:bg-white/[0.06] focus:text-[#8E88C7]"
                         >
-                          <UserCog className="mr-2 h-3.5 w-3.5 text-[#F4D47C]" /> Impersonate (Read-Only)
+                          <UserCog className="mr-2 h-3.5 w-3.5 text-[#8E88C7]" /> Impersonate (Read-Only)
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={async () => {
@@ -211,16 +239,16 @@ export default function UsersPage() {
                               toast.error(e instanceof Error ? e.message : "Failed");
                             }
                           }}
-                          className="font-mono text-xs hover:bg-[#16232B] focus:bg-[#16232B] focus:text-white"
+                          className="rounded-lg font-mono text-xs text-[#9A9DA8] hover:bg-white/[0.05] hover:text-[#F5F5F7] focus:bg-white/[0.06] focus:text-[#F5F5F7]"
                         >
-                          <KeyRound className="mr-2 h-3.5 w-3.5 text-[#E4EEF0]/60" /> Force Password Reset
+                          <KeyRound className="mr-2 h-3.5 w-3.5 text-[#666A76]" /> Force Password Reset
                         </DropdownMenuItem>
                         {u.is_active && (
                           <DropdownMenuItem
                             onClick={() => setSuspending(u)}
-                            className="font-mono text-xs text-[#FF5B04] hover:bg-[#FF5B04]/10 focus:bg-[#FF5B04]/10 focus:text-[#FF5B04]"
+                            className="rounded-lg font-mono text-xs text-[#F87171] hover:bg-[#F87171]/10 focus:bg-[#F87171]/15 focus:text-[#F87171]"
                           >
-                            <ShieldAlert className="mr-2 h-3.5 w-3.5 text-[#FF5B04]" /> Suspend User
+                            <ShieldAlert className="mr-2 h-3.5 w-3.5 text-[#F87171]" /> Suspend User
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>
@@ -231,7 +259,7 @@ export default function UsersPage() {
 
               {data && data.items.length === 0 && !loading && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-12 text-center font-mono text-xs text-[#E4EEF0]/50">
+                  <TableCell colSpan={6} className="py-12 text-center font-mono text-xs text-[#808495]">
                     No user accounts match the search criteria.
                   </TableCell>
                 </TableRow>
@@ -239,9 +267,9 @@ export default function UsersPage() {
 
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-12 text-center text-sm text-[#E4EEF0]/70">
+                  <TableCell colSpan={6} className="py-12 text-center text-xs text-[#9A9DA8]">
                     <div className="flex items-center justify-center gap-2">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#FF5B04] border-t-transparent" />
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#8E88C7] border-t-transparent" />
                       <span className="font-mono">Loading user directory...</span>
                     </div>
                   </TableCell>
@@ -254,7 +282,7 @@ export default function UsersPage() {
 
       {/* Meta Footer */}
       {data && !loading && (
-        <p className="font-mono text-xs text-[#E4EEF0]/50">
+        <p className="font-mono text-xs text-[#808495]">
           Showing {data.items.length} of {data.total} platform users.
         </p>
       )}

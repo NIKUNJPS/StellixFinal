@@ -11,7 +11,6 @@ import {
   Clock,
   ShieldAlert,
   FileText,
-  UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -63,8 +62,14 @@ export default function CompanyDetailPage() {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-4xl py-6 text-white">
-        <div className="flex items-center gap-2.5 rounded-lg border border-[#FF5B04]/40 bg-[#FF5B04]/10 px-4 py-3 text-sm text-[#FF5B04]">
+      <div className="mx-auto max-w-4xl py-6 text-[#F5F5F7]">
+        <div
+          className="flex items-center gap-2.5 rounded-2xl border p-4 text-xs font-medium text-[#F87171] shadow-lg backdrop-blur-md"
+          style={{
+            backgroundColor: "rgba(248, 113, 113, 0.08)",
+            borderColor: "rgba(248, 113, 113, 0.25)",
+          }}
+        >
           <ShieldAlert className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -74,10 +79,10 @@ export default function CompanyDetailPage() {
 
   if (!org) {
     return (
-      <div className="flex items-center justify-center py-20 text-white">
-        <div className="flex items-center gap-3 text-sm text-[#E4EEF0]/70">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#FF5B04] border-t-transparent" />
-          <span className="font-mono">Loading organization details...</span>
+      <div className="flex items-center justify-center py-24 text-[#F5F5F7]">
+        <div className="flex items-center gap-3 text-sm text-[#9A9DA8]">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#8E88C7] border-t-transparent" />
+          <span className="font-mono text-xs">Loading organization details...</span>
         </div>
       </div>
     );
@@ -89,30 +94,34 @@ export default function CompanyDetailPage() {
   const isTerminated = org.status === "terminated";
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 text-white">
+    <div className="relative mx-auto max-w-4xl space-y-6 text-[#F5F5F7]">
+      {/* Ambient Background Glow Orbs */}
+      <div className="pointer-events-none absolute -top-20 left-1/4 h-72 w-72 rounded-full bg-[#5C568E]/10 blur-[120px]" />
+      <div className="pointer-events-none absolute top-48 right-0 h-64 w-64 rounded-full bg-[#38BDF8]/5 blur-[100px]" />
+
       {/* Back Link */}
       <div>
         <Link
           href="/superadmin/companies"
-          className="inline-flex items-center gap-1.5 font-mono text-xs text-[#E4EEF0]/60 transition-colors hover:text-[#F4D47C]"
+          className="inline-flex items-center gap-2 rounded-xl border border-white/[0.06] bg-[#0D0F14]/60 px-3 py-1.5 font-mono text-xs text-[#9A9DA8] backdrop-blur-md transition-all hover:border-white/[0.15] hover:text-[#F5F5F7]"
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Back to all companies
         </Link>
       </div>
 
       {/* Header Profile & Actions */}
-      <div className="flex flex-col gap-4 border-b border-[#E4EEF0]/10 pb-6 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-4 border-b border-white/[0.08] pb-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            <h1 className="text-2xl font-extrabold tracking-tight text-[#F5F5F7] sm:text-3xl">
               {org.name}
             </h1>
             <OrgStatusBadge status={org.status} />
           </div>
-          <p className="mt-1.5 font-mono text-xs text-[#E4EEF0]/70">
-            <span className="text-[#F4D47C]">{org.slug}</span> ·{" "}
-            <span className="capitalize text-white">{org.plan}</span> plan ·{" "}
-            <span className="text-[#F4D47C] font-semibold">{money(org.monthly_revenue_usd)}</span>/mo
+          <p className="mt-1.5 font-mono text-xs text-[#9A9DA8]">
+            <span className="text-[#8E88C7]">{org.slug}</span> ·{" "}
+            <span className="capitalize text-[#F5F5F7]">{org.plan}</span> plan ·{" "}
+            <span className="font-semibold text-[#34D399]">{money(org.monthly_revenue_usd)}</span>/mo
           </p>
         </div>
 
@@ -121,7 +130,7 @@ export default function CompanyDetailPage() {
           {isPending && (
             <Button
               onClick={() => setDialog("approve")}
-              className="border border-[#F4D47C]/40 bg-[#F4D47C] font-mono text-xs font-semibold text-[#042F34] shadow-md transition-all hover:bg-[#F4D47C]/90 hover:shadow-black/40"
+              className="rounded-xl border border-[#8E88C7]/40 bg-[#8E88C7] font-mono text-xs font-semibold text-[#07080B] shadow-md transition-all hover:bg-[#8E88C7]/90 active:scale-95"
             >
               Approve Org
             </Button>
@@ -129,7 +138,7 @@ export default function CompanyDetailPage() {
           {isActive && (
             <Button
               onClick={() => setDialog("suspend")}
-              className="border border-[#FF5B04]/50 bg-[#FF5B04]/15 font-mono text-xs text-[#FF5B04] transition-all hover:bg-[#FF5B04] hover:text-white"
+              className="rounded-xl border border-[#F87171]/40 bg-[#F87171]/10 font-mono text-xs font-medium text-[#F87171] transition-all hover:bg-[#F87171] hover:text-white active:scale-95"
             >
               Suspend Access
             </Button>
@@ -137,7 +146,7 @@ export default function CompanyDetailPage() {
           {isSuspended && (
             <Button
               onClick={() => setDialog("reactivate")}
-              className="border border-[#F4D47C]/40 bg-[#042F34] font-mono text-xs text-[#F4D47C] transition-all hover:bg-[#16232B] hover:text-white"
+              className="rounded-xl border border-[#34D399]/40 bg-[#34D399]/10 font-mono text-xs font-medium text-[#34D399] transition-all hover:bg-[#34D399] hover:text-[#07080B] active:scale-95"
             >
               Reactivate Org
             </Button>
@@ -146,7 +155,7 @@ export default function CompanyDetailPage() {
             <Button
               variant="outline"
               onClick={() => setDialog("terminate")}
-              className="border border-[#E4EEF0]/20 bg-[#16232B]/60 font-mono text-xs text-[#E4EEF0]/70 transition-all hover:border-[#FF5B04]/50 hover:bg-[#FF5B04]/10 hover:text-[#FF5B04]"
+              className="rounded-xl border border-white/[0.08] bg-[#0D0F14]/70 font-mono text-xs text-[#9A9DA8] transition-all hover:border-[#F87171]/40 hover:bg-[#F87171]/10 hover:text-[#F87171] active:scale-95"
             >
               Terminate
             </Button>
@@ -154,10 +163,16 @@ export default function CompanyDetailPage() {
         </div>
       </div>
 
-      {/* Suspension Alert if applicable */}
+      {/* Suspension Alert */}
       {org.suspended_reason && (
-        <div className="flex items-start gap-3 rounded-lg border border-[#FF5B04]/40 bg-[#FF5B04]/10 p-4 font-mono text-xs text-[#FF5B04]">
-          <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+        <div
+          className="flex items-start gap-3 rounded-2xl border p-4 font-mono text-xs text-[#F87171] shadow-lg backdrop-blur-md"
+          style={{
+            backgroundColor: "rgba(248, 113, 113, 0.08)",
+            borderColor: "rgba(248, 113, 113, 0.25)",
+          }}
+        >
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
             <span className="font-semibold uppercase tracking-wider">Account Suspended:</span>{" "}
             {org.suspended_reason}
@@ -191,32 +206,33 @@ export default function CompanyDetailPage() {
       </div>
 
       {/* Users Roster Table */}
-      <Card className="overflow-hidden border border-[#E4EEF0]/10 bg-[#042F34]/40 shadow-xl shadow-black/20 backdrop-blur-md">
-        <CardHeader className="border-b border-[#E4EEF0]/10 bg-[#16232B]/70 py-3.5 px-5">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold text-white">
-              Organization Users ({org.users.length})
-            </CardTitle>
-            <Users className="h-4 w-4 text-[#F4D47C]" />
-          </div>
+      <Card
+        className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 shadow-[0_8px_30px_rgb(0,0,0,0.4)] backdrop-blur-xl"
+        style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+      >
+        <CardHeader className="flex flex-row items-center justify-between border-b border-white/[0.06] bg-[#0F1115]/80 py-4 px-6">
+          <CardTitle className="text-sm font-semibold tracking-wide text-[#F5F5F7]">
+            Organization Users ({org.users.length})
+          </CardTitle>
+          <Users className="h-4 w-4 text-[#8E88C7]" />
         </CardHeader>
         <CardContent className="p-0">
           <Table>
-            <TableHeader className="border-b border-[#E4EEF0]/10 bg-[#16232B]/40">
-              <TableRow className="border-b border-[#E4EEF0]/10 hover:bg-transparent">
-                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#E4EEF0]/60">
+            <TableHeader className="border-b border-white/[0.06] bg-[#0F1115]/40">
+              <TableRow className="border-b border-white/[0.06] hover:bg-transparent">
+                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#808495]">
                   Email
                 </TableHead>
-                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#E4EEF0]/60">
+                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#808495]">
                   Name
                 </TableHead>
-                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#E4EEF0]/60">
+                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#808495]">
                   Role
                 </TableHead>
-                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#E4EEF0]/60">
+                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#808495]">
                   Status
                 </TableHead>
-                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#E4EEF0]/60">
+                <TableHead className="font-mono text-xs uppercase tracking-wider text-[#808495]">
                   Last Login
                 </TableHead>
               </TableRow>
@@ -225,29 +241,29 @@ export default function CompanyDetailPage() {
               {org.users.map((u) => (
                 <TableRow
                   key={u.id}
-                  className="border-b border-[#E4EEF0]/5 transition-colors hover:bg-[#16232B]/50"
+                  className="border-b border-white/[0.04] transition-colors hover:bg-white/[0.03]"
                 >
-                  <TableCell className="py-3.5 font-mono text-xs font-medium text-white">
+                  <TableCell className="py-3.5 font-mono text-xs font-medium text-[#F5F5F7]">
                     {u.email}
                   </TableCell>
-                  <TableCell className="py-3.5 text-xs text-[#E4EEF0]/80">
+                  <TableCell className="py-3.5 text-xs text-[#9A9DA8]">
                     {u.full_name ?? "—"}
                   </TableCell>
-                  <TableCell className="py-3.5 font-mono text-xs capitalize text-[#F4D47C]">
+                  <TableCell className="py-3.5 font-mono text-xs capitalize text-[#8E88C7]">
                     {u.role.replace("_", " ")}
                   </TableCell>
                   <TableCell className="py-3.5">
                     {u.is_active ? (
-                      <span className="inline-flex items-center gap-1 rounded border border-[#F4D47C]/30 bg-[#F4D47C]/10 px-1.5 py-0.5 font-mono text-[10px] text-[#F4D47C]">
+                      <span className="inline-flex items-center gap-1 rounded-md border border-[#34D399]/30 bg-[#34D399]/10 px-2 py-0.5 font-mono text-[10px] font-medium text-[#34D399]">
                         Active
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded border border-[#FF5B04]/30 bg-[#FF5B04]/10 px-1.5 py-0.5 font-mono text-[10px] text-[#FF5B04]">
+                      <span className="inline-flex items-center gap-1 rounded-md border border-[#F87171]/30 bg-[#F87171]/10 px-2 py-0.5 font-mono text-[10px] font-medium text-[#F87171]">
                         Inactive
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="py-3.5 font-mono text-xs text-[#E4EEF0]/60">
+                  <TableCell className="py-3.5 font-mono text-xs text-[#808495]">
                     {shortDate(u.last_login_at)}
                   </TableCell>
                 </TableRow>
@@ -255,7 +271,10 @@ export default function CompanyDetailPage() {
 
               {org.users.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-8 text-center font-mono text-xs text-[#E4EEF0]/50">
+                  <TableCell
+                    colSpan={5}
+                    className="py-10 text-center font-mono text-xs text-[#808495]"
+                  >
                     No users provisioned for this organization.
                   </TableCell>
                 </TableRow>
@@ -267,17 +286,20 @@ export default function CompanyDetailPage() {
 
       {/* Internal Notes Section */}
       {org.internal_notes && (
-        <Card className="border border-[#E4EEF0]/10 bg-[#042F34]/40 shadow-lg shadow-black/20 backdrop-blur-md">
-          <CardHeader className="border-b border-[#E4EEF0]/10 py-3.5 px-5">
+        <Card
+          className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 backdrop-blur-xl"
+          style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+        >
+          <CardHeader className="border-b border-white/[0.06] bg-[#0F1115]/80 py-3.5 px-6">
             <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-[#F4D47C]" />
-              <CardTitle className="text-sm font-semibold text-white">
+              <FileText className="h-4 w-4 text-[#8E88C7]" />
+              <CardTitle className="text-sm font-semibold text-[#F5F5F7]">
                 Internal Administrative Notes
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-5">
-            <pre className="whitespace-pre-wrap font-mono text-xs text-[#E4EEF0]/80">
+            <pre className="whitespace-pre-wrap font-mono text-xs text-[#9A9DA8]">
               {org.internal_notes}
             </pre>
           </CardContent>
@@ -353,15 +375,33 @@ function Fact({
   highlight?: boolean;
 }) {
   return (
-    <Card className="border border-[#E4EEF0]/10 bg-[#042F34]/40 backdrop-blur-sm transition-all duration-200 hover:border-[#FF5B04]/30 hover:bg-[#042F34]/70">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <p className="font-mono text-xs uppercase tracking-wider text-[#E4EEF0]/60">{label}</p>
-          <Icon className={`h-3.5 w-3.5 ${highlight ? "text-[#FF5B04]" : "text-[#F4D47C]"}`} />
+    <Card
+      className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 p-0 shadow-[0_8px_30px_rgb(0,0,0,0.4)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-white/[0.18]"
+      style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+    >
+      <div
+        className="pointer-events-none absolute -top-16 left-1/2 h-20 w-3/4 -translate-x-1/2 rounded-full opacity-20 blur-2xl transition-opacity duration-300 group-hover:opacity-40"
+        style={{ backgroundColor: highlight ? "#F87171" : "#8E88C7" }}
+      />
+      <CardContent className="flex min-h-[110px] flex-col justify-between p-4">
+        <div className="flex items-start justify-between gap-2">
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-[#808495]">
+            {label}
+          </p>
+          <div
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border transition-transform duration-300 group-hover:scale-110"
+            style={{
+              backgroundColor: highlight ? "rgba(248, 113, 113, 0.12)" : "rgba(142, 136, 199, 0.12)",
+              borderColor: highlight ? "rgba(248, 113, 113, 0.25)" : "rgba(142, 136, 199, 0.25)",
+              color: highlight ? "#F87171" : "#8E88C7",
+            }}
+          >
+            <Icon className="h-3.5 w-3.5" />
+          </div>
         </div>
         <p
-          className={`mt-2 font-mono text-lg font-bold ${
-            highlight ? "text-[#F4D47C]" : "text-white"
+          className={`mt-2 font-mono text-xl font-bold tracking-tight ${
+            highlight ? "text-[#F87171]" : "text-[#F5F5F7]"
           }`}
         >
           {value}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { motion, useScroll } from "motion/react";
+// import { motion, useScroll } from "motion/react";
+import { motion, useScroll } from "framer-motion";
 import { Reveal, SectionLabel } from "./primitives";
 
 const COLORS = {

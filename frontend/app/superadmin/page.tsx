@@ -36,7 +36,7 @@ function Metric({
   value,
   icon: Icon,
   hint,
-  trendColor = "text-[#F4D47C]",
+  trendColor = "text-[#8E88C7]",
 }: {
   label: string;
   value: string;
@@ -45,22 +45,28 @@ function Metric({
   trendColor?: string;
 }) {
   return (
-    <Card className="border border-[#E4EEF0]/10 bg-[#042F34]/50 shadow-lg shadow-black/20 backdrop-blur-md transition-all duration-200 hover:border-[#FF5B04]/40 hover:bg-[#042F34]/80">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between">
-          <p className="font-mono text-xs font-medium uppercase tracking-wider text-[#E4EEF0]/70">
+    <Card
+      className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 p-0 shadow-[0_8px_30px_rgb(0,0,0,0.4)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-white/[0.18]"
+      style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+    >
+      <div className="pointer-events-none absolute -top-16 left-1/2 h-20 w-3/4 -translate-x-1/2 rounded-full bg-[#8E88C7]/20 opacity-25 blur-2xl transition-opacity duration-300 group-hover:opacity-50" />
+      <CardContent className="flex min-h-[125px] flex-col justify-between p-5">
+        <div className="flex items-start justify-between gap-2">
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-[#808495]">
             {label}
           </p>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E4EEF0]/10 bg-[#16232B] text-[#FF5B04]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#8E88C7]/30 bg-[#8E88C7]/15 text-[#8E88C7] transition-transform duration-300 group-hover:scale-110">
             <Icon className="h-4 w-4" />
           </div>
         </div>
-        <p className="mt-3 font-mono text-3xl font-bold tracking-tight text-white">{value}</p>
-        {hint && (
-          <p className={`mt-1.5 flex items-center gap-1.5 font-mono text-xs ${trendColor}`}>
-            <span>{hint}</span>
-          </p>
-        )}
+        <div>
+          <p className="truncate font-mono text-2xl font-bold tracking-tight text-[#F5F5F7] sm:text-3xl">{value}</p>
+          {hint && (
+            <p className={`mt-1 truncate font-mono text-[11px] ${trendColor}`}>
+              <span>{hint}</span>
+            </p>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -78,28 +84,53 @@ export default function SuperadminHome() {
       .catch(() => setPendingDemos(null));
   }, []);
 
+  const cardClass =
+    "relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 p-0 shadow-[0_8px_30px_rgb(0,0,0,0.4)] backdrop-blur-xl transition-all duration-300";
+
   return (
-    <div className="mx-auto max-w-6xl space-y-6 text-[#FFFFFF]">
+    <div className="relative mx-auto max-w-6xl space-y-6 text-[#F5F5F7]">
+      {/* Ambient Background Glow Orbs */}
+      <div className="pointer-events-none absolute -top-24 left-1/4 h-80 w-80 rounded-full bg-[#5C568E]/10 blur-[120px]" />
+      <div className="pointer-events-none absolute top-40 right-10 h-72 w-72 rounded-full bg-[#38BDF8]/5 blur-[100px]" />
+
       {/* Page Title & Subtitle */}
-      <div className="flex flex-col gap-1 border-b border-[#E4EEF0]/10 pb-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 border-b border-white/[0.06] pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8E88C7] opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#8E88C7]" />
+            </span>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[#808495]">
+              Quantix Intelligence • Control Plane
+            </p>
+          </div>
+          <h1 className="mt-1.5 text-2xl font-extrabold tracking-tight text-[#F5F5F7] sm:text-3xl">
             Command Center
           </h1>
-          <p className="mt-1 text-sm text-[#E4EEF0]/70">
+          <p className="mt-1 text-xs text-[#9A9DA8]">
             Platform-wide telemetry and multi-tenant operational status.
           </p>
         </div>
         <div className="mt-3 flex items-center gap-2 sm:mt-0">
-          <span className="flex items-center gap-1.5 rounded-full border border-[#FF5B04]/30 bg-[#FF5B04]/10 px-3 py-1 font-mono text-xs text-[#FF5B04]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#FF5B04]" />
-            Live Metrics
-          </span>
+          <div
+            className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-[#0F1117]/80 px-4 py-2 font-mono text-xs font-semibold text-[#F5F5F7] shadow-inner backdrop-blur-md"
+            style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-[#8E88C7]" />
+            <span className="text-[#8E88C7]">Live Metrics</span>
+          </div>
         </div>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2.5 rounded-lg border border-[#FF5B04]/40 bg-[#FF5B04]/10 px-4 py-3 text-sm text-[#FF5B04]">
+        <div
+          className="flex items-center gap-2.5 rounded-2xl border p-4 text-xs font-medium text-[#F87171] shadow-lg backdrop-blur-md"
+          style={{
+            backgroundColor: "rgba(248, 113, 113, 0.08)",
+            borderColor: "rgba(248, 113, 113, 0.25)",
+          }}
+        >
           <ShieldAlert className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -114,44 +145,44 @@ export default function SuperadminHome() {
               value={String(stats.total_orgs)}
               icon={Building2}
               hint={`+${stats.new_orgs_30d} new in 30d`}
-              trendColor="text-[#F4D47C]"
+              trendColor="text-[#8E88C7]"
             />
             <Metric
               label="Total Users"
               value={String(stats.total_users)}
               icon={Users}
               hint="Cross-tenant access"
-              trendColor="text-[#E4EEF0]/60"
+              trendColor="text-[#9A9DA8]"
             />
             <Metric
               label="Monthly Recurring Rev"
               value={money(stats.mrr_usd)}
               icon={DollarSign}
               hint={stats.mrr_is_list_price ? "List price (no live billing key)" : undefined}
-              trendColor="text-[#F4D47C]"
+              trendColor="text-[#34D399]"
             />
             <Metric
               label="Pending Demo Leads"
               value={pendingDemos === null ? "—" : String(pendingDemos)}
               icon={Inbox}
               hint={pendingDemos && pendingDemos > 0 ? "Awaiting review" : "Inbox clear"}
-              trendColor={pendingDemos && pendingDemos > 0 ? "text-[#FF5B04]" : "text-[#F4D47C]"}
+              trendColor={pendingDemos && pendingDemos > 0 ? "text-[#F87171]" : "text-[#8E88C7]"}
             />
           </div>
 
           {/* Detailed Cards Section */}
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Organizations Breakdown */}
-            <Card className="border border-[#E4EEF0]/10 bg-[#042F34]/40 shadow-lg shadow-black/20 backdrop-blur-md">
-              <CardHeader className="border-b border-[#E4EEF0]/10 pb-4">
+            <Card className={cardClass} style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}>
+              <CardHeader className="border-b border-white/[0.06] bg-[#0F1115]/80 py-4 px-6">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-semibold text-white">
+                  <CardTitle className="text-sm font-semibold tracking-wide text-[#F5F5F7]">
                     Organizations by Status
                   </CardTitle>
-                  <Building2 className="h-4 w-4 text-[#F4D47C]" />
+                  <Building2 className="h-4 w-4 text-[#8E88C7]" />
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4 pt-5">
+              <CardContent className="space-y-4 p-6">
                 {STATUS_ORDER.map((s) => {
                   const count = stats.orgs_by_status[s] ?? 0;
                   const pct = stats.total_orgs ? (count / stats.total_orgs) * 100 : 0;
@@ -161,27 +192,24 @@ export default function SuperadminHome() {
                   return (
                     <div key={s} className="space-y-1.5">
                       <div className="flex items-center justify-between font-mono text-xs">
-                        <span className="text-[#E4EEF0]/80">{STATUS_LABEL[s]}</span>
-                        <span className="font-semibold text-white">
+                        <span className="text-[#9A9DA8]">{STATUS_LABEL[s]}</span>
+                        <span className="font-semibold text-[#F5F5F7]">
                           {count}{" "}
-                          <span className="font-normal text-[#E4EEF0]/50">
+                          <span className="font-normal text-[#808495]">
                             ({pct.toFixed(0)}%)
                           </span>
                         </span>
                       </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-[#16232B]">
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.06] p-[1px]">
                         <div
-                          className={`h-full rounded-full transition-all duration-300 ${
+                          className={`h-full rounded-full transition-all duration-500 ease-out ${
                             isProblematic
-                              ? "bg-[#FF5B04]"
+                              ? "bg-[#F87171] shadow-[0_0_10px_rgba(248,113,113,0.6)]"
                               : isPending
-                              ? "bg-[#F4D47C]"
-                              : "bg-[#042F34] brightness-150"
+                              ? "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.5)]"
+                              : "bg-gradient-to-r from-[#6F6B9B] to-[#8E88C7] shadow-[0_0_8px_rgba(142,136,199,0.5)]"
                           }`}
-                          style={{
-                            width: `${pct}%`,
-                            backgroundColor: !isProblematic && !isPending ? "#F4D47C" : undefined,
-                          }}
+                          style={{ width: `${pct}%` }}
                         />
                       </div>
                     </div>
@@ -191,16 +219,16 @@ export default function SuperadminHome() {
             </Card>
 
             {/* Platform Activity Overview */}
-            <Card className="border border-[#E4EEF0]/10 bg-[#042F34]/40 shadow-lg shadow-black/20 backdrop-blur-md">
-              <CardHeader className="border-b border-[#E4EEF0]/10 pb-4">
+            <Card className={cardClass} style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}>
+              <CardHeader className="border-b border-white/[0.06] bg-[#0F1115]/80 py-4 px-6">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-semibold text-white">
+                  <CardTitle className="text-sm font-semibold tracking-wide text-[#F5F5F7]">
                     Platform Activity & Compute
                   </CardTitle>
-                  <Activity className="h-4 w-4 text-[#FF5B04]" />
+                  <Activity className="h-4 w-4 text-[#8E88C7]" />
                 </div>
               </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-4 pt-5">
+              <CardContent className="grid grid-cols-2 gap-4 p-6">
                 <Stat
                   label="Total Strategies"
                   value={stats.total_strategies}
@@ -227,8 +255,8 @@ export default function SuperadminHome() {
           </div>
 
           {/* Quick Actions Bar */}
-          <div className="space-y-2">
-            <p className="font-mono text-xs uppercase tracking-wider text-[#E4EEF0]/60">
+          <div className="space-y-3">
+            <p className="font-mono text-xs uppercase tracking-wider text-[#808495]">
               Operational Shortcuts
             </p>
             <div className="flex flex-wrap gap-3">
@@ -247,17 +275,17 @@ export default function SuperadminHome() {
       )}
 
       {!stats && !error && (
-        <div className="flex items-center justify-center py-16">
-          <div className="flex items-center gap-3 text-sm text-[#E4EEF0]/70">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#FF5B04] border-t-transparent" />
-            <span className="font-mono">Loading Command Center data...</span>
+        <div className="flex items-center justify-center py-24 text-[#F5F5F7]">
+          <div className="flex items-center gap-3 text-sm text-[#9A9DA8]">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#8E88C7] border-t-transparent" />
+            <span className="font-mono text-xs">Loading Command Center data...</span>
           </div>
         </div>
       )}
 
       {/* Footer Info Notice */}
-      <div className="flex items-center gap-2 rounded-lg border border-[#E4EEF0]/10 bg-[#16232B]/60 px-4 py-3 font-mono text-xs text-[#E4EEF0]/70">
-        <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[#F4D47C]" />
+      <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-[#0D0F14]/70 px-4 py-3 font-mono text-xs text-[#9A9DA8] backdrop-blur-md">
+        <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[#8E88C7]" />
         <span>
           Revenue reflects list-price MRR computed from active subscription tiers.
         </span>
@@ -278,12 +306,15 @@ function Stat({
   highlight?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-[#E4EEF0]/10 bg-[#16232B]/70 p-3.5 transition-colors hover:border-[#E4EEF0]/20">
+    <div
+      className="group relative overflow-hidden rounded-xl border border-white/[0.06] bg-[#0F1115]/60 p-4 transition-all duration-300 hover:border-white/[0.14] hover:bg-[#14161B]/80"
+      style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.04)" }}
+    >
       <div className="flex items-center justify-between">
-        <p className="font-mono text-xs text-[#E4EEF0]/60">{label}</p>
-        <Icon className={`h-3.5 w-3.5 ${highlight ? "text-[#FF5B04]" : "text-[#F4D47C]"}`} />
+        <p className="font-mono text-xs text-[#808495]">{label}</p>
+        <Icon className={`h-3.5 w-3.5 ${highlight ? "text-[#34D399]" : "text-[#8E88C7]"}`} />
       </div>
-      <p className={`mt-2 font-mono text-xl font-bold ${highlight ? "text-[#F4D47C]" : "text-white"}`}>
+      <p className={`mt-2 font-mono text-xl font-bold tracking-tight ${highlight ? "text-[#34D399]" : "text-[#F5F5F7]"}`}>
         {value}
       </p>
     </div>
@@ -302,11 +333,12 @@ function QuickLink({
   return (
     <Link
       href={href}
-      className="group inline-flex items-center gap-2 rounded-lg border border-[#E4EEF0]/10 bg-[#042F34]/70 px-4 py-2.5 text-sm font-medium text-white transition-all duration-150 hover:border-[#FF5B04]/50 hover:bg-[#042F34] hover:text-[#F4D47C] hover:shadow-md hover:shadow-black/30"
+      className="group inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-[#0D0F14]/70 px-4 py-2.5 font-mono text-xs font-semibold text-[#F5F5F7] backdrop-blur-md transition-all duration-200 hover:border-[#8E88C7]/40 hover:bg-[#14161B] hover:text-[#8E88C7] hover:shadow-lg hover:shadow-black/40 active:scale-95"
+      style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.06)" }}
     >
-      <Icon className="h-4 w-4 text-[#FF5B04] transition-colors group-hover:text-[#F4D47C]" />
+      <Icon className="h-4 w-4 text-[#8E88C7] transition-colors group-hover:text-[#8E88C7]" />
       <span>{children}</span>
-      <ArrowUpRight className="h-3.5 w-3.5 text-[#E4EEF0]/40 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-[#F4D47C]" />
+      <ArrowUpRight className="h-3.5 w-3.5 text-[#808495] transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#8E88C7]" />
     </Link>
   );
 }
