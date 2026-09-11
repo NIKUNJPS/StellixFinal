@@ -1,11 +1,10 @@
 import type { ReactNode } from "react";
-import { Instrument_Serif, JetBrains_Mono } from "next/font/google";
+import { Figtree, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
-import { MarketingNav } from "@/components/marketing/marketing-nav";
+import { ConditionalMarketingNav } from "@/components/marketing/conditional-marketing-nav";
 
 // Cold Precision display face — editorial serif, loaded only for the public site.
-// Instrument Serif ships a single 400 weight; headlines rely on size, not weight.
 const instrumentSerif = Instrument_Serif({
   weight: "400",
   subsets: ["latin"],
@@ -20,14 +19,19 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+// Primary sans-serif font for marketing content.
+const figtree = Figtree({
+  subsets: ["latin"],
+  variable: "--font-figtree",
+  display: "swap",
+});
+
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
-    // `.marketing` scopes the Cold Precision CSS variables (globals.css) — the
-    // dashboard outside this wrapper keeps the navy/cyan theme untouched.
     <div
-      className={`marketing ${instrumentSerif.variable} ${jetbrainsMono.variable} flex min-h-screen flex-col bg-white text-[#0A0F1E] antialiased`}
+      className={`marketing ${instrumentSerif.variable} ${jetbrainsMono.variable} ${figtree.variable} flex min-h-screen flex-col bg-white text-[#0A0F1E] antialiased`}
     >
-      <MarketingNav />
+      <ConditionalMarketingNav />
       <main className="flex-1">{children}</main>
       <MarketingFooter />
     </div>

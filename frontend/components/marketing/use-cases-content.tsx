@@ -1,11 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { ArrowUpRight, Minus, Plus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-type Segment = { name: string; oneLiner: string; scenario: string; fits: string };
+type Segment = {
+  name: string;
+  oneLiner: string;
+  scenario: string;
+  fits: string;
+};
 
 const SEGMENTS: Segment[] = [
   {
@@ -47,49 +52,160 @@ const SEGMENTS: Segment[] = [
 
 export function UseCasesContent() {
   const [open, setOpen] = useState(0);
+
   return (
-    <div className="mt-12 divide-y divide-border/70 overflow-hidden rounded-2xl border border-border">
-      {SEGMENTS.map((s, i) => {
-        const isOpen = open === i;
-        return (
-          <div key={s.name} className={cn(isOpen && "bg-card/30")}>
-            <button
-              type="button"
-              onClick={() => setOpen(isOpen ? -1 : i)}
-              className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
-              aria-expanded={isOpen}
-            >
-              <div>
-                <span className="font-display text-lg font-semibold">{s.name}</span>
-                <span className="ml-3 hidden text-sm text-accent sm:inline">{s.oneLiner}</span>
-              </div>
-              <Plus
-                className={cn(
-                  "h-5 w-5 shrink-0 text-muted-foreground transition-transform",
-                  isOpen && "rotate-45",
-                )}
-              />
-            </button>
+    <section className="relative overflow-hidden border-y border-white/[0.08] bg-[#0B0B10] font-[var(--font-figtree)]">
+      {/* Subtle grid */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.025]">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)
+            `,
+            backgroundSize: "80px 80px",
+          }}
+        />
+      </div>
+
+      {/* Purple atmosphere */}
+      <div className="pointer-events-none absolute left-[-20%] top-[20%] h-[500px] w-[500px] rounded-full bg-[#522A6F]/10 blur-[180px]" />
+
+      <div className="relative">
+        {SEGMENTS.map((segment, index) => {
+          const isOpen = open === index;
+
+          return (
             <div
+              key={segment.name}
               className={cn(
-                "grid transition-all duration-300 ease-out",
-                isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+                "relative border-b border-white/[0.08] last:border-b-0 transition-colors duration-300",
+                isOpen && "bg-white/[0.015]",
               )}
             >
-              <div className="overflow-hidden">
-                <div className="px-6 pb-6">
-                  <p className="text-sm text-accent sm:hidden">{s.oneLiner}</p>
-                  <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">{s.scenario}</p>
-                  <p className="mt-4 text-xs uppercase tracking-wider text-foreground/70">
-                    Fits because:{" "}
-                    <span className="font-normal normal-case tracking-normal text-muted-foreground">{s.fits}</span>
-                  </p>
+              {/* Active indicator */}
+              <div
+                className={cn(
+                  "absolute left-0 top-0 h-full w-[2px] transition-all duration-300",
+                  isOpen
+                    ? "bg-[#8B7CFF] opacity-100"
+                    : "bg-transparent opacity-0",
+                )}
+              />
+
+              <button
+                type="button"
+                onClick={() => setOpen(isOpen ? -1 : index)}
+                className="group flex w-full items-start gap-5 px-6 py-8 text-left sm:px-10 sm:py-10 lg:px-14 lg:py-11"
+                aria-expanded={isOpen}
+              >
+                {/* Number */}
+                <span
+                  className={cn(
+                    "mt-2 w-10 shrink-0 text-[11px] font-semibold tracking-[0.2em]",
+                    isOpen
+                      ? "text-[#A79CFF]"
+                      : "text-white/40 group-hover:text-white/60",
+                  )}
+                >
+                  0{index + 1}
+                </span>
+
+                {/* Main text */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-baseline lg:gap-10">
+                    <h3
+                      className={cn(
+                        "font-[var(--font-figtree)] text-[clamp(1.75rem,2.8vw,2.6rem)] font-semibold leading-[1.05] tracking-[-0.045em] transition-colors",
+                        isOpen
+                          ? "text-[#F4F3F7]"
+                          : "text-white/85 group-hover:text-white",
+                      )}
+                    >
+                      {segment.name}
+                    </h3>
+
+                    <p
+                      className={cn(
+                        "max-w-xl text-[15px] leading-relaxed sm:text-[16px]",
+                        isOpen
+                          ? "text-white/65"
+                          : "text-white/50 group-hover:text-white/65",
+                      )}
+                    >
+                      {segment.oneLiner}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Icon */}
+                <div
+                  className={cn(
+                    "mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-all duration-300",
+                    isOpen
+                      ? "border-[#8B7CFF]/60 bg-[#8B7CFF]/15 text-[#A79CFF]"
+                      : "border-white/[0.14] text-white/60 group-hover:border-white/30 group-hover:text-white",
+                  )}
+                >
+                  {isOpen ? (
+                    <Minus className="h-5 w-5" />
+                  ) : (
+                    <Plus className="h-5 w-5" />
+                  )}
+                </div>
+              </button>
+
+              {/* Expanded content */}
+              <div
+                className={cn(
+                  "grid transition-all duration-500 ease-out",
+                  isOpen
+                    ? "grid-rows-[1fr] opacity-100"
+                    : "grid-rows-[0fr] opacity-0",
+                )}
+              >
+                <div className="overflow-hidden">
+                  <div className="pb-10 pl-[5.25rem] pr-6 sm:pb-12 sm:pl-[7.5rem] sm:pr-12 lg:pb-14 lg:pl-[10.5rem] lg:pr-20">
+                    <div className="max-w-4xl border-l border-[#8B7CFF]/35 pl-7 sm:pl-10">
+                      {/* Scenario label */}
+                      <div className="flex items-center gap-3">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#8B7CFF]" />
+
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#A79CFF]">
+                          The scenario
+                        </span>
+                      </div>
+
+                      {/* Scenario */}
+                      <p className="mt-6 text-[16px] leading-[1.85] text-white/80 sm:text-[17px]">
+                        {segment.scenario}
+                      </p>
+
+                      {/* Fits */}
+                      <div className="mt-8 border-t border-white/[0.1] pt-6">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-7">
+                          <div className="flex shrink-0 items-center gap-2">
+                            <ArrowUpRight className="h-4 w-4 text-[#A79CFF]" />
+
+                            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#A79CFF]">
+                              Fits because
+                            </span>
+                          </div>
+
+                          <p className="text-[15px] leading-relaxed text-white/65">
+                            {segment.fits}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }

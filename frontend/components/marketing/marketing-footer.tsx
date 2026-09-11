@@ -2,7 +2,10 @@ import Link from "next/link";
 
 import { LogoMark } from "@/components/marketing/logo";
 
-const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
+const COLUMNS: {
+  title: string;
+  links: { label: string; href: string }[];
+}[] = [
   {
     title: "Product",
     links: [
@@ -17,7 +20,10 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
     links: [
       { label: "Documentation", href: "/docs" },
       { label: "API Reference", href: "/docs#api-reference" },
-      { label: "Knowledge Graph Schema", href: "/architecture#graph-schema" },
+      {
+        label: "Knowledge Graph Schema",
+        href: "/architecture#graph-schema",
+      },
     ],
   },
   {
@@ -37,36 +43,48 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   },
 ];
 
-/**
- * Footer (Cold Precision redesign): near-black #0A0F1E, minimal, explicit dark
- * palette — the scoped `.marketing` tokens are light, so this section styles
- * itself directly rather than through the tokens.
- */
 export function MarketingFooter() {
   return (
-    <footer className="bg-[#0A0F1E]">
-      <div className="container py-16">
-        <div className="grid grid-cols-2 gap-10 md:grid-cols-5">
-          <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2.5">
+    <footer className="relative bg-[#050506]">
+      {/* subtle top separator */}
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-white/[0.10] to-transparent" />
+
+      <div className="mx-auto w-full max-w-[1800px] px-6 py-16 sm:px-10 lg:px-16 lg:py-20">
+        {/* Main footer */}
+        <div className="grid gap-14 sm:grid-cols-2 lg:grid-cols-[1.5fr_repeat(4,1fr)] lg:gap-10">
+          {/* Brand */}
+          <div className="max-w-xs">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-3"
+            >
               <LogoMark className="h-8 w-8" />
-              <span className="font-display text-lg tracking-tight text-white">Stellix Labs</span>
-            </div>
-            <p className="mt-4 text-sm leading-relaxed text-[#9CA3AF]">
-              Regime-conditioned. Failure-aware. Compounding over time.
+
+              <span className="text-[18px] font-semibold tracking-[-0.03em] text-white">
+                Stellix Labs
+              </span>
+            </Link>
+
+            <p className="mt-5 text-[14px] leading-relaxed text-white/40">
+              Research infrastructure for preserving failure intelligence,
+              understanding market regimes, and compounding institutional
+              knowledge.
             </p>
           </div>
-          {COLUMNS.map((col) => (
-            <div key={col.title}>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-white/80">
-                {col.title}
+
+          {/* Links */}
+          {COLUMNS.map((column) => (
+            <div key={column.title}>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/60">
+                {column.title}
               </p>
-              <ul className="mt-4 space-y-2.5">
-                {col.links.map((link) => (
+
+              <ul className="mt-6 space-y-3.5">
+                {column.links.map((link) => (
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-sm text-[#9CA3AF] transition-colors hover:text-white"
+                      className="text-[13px] text-white/35 transition-colors duration-200 hover:text-[#A79CFF]"
                     >
                       {link.label}
                     </Link>
@@ -76,10 +94,15 @@ export function MarketingFooter() {
             </div>
           ))}
         </div>
-        <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-6 text-sm text-[#9CA3AF] sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 Stellix Labs. The institutional memory layer for quantitative research.</p>
-          <p>
-            Built in India <span aria-hidden>🇮🇳</span>
+
+        {/* Bottom */}
+        <div className="mt-16 flex flex-col gap-5 border-t border-white/[0.07] pt-7 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[12px] text-white/25">
+            © 2026 Stellix Labs. All rights reserved.
+          </p>
+
+          <p className="text-[12px] text-white/25">
+            The institutional memory layer for quantitative research.
           </p>
         </div>
       </div>

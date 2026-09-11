@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 
-import { CodeBlock } from "@/components/marketing/code-block";
+
+import { CodeBlock } from "@/components/marketing/code-snippet";
 import { API_BASE_URL } from "@/lib/api";
 import { DOC_CATEGORIES, DOC_SECTIONS, type DocSection } from "@/lib/marketing/docs";
 import { cn } from "@/lib/utils";
