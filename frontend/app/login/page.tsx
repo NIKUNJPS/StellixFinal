@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { Home, ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -146,11 +147,110 @@ export default function LoginPage() {
 
   if (challengeToken) {
     return (
-      <main className="relative flex min-h-screen w-full items-center justify-center overflow-hidden px-4 py-16 selection:bg-[#6F6B9B]/30">
+      <main className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden px-4 py-16 selection:bg-[#6F6B9B]/30">
         <BackgroundVideo />
 
+        {/* Top-Right Home Navigation Button */}
+        <Link
+          href="/"
+          className="fixed top-6 right-6 z-20 flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.18] bg-[#0F1115]/40 text-[#9A9DA8] backdrop-blur-md transition-all duration-150 hover:border-white/40 hover:bg-[#0F1115]/80 hover:text-[#F5F5F7]"
+          title="Return to Home"
+        >
+          <Home className="h-4 w-4" />
+        </Link>
+
+        <div className="relative z-10 flex w-full max-w-[390px] flex-col items-center gap-4">
+          <Card
+            className="w-full rounded-2xl p-3 shadow-2xl backdrop-blur-sm transition-all duration-200"
+            style={{
+              backgroundColor: "rgba(15, 17, 21, 0.08)",
+              border: "1px solid rgba(255, 255, 255, 0.18)",
+              boxShadow:
+                "0 20px 60px -15px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.06)",
+            }}
+          >
+            <CardHeader className="space-y-1.5 pb-4">
+              <CardTitle className="text-xl font-bold tracking-tight text-[#F5F5F7]">
+                Two-factor verification
+              </CardTitle>
+              <CardDescription className="text-sm text-[#9A9DA8]">
+                Enter the 6-digit code from your authenticator app.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <Input
+                placeholder="123456"
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value)}
+                maxLength={6}
+                autoFocus
+                className="h-12 rounded-xl text-center font-mono text-lg tracking-widest text-[#F5F5F7] placeholder:text-[#666A76] transition-all duration-150 focus:border-white focus:outline-none focus:ring-0 focus-visible:ring-0"
+                style={{
+                  backgroundColor: "rgba(20, 22, 27, 0.15)",
+                  border: mfaCode
+                    ? "1px solid rgba(255, 255, 255, 0.75)"
+                    : "1px solid rgba(255, 255, 255, 0.12)",
+                }}
+              />
+              {serverError && (
+                <p className="rounded-xl border border-[#E45B5B]/30 bg-[#E45B5B]/10 px-3 py-2 text-sm font-medium text-[#E45B5B]">
+                  {serverError}
+                </p>
+              )}
+              <Button
+                onClick={onSubmitMfa}
+                disabled={mfaBusy || mfaCode.length !== 6}
+                className="h-12 rounded-xl text-sm font-semibold tracking-wide text-white shadow-sm transition-all duration-200 active:scale-[0.99] disabled:opacity-40"
+                style={{
+                  backgroundColor: "#5C568E",
+                  border: "1px solid rgba(255, 255, 255, 0.18)",
+                  boxShadow: "0 4px 22px rgba(92, 86, 142, 0.5)",
+                }}
+              >
+                {mfaBusy ? "Verifying…" : "Verify"}
+              </Button>
+              <button
+                type="button"
+                className="text-center font-mono text-xs text-[#9A9DA8] transition-colors hover:text-[#F5F5F7]"
+                onClick={() => {
+                  setChallengeToken(null);
+                  setMfaCode("");
+                }}
+              >
+                Back to sign in
+              </button>
+            </CardContent>
+          </Card>
+
+          {/* Back to Home Link Below Card */}
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 font-mono text-xs text-[#9A9DA8] transition-colors hover:text-[#F5F5F7]"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to home
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden px-4 py-16 selection:bg-[#6F6B9B]/30">
+      {/* Full-Screen Animated Network Video Background */}
+      <BackgroundVideo />
+
+      {/* Top-Right Home Navigation Button */}
+      <Link
+        href="/"
+        className="fixed top-6 right-6 z-20 flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.18] bg-[#0F1115]/40 text-[#9A9DA8] backdrop-blur-md transition-all duration-150 hover:border-white/40 hover:bg-[#0F1115]/80 hover:text-[#F5F5F7]"
+        title="Return to Home"
+      >
+        <Home className="h-4 w-4" />
+      </Link>
+
+      <div className="relative z-10 flex w-full max-w-[390px] flex-col items-center gap-4">
         <Card
-          className="relative z-10 w-full max-w-[390px] rounded-2xl p-3 shadow-2xl backdrop-blur-sm transition-all duration-200"
+          className="w-full rounded-2xl p-3 shadow-2xl backdrop-blur-sm transition-all duration-200"
           style={{
             backgroundColor: "rgba(15, 17, 21, 0.08)",
             border: "1px solid rgba(255, 255, 255, 0.18)",
@@ -158,255 +258,194 @@ export default function LoginPage() {
               "0 20px 60px -15px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.06)",
           }}
         >
-          <CardHeader className="space-y-1.5 pb-4">
-            <CardTitle className="text-xl font-bold tracking-tight text-[#F5F5F7]">
-              Two-factor verification
+          <CardHeader className="space-y-2 pb-5">
+            <div className="flex items-center gap-2">
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{
+                  backgroundColor: "#6F6B9B",
+                  boxShadow: "0 0 8px rgba(111, 107, 155, 0.9)",
+                }}
+              />
+              <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9A9DA8]">
+                Platform Access
+              </span>
+            </div>
+            <CardTitle className="text-[28px] font-bold tracking-tight text-[#F5F5F7]">
+              Sign in
             </CardTitle>
-            <CardDescription className="text-sm text-[#9A9DA8]">
-              Enter the 6-digit code from your authenticator app.
+            <CardDescription className="text-sm leading-relaxed text-[#9A9DA8]">
+              Welcome back to Stellix Labs.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <Input
-              placeholder="123456"
-              value={mfaCode}
-              onChange={(e) => setMfaCode(e.target.value)}
-              maxLength={6}
-              autoFocus
-              className="h-12 rounded-xl text-center font-mono text-lg tracking-widest text-[#F5F5F7] placeholder:text-[#666A76] transition-all duration-150 focus:border-white focus:outline-none focus:ring-0 focus-visible:ring-0"
-              style={{
-                backgroundColor: "rgba(20, 22, 27, 0.15)",
-                border: mfaCode
-                  ? "1px solid rgba(255, 255, 255, 0.75)"
-                  : "1px solid rgba(255, 255, 255, 0.12)",
-              }}
-            />
-            {serverError && (
-              <p className="rounded-xl border border-[#E45B5B]/30 bg-[#E45B5B]/10 px-3 py-2 text-sm font-medium text-[#E45B5B]">
-                {serverError}
-              </p>
-            )}
-            <Button
-              onClick={onSubmitMfa}
-              disabled={mfaBusy || mfaCode.length !== 6}
-              className="h-12 rounded-xl text-sm font-semibold tracking-wide text-white shadow-sm transition-all duration-200 active:scale-[0.99] disabled:opacity-40"
-              style={{
-                backgroundColor: "#5C568E",
-                border: "1px solid rgba(255, 255, 255, 0.18)",
-                boxShadow: "0 4px 22px rgba(92, 86, 142, 0.5)",
-              }}
+
+          <CardContent>
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="flex flex-col gap-4"
+              noValidate
             >
-              {mfaBusy ? "Verifying…" : "Verify"}
-            </Button>
-            <button
-              type="button"
-              className="text-center font-mono text-xs text-[#9A9DA8] transition-colors hover:text-[#F5F5F7]"
-              onClick={() => {
-                setChallengeToken(null);
-                setMfaCode("");
-              }}
-            >
-              Back to sign in
-            </button>
-          </CardContent>
-        </Card>
-      </main>
-    );
-  }
-
-  return (
-    <main className="relative flex min-h-screen w-full items-center justify-center overflow-hidden px-4 py-16 selection:bg-[#6F6B9B]/30">
-      {/* Full-Screen Animated Network Video Background */}
-      <BackgroundVideo />
-
-      <Card
-        className="relative z-10 w-full max-w-[390px] rounded-2xl p-3 shadow-2xl backdrop-blur-sm transition-all duration-200"
-        style={{
-          backgroundColor: "rgba(15, 17, 21, 0.08)",
-          border: "1px solid rgba(255, 255, 255, 0.18)",
-          boxShadow:
-            "0 20px 60px -15px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.06)",
-        }}
-      >
-        <CardHeader className="space-y-2 pb-5">
-          <div className="flex items-center gap-2">
-            <span
-              className="h-2 w-2 rounded-full"
-              style={{
-                backgroundColor: "#6F6B9B",
-                boxShadow: "0 0 8px rgba(111, 107, 155, 0.9)",
-              }}
-            />
-            <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9A9DA8]">
-              Platform Access
-            </span>
-          </div>
-          <CardTitle className="text-[28px] font-bold tracking-tight text-[#F5F5F7]">
-            Sign in
-          </CardTitle>
-          <CardDescription className="text-sm leading-relaxed text-[#9A9DA8]">
-            Welcome back to Stellix Labs.
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-4"
-            noValidate
-          >
-            {/* Email Field Group */}
-            <div className="flex flex-col gap-2">
-              <Label
-                htmlFor="login-email-input"
-                className="text-sm font-semibold text-[#F5F5F7]"
-              >
-                Email
-              </Label>
-              <Input
-                id="login-email-input"
-                type="email"
-                placeholder="admin@acme.com"
-                {...register("email")}
-                className="h-11 rounded-xl text-sm text-[#F5F5F7] placeholder:text-[#666A76] transition-all duration-150 focus:border-white focus:outline-none focus:ring-0 focus-visible:border-white focus-visible:ring-0"
-                style={{
-                  backgroundColor: "rgba(20, 22, 27, 0.15)",
-                  border: emailValue
-                    ? "1px solid rgba(255, 255, 255, 0.75)"
-                    : "1px solid rgba(255, 255, 255, 0.12)",
-                }}
-              />
-              {errors.email && (
-                <span className="font-mono text-xs text-[#E45B5B]">
-                  {errors.email.message}
-                </span>
-              )}
-            </div>
-
-            {/* Password Field Group */}
-            <div className="flex flex-col gap-2">
-              <Label
-                htmlFor="login-password-input"
-                className="text-sm font-semibold text-[#F5F5F7]"
-              >
-                Password
-              </Label>
-              <Input
-                id="login-password-input"
-                type="password"
-                placeholder="••••••••••"
-                {...register("password")}
-                className="h-11 rounded-xl text-sm text-[#F5F5F7] placeholder:text-[#666A76] transition-all duration-150 focus:border-white focus:outline-none focus:ring-0 focus-visible:border-white focus-visible:ring-0"
-                style={{
-                  backgroundColor: "rgba(20, 22, 27, 0.15)",
-                  border: passwordValue
-                    ? "1px solid rgba(255, 255, 255, 0.75)"
-                    : "1px solid rgba(255, 255, 255, 0.12)",
-                }}
-              />
-              {errors.password && (
-                <span className="font-mono text-xs text-[#E45B5B]">
-                  {errors.password.message}
-                </span>
-              )}
-            </div>
-
-            {/* Organization Slug Group */}
-            <div className="flex flex-col gap-2">
-              <Label
-                htmlFor="login-slug-input"
-                className="text-sm font-medium text-[#9A9DA8]"
-              >
-                Organization slug{" "}
-                <span className="text-xs text-[#666A76]">(optional)</span>
-              </Label>
-              <Input
-                id="login-slug-input"
-                placeholder="acme-capital"
-                {...register("organization_slug")}
-                className="h-11 rounded-xl text-sm text-[#F5F5F7] placeholder:text-[#666A76] transition-all duration-150 focus:border-white focus:outline-none focus:ring-0 focus-visible:border-white focus-visible:ring-0"
-                style={{
-                  backgroundColor: "rgba(20, 22, 27, 0.15)",
-                  border: slugValue
-                    ? "1px solid rgba(255, 255, 255, 0.75)"
-                    : "1px solid rgba(255, 255, 255, 0.12)",
-                }}
-              />
-            </div>
-
-            <div className="flex items-center justify-between pt-1">
-              <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#9A9DA8] transition-colors hover:text-[#F5F5F7]">
-                <Checkbox
-                  checked={!!rememberMe}
-                  onCheckedChange={(checked) =>
-                    setValue("remember_me", checked === true)
-                  }
-                  className="h-4 w-4 rounded border-white/[0.25] data-[state=checked]:border-[#5C568E] data-[state=checked]:bg-[#5C568E] data-[state=checked]:text-white"
-                />
-                Remember me
-              </label>
-              <Link
-                href="/forgot-password"
-                className="text-sm font-medium text-[#9A9DA8] transition-colors hover:text-[#F5F5F7] hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </div>
-
-            {serverError && (
-              <p className="rounded-xl border border-[#E45B5B]/30 bg-[#E45B5B]/10 px-3.5 py-2.5 text-sm font-medium text-[#E45B5B]">
-                {serverError}
-              </p>
-            )}
-
-            {unverifiedEmail && (
-              <div className="rounded-xl border border-[#E5A84B]/30 bg-[#E5A84B]/10 p-3.5">
-                <p className="text-sm text-[#E5A84B]">
-                  Didn&apos;t get the email?
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-2 h-9 rounded-lg border-white/[0.12] bg-[#14161B]/40 text-sm text-[#F5F5F7] hover:bg-[#14161B]"
-                  disabled={resendBusy}
-                  onClick={() => void onResendVerification()}
+              {/* Email Field Group */}
+              <div className="flex flex-col gap-2">
+                <Label
+                  htmlFor="login-email-input"
+                  className="text-sm font-semibold text-[#F5F5F7]"
                 >
-                  {resendBusy ? "Sending…" : "Resend verification link"}
-                </Button>
-                {resendNotice && (
-                  <p className="mt-2 font-mono text-xs text-[#9A9DA8]">
-                    {resendNotice}
-                  </p>
+                  Email
+                </Label>
+                <Input
+                  id="login-email-input"
+                  type="email"
+                  placeholder="admin@acme.com"
+                  {...register("email")}
+                  className="h-11 rounded-xl text-sm text-[#F5F5F7] placeholder:text-[#666A76] transition-all duration-150 focus:border-white focus:outline-none focus:ring-0 focus-visible:border-white focus-visible:ring-0"
+                  style={{
+                    backgroundColor: "rgba(20, 22, 27, 0.15)",
+                    border: emailValue
+                      ? "1px solid rgba(255, 255, 255, 0.75)"
+                      : "1px solid rgba(255, 255, 255, 0.12)",
+                  }}
+                />
+                {errors.email && (
+                  <span className="font-mono text-xs text-[#E45B5B]">
+                    {errors.email.message}
+                  </span>
                 )}
               </div>
-            )}
 
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="mt-2 h-12 rounded-xl text-sm font-semibold tracking-wide text-white shadow-sm transition-all duration-200 hover:brightness-110 active:scale-[0.99] disabled:opacity-40"
-              style={{
-                backgroundColor: "#5C568E",
-                border: "1px solid rgba(255, 255, 255, 0.18)",
-                boxShadow: "0 4px 22px rgba(92, 86, 142, 0.5)",
-              }}
-            >
-              {isSubmitting ? "Signing in…" : "Sign in"}
-            </Button>
-          </form>
+              {/* Password Field Group */}
+              <div className="flex flex-col gap-2">
+                <Label
+                  htmlFor="login-password-input"
+                  className="text-sm font-semibold text-[#F5F5F7]"
+                >
+                  Password
+                </Label>
+                <Input
+                  id="login-password-input"
+                  type="password"
+                  placeholder="••••••••••"
+                  {...register("password")}
+                  className="h-11 rounded-xl text-sm text-[#F5F5F7] placeholder:text-[#666A76] transition-all duration-150 focus:border-white focus:outline-none focus:ring-0 focus-visible:border-white focus-visible:ring-0"
+                  style={{
+                    backgroundColor: "rgba(20, 22, 27, 0.15)",
+                    border: passwordValue
+                      ? "1px solid rgba(255, 255, 255, 0.75)"
+                      : "1px solid rgba(255, 255, 255, 0.12)",
+                  }}
+                />
+                {errors.password && (
+                  <span className="font-mono text-xs text-[#E45B5B]">
+                    {errors.password.message}
+                  </span>
+                )}
+              </div>
 
-          <p className="mt-5 text-center text-sm text-[#666A76]">
-            Need an account?{" "}
-            <Link
-              href="/register"
-              className="font-medium text-[#F5F5F7] transition-colors hover:underline"
-            >
-              Create one
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+              {/* Organization Slug Group */}
+              <div className="flex flex-col gap-2">
+                <Label
+                  htmlFor="login-slug-input"
+                  className="text-sm font-medium text-[#9A9DA8]"
+                >
+                  Organization slug{" "}
+                  <span className="text-xs text-[#666A76]">(optional)</span>
+                </Label>
+                <Input
+                  id="login-slug-input"
+                  placeholder="acme-capital"
+                  {...register("organization_slug")}
+                  className="h-11 rounded-xl text-sm text-[#F5F5F7] placeholder:text-[#666A76] transition-all duration-150 focus:border-white focus:outline-none focus:ring-0 focus-visible:border-white focus-visible:ring-0"
+                  style={{
+                    backgroundColor: "rgba(20, 22, 27, 0.15)",
+                    border: slugValue
+                      ? "1px solid rgba(255, 255, 255, 0.75)"
+                      : "1px solid rgba(255, 255, 255, 0.12)",
+                  }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#9A9DA8] transition-colors hover:text-[#F5F5F7]">
+                  <Checkbox
+                    checked={!!rememberMe}
+                    onCheckedChange={(checked) =>
+                      setValue("remember_me", checked === true)
+                    }
+                    className="h-4 w-4 rounded border-white/[0.25] data-[state=checked]:border-[#5C568E] data-[state=checked]:bg-[#5C568E] data-[state=checked]:text-white"
+                  />
+                  Remember me
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-sm font-medium text-[#9A9DA8] transition-colors hover:text-[#F5F5F7] hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
+              {serverError && (
+                <p className="rounded-xl border border-[#E45B5B]/30 bg-[#E45B5B]/10 px-3.5 py-2.5 text-sm font-medium text-[#E45B5B]">
+                  {serverError}
+                </p>
+              )}
+
+              {unverifiedEmail && (
+                <div className="rounded-xl border border-[#E5A84B]/30 bg-[#E5A84B]/10 p-3.5">
+                  <p className="text-sm text-[#E5A84B]">
+                    Didn&apos;t get the email?
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 h-9 rounded-lg border-white/[0.12] bg-[#14161B]/40 text-sm text-[#F5F5F7] hover:bg-[#14161B]"
+                    disabled={resendBusy}
+                    onClick={() => void onResendVerification()}
+                  >
+                    {resendBusy ? "Sending…" : "Resend verification link"}
+                  </Button>
+                  {resendNotice && (
+                    <p className="mt-2 font-mono text-xs text-[#9A9DA8]">
+                      {resendNotice}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="mt-2 h-12 rounded-xl text-sm font-semibold tracking-wide text-white shadow-sm transition-all duration-200 hover:brightness-110 active:scale-[0.99] disabled:opacity-40"
+                style={{
+                  backgroundColor: "#5C568E",
+                  border: "1px solid rgba(255, 255, 255, 0.18)",
+                  boxShadow: "0 4px 22px rgba(92, 86, 142, 0.5)",
+                }}
+              >
+                {isSubmitting ? "Signing in…" : "Sign in"}
+              </Button>
+            </form>
+
+            <p className="mt-5 text-center text-sm text-[#666A76]">
+              Need an account?{" "}
+              <Link
+                href="/register"
+                className="font-medium text-[#F5F5F7] transition-colors hover:underline"
+              >
+                Create one
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Back to Home Link Below Card */}
+        <Link
+          href="/"
+          className="flex items-center gap-1.5 font-mono text-xs text-[#9A9DA8] transition-colors hover:text-[#F5F5F7]"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to home
+        </Link>
+      </div>
     </main>
   );
 }
