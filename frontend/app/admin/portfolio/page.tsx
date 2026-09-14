@@ -1,6 +1,13 @@
 "use client";
 
-import { AlertTriangle, Layers, ShieldAlert, TrendingDown } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  ArrowUpRight,
+  Layers,
+  ShieldAlert,
+  TrendingDown,
+} from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 
@@ -13,123 +20,171 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getPortfolioCorrelation, getPortfolioOverview } from "@/lib/portfolio";
+
+import {
+  getPortfolioCorrelation,
+  getPortfolioOverview,
+} from "@/lib/portfolio";
+
 import type {
   CorrelationMatrix,
   PortfolioOverview,
   RiskAlert,
 } from "@/lib/portfolio-types";
 
-// Charts pull recharts (a large lib) that this page is the only admin consumer of
-// besides backtest-results — load it client-side so it stays out of the initial
-// bundle (Batch 20 Lighthouse pass). ssr:false + a skeleton avoids layout shift.
+/* -------------------------------------------------------------------------- */
+/*                                CHART LOADER                                */
+/* -------------------------------------------------------------------------- */
+
 const PortfolioCharts = dynamic(
   () => import("@/components/portfolio/portfolio-charts"),
   {
     ssr: false,
     loading: () => (
-      <div className="h-[260px] animate-pulse rounded-xl border border-[#d3dbdd]/10 bg-[#16232b]/60" />
+      <div className="h-[260px] animate-pulse rounded-2xl border border-white/[0.06] bg-[#0F1117]/70" />
     ),
   },
 );
 
-// Stellix Labs palette
-const COLORS = {
-  midnight: "#16232b",
-  tealDark: "#042F34",
-  teal: "#075056",
-  orange: "#c40707",
-  sand: "#f2d17d",
-  silver: "#d3dbdd",
-  black: "#000000",
+/* -------------------------------------------------------------------------- */
+/*                                  COLORS                                    */
+/* -------------------------------------------------------------------------- */
+
+const REGIME_DONUT: Record<string, string> = {
+  Bull: "#34D399",
+  Bear: "#F87171",
+  Crisis: "#F43F5E",
+  "High-Volatility": "#FBBF24",
+  Sideways: "#8E88C7",
+  "Low-Volatility": "#38BDF8",
 };
 
-// Donut colours keyed by the regime label the backend emits.
-const REGIME_DONUT: Record<string, string> = {
-  Bull: "#075056",
-  Bear: "#c40707",
-  Crisis: "#16232b",
-  "High-Volatility": "#f2d17d",
-  Sideways: "#d3dbdd",
-  "Low-Volatility": "#075056",
-};
+/* -------------------------------------------------------------------------- */
+/*                               ALERT STYLES                                 */
+/* -------------------------------------------------------------------------- */
 
 const ALERT_STYLES: Record<RiskAlert["severity"], string> = {
   critical:
-    "border-[#c40707]/40 bg-[#c40707]/10 text-[#c40707]",
+    "border-[#F87171]/25 bg-[#F87171]/10 text-[#F87171]",
+
   warning:
-    "border-[#f2d17d]/40 bg-[#f2d17d]/10 text-[#f2d17d]",
+    "border-[#FBBF24]/25 bg-[#FBBF24]/10 text-[#FBBF24]",
+
   info:
-    "border-[#075056]/50 bg-[#075056]/20 text-[#d3dbdd]",
+    "border-[#38BDF8]/25 bg-[#38BDF8]/10 text-[#38BDF8]",
 };
+
+/* -------------------------------------------------------------------------- */
+/*                                KPI CARD                                    */
+/* -------------------------------------------------------------------------- */
 
 function KpiCard({
   icon: Icon,
   label,
   value,
-  tone = "accent",
+  sub,
+  tone = "primary",
 }: {
   icon: typeof Layers;
   label: string;
   value: string;
-  tone?: "accent" | "danger" | "warn";
+  sub?: string;
+  tone?: "primary" | "danger" | "warning";
 }) {
-  const toneClass =
-    tone === "danger"
-      ? "bg-[#c40707]/12 text-[#c40707]"
-      : tone === "warn"
-        ? "bg-[#f2d17d]/12 text-[#f2d17d]"
-        : "bg-[#075056]/25 text-[#d3dbdd]";
+  let accentColor = "#8E88C7";
+  let iconBg = "rgba(142,136,199,0.12)";
+  let borderGlow = "rgba(142,136,199,0.25)";
+
+  if (tone === "danger") {
+    accentColor = "#F87171";
+    iconBg = "rgba(248,113,113,0.12)";
+    borderGlow = "rgba(248,113,113,0.25)";
+  }
+
+  if (tone === "warning") {
+    accentColor = "#FBBF24";
+    iconBg = "rgba(251,191,36,0.12)";
+    borderGlow = "rgba(251,191,36,0.25)";
+  }
 
   return (
-    <Card className="rounded-xl border border-[#d3dbdd]/10 bg-[#16232b] shadow-none transition-colors duration-200 hover:border-[#d3dbdd]/15">
-      <CardContent className="flex items-center gap-4 p-4">
-        <div className={`rounded-xl p-2.5 ${toneClass}`}>
-          <Icon className="h-5 w-5" aria-hidden />
+    <Card
+      className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 p-0 shadow-[0_8px_30px_rgb(0,0,0,0.4)] backdrop-blur-xl"
+      style={{
+        boxShadow:
+          "inset 0 1px 0 0 rgba(255,255,255,0.08)",
+      }}
+    >
+      {/* Static subtle top glow */}
+
+      <div
+        className="pointer-events-none absolute -top-16 left-1/2 h-24 w-3/4 -translate-x-1/2 rounded-full opacity-20 blur-2xl"
+        style={{
+          backgroundColor: accentColor,
+        }}
+      />
+
+      <CardContent className="flex min-h-[125px] flex-col justify-between p-5">
+        <div className="flex items-start justify-between gap-3">
+          <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-[#808495]">
+            {label}
+          </span>
+
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
+            style={{
+              backgroundColor: iconBg,
+              color: accentColor,
+              border: `1px solid ${borderGlow}`,
+            }}
+          >
+            <Icon className="h-4 w-4" />
+          </div>
         </div>
 
-        <div className="min-w-0">
-          <p className="text-xs text-[#d3dbdd]/55">
-            {label}
-          </p>
-
-          <p className="truncate text-xl font-semibold text-[#d3dbdd]">
+        <div>
+          <p className="truncate text-[27px] font-bold tracking-tight text-[#F5F5F7]">
             {value}
           </p>
+
+          {sub && (
+            <p className="mt-0.5 truncate text-[11px] font-medium text-[#9A9DA8]">
+              {sub}
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
   );
 }
 
-/**
- * Correlation cell colour.
- *
- * Kept as a separate function because the correlation data/integration
- * remains unchanged. Only the visual mapping has been adapted to the
- * Stellix palette.
- */
+/* -------------------------------------------------------------------------- */
+/*                          CORRELATION COLOR LOGIC                           */
+/* -------------------------------------------------------------------------- */
+
 function correlationColor(v: number): string {
   const t = Math.max(-1, Math.min(1, v));
 
   if (t >= 0) {
-    // #16232b → #c40707 for positive correlation
-    const r = Math.round(22 + (196 - 22) * t);
-    const g = Math.round(35 + (7 - 35) * t);
-    const b = Math.round(43 + (7 - 43) * t);
+    const r = Math.round(13 + (248 - 13) * t);
+    const g = Math.round(15 + (113 - 15) * t);
+    const b = Math.round(20 + (113 - 20) * t);
 
     return `rgb(${r},${g},${b})`;
   }
 
   const a = -t;
 
-  // #16232b → #075056 for negative correlation
-  const r = Math.round(22 + (7 - 22) * a);
-  const g = Math.round(35 + (80 - 35) * a);
-  const b = Math.round(43 + (86 - 43) * a);
+  const r = Math.round(13 + (56 - 13) * a);
+  const g = Math.round(15 + (189 - 15) * a);
+  const b = Math.round(20 + (248 - 20) * a);
 
   return `rgb(${r},${g},${b})`;
 }
+
+/* -------------------------------------------------------------------------- */
+/*                           CORRELATION HEATMAP                              */
+/* -------------------------------------------------------------------------- */
 
 function CorrelationHeatmap({
   corr,
@@ -138,41 +193,48 @@ function CorrelationHeatmap({
 }) {
   if (corr.matrix.length < 2) {
     return (
-      <p className="py-10 text-center text-sm text-[#d3dbdd]/55">
-        Not enough backtest history yet to compute correlations.
+      <div className="flex min-h-[200px] items-center justify-center">
+        <div className="text-center">
+          <p className="text-sm text-[#9A9DA8]">
+            Not enough backtest history yet to compute correlations.
+          </p>
 
-        {corr.excluded.length > 0 && (
-          <span className="mt-1 block text-xs text-[#d3dbdd]/40">
-            Excluded: {corr.excluded.join(", ")}
-          </span>
-        )}
-      </p>
+          {corr.excluded.length > 0 && (
+            <p className="mt-2 text-xs text-[#666A76]">
+              Excluded: {corr.excluded.join(", ")}
+            </p>
+          )}
+        </div>
+      </div>
     );
   }
 
   const n = corr.labels.length;
 
   const short = (name: string) =>
-    name.length > 10 ? `${name.slice(0, 9)}…` : name;
+    name.length > 10
+      ? `${name.slice(0, 9)}…`
+      : name;
 
   return (
     <div className="overflow-x-auto">
       <div
         role="img"
-        aria-label={`Correlation heatmap of ${n} strategies over ${corr.days_used} trading days. Red is high positive correlation, cyan is negative.`}
+        aria-label={`Correlation heatmap of ${n} strategies over ${corr.days_used} trading days`}
+        className="min-w-max"
       >
-        <table className="border-separate border-spacing-1 text-[11px]">
+        <table className="border-separate border-spacing-1.5 text-[11px]">
           <thead>
             <tr>
               <th className="p-1" />
 
-              {corr.labels.map((l) => (
+              {corr.labels.map((label) => (
                 <th
-                  key={l}
-                  className="p-1 font-medium text-[#d3dbdd]/55"
-                  title={l}
+                  key={label}
+                  className="p-1 font-medium text-[#808495]"
+                  title={label}
                 >
-                  {short(l)}
+                  {short(label)}
                 </th>
               ))}
             </tr>
@@ -182,31 +244,32 @@ function CorrelationHeatmap({
             {corr.matrix.map((row, i) => (
               <tr key={corr.labels[i]}>
                 <td
-                  className="whitespace-nowrap p-1 text-right font-medium text-[#d3dbdd]/55"
+                  className="whitespace-nowrap p-1 text-right font-medium text-[#808495]"
                   title={corr.labels[i]}
                 >
                   {short(corr.labels[i]!)}
                 </td>
 
-                {row.map((v, j) =>
-                  v === null ? (
+                {row.map((value, j) =>
+                  value === null ? (
                     <td
                       key={j}
-                      className="h-9 w-14 rounded-lg text-center font-mono text-[11px] text-[#d3dbdd]/50"
-                      title={`${corr.labels[i]} × ${corr.labels[j]}: unavailable`}
+                      className="h-10 w-14 rounded-lg border border-white/[0.03] bg-white/[0.015] text-center font-mono text-[11px] text-[#666A76]"
                     >
                       —
                     </td>
                   ) : (
                     <td
                       key={j}
-                      className="h-9 w-14 rounded-lg text-center font-mono text-[11px] text-[#d3dbdd]"
+                      className="h-10 w-14 rounded-lg text-center font-mono text-[11px] font-medium text-[#F5F5F7] shadow-inner"
                       style={{
-                        background: correlationColor(v),
+                        background: correlationColor(value),
                       }}
-                      title={`${corr.labels[i]} × ${corr.labels[j]}: ${v.toFixed(2)}`}
+                      title={`${corr.labels[i]} × ${
+                        corr.labels[j]
+                      }: ${value.toFixed(2)}`}
                     >
-                      {v.toFixed(2)}
+                      {value.toFixed(2)}
                     </td>
                   ),
                 )}
@@ -217,7 +280,7 @@ function CorrelationHeatmap({
       </div>
 
       {corr.excluded.length > 0 && (
-        <p className="mt-2 text-xs text-[#d3dbdd]/40">
+        <p className="mt-4 text-xs text-[#666A76]">
           Excluded (insufficient history):{" "}
           {corr.excluded.join(", ")}
         </p>
@@ -225,6 +288,10 @@ function CorrelationHeatmap({
     </div>
   );
 }
+
+/* -------------------------------------------------------------------------- */
+/*                               MAIN PAGE                                    */
+/* -------------------------------------------------------------------------- */
 
 export default function PortfolioPage() {
   const [overview, setOverview] =
@@ -268,223 +335,347 @@ export default function PortfolioPage() {
 
   const donutData = useMemo(
     () =>
-      (overview?.regime_exposure ?? []).map((r) => ({
-        name: r.regime,
-        value: r.count,
-        color: REGIME_DONUT[r.regime] ?? "#64748B",
-      })),
+      (overview?.regime_exposure ?? []).map(
+        (regime) => ({
+          name: regime.regime,
+          value: regime.count,
+          color:
+            REGIME_DONUT[regime.regime] ??
+            "#8E88C7",
+        }),
+      ),
     [overview],
   );
 
+  const cardClass =
+    "relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 p-0 shadow-[0_8px_30px_rgb(0,0,0,0.4)] backdrop-blur-xl";
+
   return (
-    <>
-      <div className="space-y-6">
-        {/* Page heading */}
+    <div className="relative min-h-full bg-[#07080B] px-1 py-1 text-[#F5F5F7]">
+      {/* Background atmosphere */}
+
+      <div className="pointer-events-none absolute -top-24 left-1/4 h-80 w-80 rounded-full bg-[#5C568E]/10 blur-[120px]" />
+
+      <div className="pointer-events-none absolute top-40 right-10 h-72 w-72 rounded-full bg-[#38BDF8]/5 blur-[100px]" />
+
+      {/* Error */}
+
+      {error && (
+        <div className="mb-6 rounded-2xl border border-[#F87171]/25 bg-[#F87171]/10 p-4 text-xs font-medium text-[#F87171] backdrop-blur-md">
+          {error}
+        </div>
+      )}
+
+      {/* Page Header */}
+
+      <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#d3dbdd]">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8E88C7] opacity-75" />
+
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#8E88C7]" />
+            </span>
+
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[#808495]">
+              Portfolio Intelligence • Research Mode
+            </p>
+          </div>
+
+          <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight text-[#F5F5F7]">
             Portfolio
           </h1>
 
-          <p className="mt-1 text-sm text-[#d3dbdd]/50">
-            Cross-strategy view of the active book — equal-weighted,
-            computed from real stored backtest metrics and equity curves.
+          <p className="mt-1 max-w-2xl text-xs text-[#9A9DA8]">
+            Cross-strategy intelligence for performance,
+            exposure, correlation, and portfolio-level risk.
           </p>
         </div>
 
-        {error && (
-          <p
-            role="alert"
-            className="rounded-xl border border-[#c40707]/30 bg-[#c40707]/10 px-3 py-2 text-sm text-[#c40707]"
-          >
-            {error}
-          </p>
-        )}
+        <div
+          className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-[#0F1117]/80 px-4 py-2 font-mono text-xs font-semibold text-[#F5F5F7] shadow-inner backdrop-blur-md"
+          style={{
+            boxShadow:
+              "inset 0 1px 0 0 rgba(255,255,255,0.08)",
+          }}
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-[#34D399]" />
 
-        {overview && (
-          <>
-            {/* Row 1 — KPI cards */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <KpiCard
-                icon={Layers}
-                label="Portfolio Sharpe"
-                value={
-                  overview.portfolio_sharpe != null
-                    ? overview.portfolio_sharpe.toFixed(2)
-                    : "—"
-                }
-              />
+          ACTIVE BOOK
 
-              <KpiCard
-                icon={TrendingDown}
-                label="Max Drawdown"
-                tone="danger"
-                value={
-                  overview.portfolio_max_drawdown != null
-                    ? `${(
-                        overview.portfolio_max_drawdown * 100
-                      ).toFixed(1)}%`
-                    : "—"
-                }
-              />
+          <span className="text-[10px] text-[#666A76]">
+            LIVE
+          </span>
+        </div>
+      </div>
 
-              <KpiCard
-                icon={Layers}
-                label="Active Strategies"
-                value={String(
-                  overview.total_active_strategies,
-                )}
-              />
+      {overview && (
+        <>
+          {/* KPI CARDS */}
 
-              <KpiCard
-                icon={ShieldAlert}
-                label="Risk Alerts"
-                tone={
-                  overview.risk_alerts.length > 0
-                    ? "warn"
-                    : "accent"
-                }
-                value={String(
-                  overview.risk_alerts.length,
-                )}
-              />
-            </div>
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiCard
+              icon={Activity}
+              label="Portfolio Sharpe"
+              value={
+                overview.portfolio_sharpe != null
+                  ? overview.portfolio_sharpe.toFixed(2)
+                  : "—"
+              }
+              sub="risk-adjusted return"
+            />
 
-            {/* Row 2 — two columns */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {/* Left: combined equity + regime donut */}
-              <div className="space-y-4">
-                <Card className="rounded-xl border border-[#d3dbdd]/10 bg-[#16232b] shadow-none">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-semibold text-[#d3dbdd]">
+            <KpiCard
+              icon={TrendingDown}
+              label="Max Drawdown"
+              tone="danger"
+              value={
+                overview.portfolio_max_drawdown != null
+                  ? `${(
+                      overview.portfolio_max_drawdown * 100
+                    ).toFixed(1)}%`
+                  : "—"
+              }
+              sub="maximum portfolio decline"
+            />
+
+            <KpiCard
+              icon={Layers}
+              label="Active Strategies"
+              value={String(
+                overview.total_active_strategies,
+              )}
+              sub="currently in portfolio"
+            />
+
+            <KpiCard
+              icon={ShieldAlert}
+              label="Risk Alerts"
+              tone={
+                overview.risk_alerts.length > 0
+                  ? "warning"
+                  : "primary"
+              }
+              value={String(
+                overview.risk_alerts.length,
+              )}
+              sub={
+                overview.risk_alerts.length > 0
+                  ? "requires attention"
+                  : "within thresholds"
+              }
+            />
+          </div>
+
+          {/* MAIN GRID */}
+
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            {/* LEFT COLUMN */}
+
+            <div className="space-y-5">
+              <Card
+                className={cardClass}
+                style={{
+                  boxShadow:
+                    "inset 0 1px 0 0 rgba(255,255,255,0.08)",
+                }}
+              >
+                <CardHeader className="flex flex-row items-start justify-between border-b border-white/[0.06] p-5">
+                  <div>
+                    <CardTitle className="text-sm font-semibold tracking-wide text-[#F5F5F7]">
                       Combined Equity Curve
                     </CardTitle>
 
-                    <CardDescription className="text-xs text-[#d3dbdd]/45">
-                      Equal-weighted, normalised to 1.0 at start
+                    <CardDescription className="mt-0.5 text-xs text-[#808495]">
+                      Equal-weighted portfolio performance,
+                      normalised to 1.0
                     </CardDescription>
-                  </CardHeader>
+                  </div>
 
-                  <CardContent>
-                    <PortfolioCharts
-                      kind="equity"
-                      data={overview.combined_equity_curve}
-                    />
-                  </CardContent>
-                </Card>
+                  <ArrowUpRight className="h-4 w-4 text-[#808495]" />
+                </CardHeader>
 
-                <Card className="rounded-xl border border-[#d3dbdd]/10 bg-[#16232b] shadow-none">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-semibold text-[#d3dbdd]">
+                <CardContent className="p-5">
+                  <PortfolioCharts
+                    kind="equity"
+                    data={overview.combined_equity_curve}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card
+                className={cardClass}
+                style={{
+                  boxShadow:
+                    "inset 0 1px 0 0 rgba(255,255,255,0.08)",
+                }}
+              >
+                <CardHeader className="flex flex-row items-start justify-between border-b border-white/[0.06] p-5">
+                  <div>
+                    <CardTitle className="text-sm font-semibold tracking-wide text-[#F5F5F7]">
                       Regime Specialisation
                     </CardTitle>
 
-                    <CardDescription className="text-xs text-[#d3dbdd]/45">
-                      Active strategies by dominant regime
-                      (from stored compatibility scores)
+                    <CardDescription className="mt-0.5 text-xs text-[#808495]">
+                      Active strategies grouped by dominant
+                      market regime
                     </CardDescription>
-                  </CardHeader>
+                  </div>
 
-                  <CardContent>
-                    {donutData.length > 0 ? (
-                      <PortfolioCharts
-                        kind="donut"
-                        data={donutData}
-                      />
-                    ) : (
-                      <p className="py-10 text-center text-sm text-[#d3dbdd]/45">
+                  <ArrowUpRight className="h-4 w-4 text-[#808495]" />
+                </CardHeader>
+
+                <CardContent className="p-5">
+                  {donutData.length > 0 ? (
+                    <PortfolioCharts
+                      kind="donut"
+                      data={donutData}
+                    />
+                  ) : (
+                    <div className="flex min-h-[240px] items-center justify-center">
+                      <p className="text-sm text-[#666A76]">
                         No regime compatibility data yet.
                       </p>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
-              {/* Right: correlation heatmap + risk alerts */}
-              <div className="space-y-4">
-                <Card className="rounded-xl border border-[#d3dbdd]/10 bg-[#16232b] shadow-none">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-semibold text-[#d3dbdd]">
+            {/* RIGHT COLUMN */}
+
+            <div className="space-y-5">
+              <Card
+                className={cardClass}
+                style={{
+                  boxShadow:
+                    "inset 0 1px 0 0 rgba(255,255,255,0.08)",
+                }}
+              >
+                <CardHeader className="flex flex-row items-start justify-between border-b border-white/[0.06] p-5">
+                  <div>
+                    <CardTitle className="text-sm font-semibold tracking-wide text-[#F5F5F7]">
                       Strategy Correlation
                     </CardTitle>
 
-                    <CardDescription className="text-xs text-[#d3dbdd]/45">
-                      Daily-return correlation over real equity
-                      curves
+                    <CardDescription className="mt-0.5 text-xs text-[#808495]">
+                      Daily-return correlation across active
+                      strategy equity curves
                       {corr && corr.days_used > 0
-                        ? ` · ${corr.days_used} days`
+                        ? ` • ${corr.days_used} days`
                         : ""}
                     </CardDescription>
-                  </CardHeader>
+                  </div>
 
-                  <CardContent>
-                    {corr ? (
-                      <CorrelationHeatmap corr={corr} />
-                    ) : (
-                      <div className="h-40 animate-pulse rounded-xl border border-[#d3dbdd]/10 bg-[#16232b]/70" />
-                    )}
-                  </CardContent>
-                </Card>
+                  <ArrowUpRight className="h-4 w-4 text-[#808495]" />
+                </CardHeader>
 
-                <Card className="rounded-xl border border-[#d3dbdd]/10 bg-[#16232b] shadow-none">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-semibold text-[#d3dbdd]">
+                <CardContent className="p-5">
+                  {corr ? (
+                    <CorrelationHeatmap corr={corr} />
+                  ) : (
+                    <div className="h-48 animate-pulse rounded-xl border border-white/[0.05] bg-[#0F1117]/60" />
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card
+                className={cardClass}
+                style={{
+                  boxShadow:
+                    "inset 0 1px 0 0 rgba(255,255,255,0.08)",
+                }}
+              >
+                <CardHeader className="flex flex-row items-start justify-between border-b border-white/[0.06] p-5">
+                  <div>
+                    <CardTitle className="text-sm font-semibold tracking-wide text-[#F5F5F7]">
                       Risk Alerts
                     </CardTitle>
-                  </CardHeader>
 
-                  <CardContent>
-                    {overview.risk_alerts.length === 0 ? (
-                      <div className="rounded-xl border border-[#075056]/30 bg-[#075056]/10 px-4 py-3">
-                        <p className="text-sm text-[#d3dbdd]/65">
-                          No risk alerts — the book is within
-                          concentration, correlation, and drawdown
-                          thresholds.
+                    <CardDescription className="mt-0.5 text-xs text-[#808495]">
+                      Portfolio-level concentration,
+                      correlation, and drawdown signals
+                    </CardDescription>
+                  </div>
+
+                  <ShieldAlert className="h-4 w-4 text-[#808495]" />
+                </CardHeader>
+
+                <CardContent className="p-5">
+                  {overview.risk_alerts.length === 0 ? (
+                    <div className="flex items-center gap-3 rounded-xl border border-[#34D399]/15 bg-[#34D399]/5 p-4">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#34D399]/20 bg-[#34D399]/10">
+                        <ShieldAlert className="h-4 w-4 text-[#34D399]" />
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-medium text-[#F5F5F7]">
+                          Portfolio within thresholds
+                        </p>
+
+                        <p className="mt-1 text-xs leading-relaxed text-[#808495]">
+                          No concentration, correlation, or
+                          drawdown alerts are currently active.
                         </p>
                       </div>
-                    ) : (
-                      <ul className="space-y-2">
-                        {overview.risk_alerts.map((a, i) => (
+                    </div>
+                  ) : (
+                    <ul className="space-y-3">
+                      {overview.risk_alerts.map(
+                        (alert, index) => (
                           <li
-                            key={i}
-                            className="flex items-start gap-2 rounded-xl border border-[#d3dbdd]/10 bg-[#000000]/20 p-3"
+                            key={index}
+                            className="flex items-start gap-3 rounded-xl border border-white/[0.07] bg-[#0A0B10]/60 p-3.5"
                           >
                             <Badge
                               variant="outline"
                               className={cn(
-                                "shrink-0 rounded-lg",
-                                ALERT_STYLES[a.severity],
+                                "shrink-0 rounded-lg border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide",
+                                ALERT_STYLES[
+                                  alert.severity
+                                ],
                               )}
                             >
-                              {a.kind}
+                              {alert.kind}
                             </Badge>
 
-                            <span className="flex items-start gap-1.5 text-sm text-[#d3dbdd]/75">
+                            <div className="flex min-w-0 items-start gap-2">
                               <AlertTriangle
-                                className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#c40707]"
+                                className="mt-0.5 h-4 w-4 shrink-0 text-[#F87171]"
                                 aria-hidden
                               />
 
-                              {a.message}
-                            </span>
+                              <p className="text-sm leading-relaxed text-[#9A9DA8]">
+                                {alert.message}
+                              </p>
+                            </div>
                           </li>
-                        ))}
-                      </ul>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                        ),
+                      )}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
             </div>
+          </div>
 
-            {overview.strategies_without_metrics.length > 0 && (
-              <p className="text-xs text-[#d3dbdd]/40">
-                Active but without stored backtest metrics
-                (excluded from Sharpe/drawdown):{" "}
-                {overview.strategies_without_metrics.join(", ")}
+          {/* FOOTNOTE */}
+
+          {overview.strategies_without_metrics.length >
+            0 && (
+            <div className="mt-6 border-t border-white/[0.06] pt-5">
+              <p className="text-xs text-[#666A76]">
+                Active strategies without stored backtest
+                metrics — excluded from portfolio Sharpe and
+                drawdown calculations:{" "}
+                {overview.strategies_without_metrics.join(
+                  ", ",
+                )}
               </p>
-            )}
-          </>
-        )}
-      </div>
-    </>
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }

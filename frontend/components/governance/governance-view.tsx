@@ -1,40 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  type LucideIcon,
-  AlertTriangle,
-  ArrowDownRight,
-  ArrowUpRight,
-  Check,
-  ChevronRight,
-  CircleAlert,
-  Clock3,
-  Download,
-  FileCheck2,
-  FileText,
-  History,
-  LockKeyhole,
-  RefreshCw,
-  ShieldCheck,
-  ShieldOff,
-  Siren,
-  Terminal,
-  UserCheck,
-  X,
-  Zap,
-  Activity,
-} from "lucide-react";
-
+import { type LucideIcon, AlertTriangle, Check, ChevronRight, CircleAlert, Download, FileCheck2, FileText, History, LockKeyhole, RefreshCw, ShieldCheck, ShieldOff, Siren, Terminal, UserCheck, X, Zap, Activity, ArrowDownRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -133,32 +102,32 @@ function robustnessLabel(score?: number | null) {
 function robustnessTone(score?: number | null) {
   if (score == null) {
     return {
-      text: "text-muted-foreground",
-      bg: "bg-white/[0.03]",
-      border: "border-white/10",
+      text: "text-[#808495]",
+      bg: "rgba(255, 255, 255, 0.03)",
+      border: "rgba(255, 255, 255, 0.08)",
     };
   }
 
   if (score >= 0.8) {
     return {
-      text: "text-[#8dd8b8]",
-      bg: "bg-[#8dd8b8]/10",
-      border: "border-[#8dd8b8]/20",
+      text: "text-[#34D399]",
+      bg: "rgba(52, 211, 153, 0.12)",
+      border: "rgba(52, 211, 153, 0.25)",
     };
   }
 
   if (score >= 0.7) {
     return {
-      text: "text-[#74b9df]",
-      bg: "bg-[#074068]/30",
-      border: "border-[#074068]/50",
+      text: "text-[#38BDF8]",
+      bg: "rgba(56, 189, 248, 0.12)",
+      border: "rgba(56, 189, 248, 0.25)",
     };
   }
 
   return {
-    text: "text-red-400",
-    bg: "bg-red-500/10",
-    border: "border-red-500/20",
+    text: "text-[#F87171]",
+    bg: "rgba(248, 113, 113, 0.12)",
+    border: "rgba(248, 113, 113, 0.25)",
   };
 }
 
@@ -174,15 +143,15 @@ function SectionEyebrow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8a9ba3]">
-      <Icon className="h-3.5 w-3.5" />
+    <div className="mb-1.5 flex items-center gap-2 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[#808495]">
+      <Icon className="h-3.5 w-3.5 text-[#8E88C7]" />
       {children}
     </div>
   );
 }
 
 /* ============================================================
-   CONTROL STRIP
+   PORTFOLIO METRIC CARD (STATIC CONTROL-ROOM VARIANT)
    ============================================================ */
 
 function ControlMetric({
@@ -200,50 +169,60 @@ function ControlMetric({
 }) {
   const tones = {
     blue: {
-      icon: "text-[#74b9df]",
-      dot: "bg-[#074068]",
+      icon: "text-[#38BDF8]",
+      bg: "rgba(56, 189, 248, 0.12)",
+      border: "rgba(56, 189, 248, 0.25)",
+      bar: "bg-[#38BDF8]",
     },
     mint: {
-      icon: "text-[#8dd8b8]",
-      dot: "bg-[#8dd8b8]",
+      icon: "text-[#34D399]",
+      bg: "rgba(52, 211, 153, 0.12)",
+      border: "rgba(52, 211, 153, 0.25)",
+      bar: "bg-[#34D399]",
     },
     red: {
-      icon: "text-red-400",
-      dot: "bg-red-500",
+      icon: "text-[#F87171]",
+      bg: "rgba(248, 113, 113, 0.12)",
+      border: "rgba(248, 113, 113, 0.25)",
+      bar: "bg-[#F87171]",
     },
     neutral: {
-      icon: "text-[#9eabb1]",
-      dot: "bg-[#6b7b83]",
+      icon: "text-[#8E88C7]",
+      bg: "rgba(142, 136, 199, 0.12)",
+      border: "rgba(142, 136, 199, 0.25)",
+      bar: "bg-[#8E88C7]",
     },
   };
 
   const current = tones[tone];
 
   return (
-    <div className="relative flex min-w-0 items-center gap-3 px-5 py-4">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.035]">
+    <div className="relative flex min-w-0 items-center gap-4 bg-[#0D0F14]/70 px-5 py-5 backdrop-blur-xl">
+      <div
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+        style={{
+          backgroundColor: current.bg,
+          border: `1px solid ${current.border}`,
+        }}
+      >
         <Icon className={`h-4 w-4 ${current.icon}`} />
       </div>
 
-      <div className="min-w-0">
-        <p className="text-[10px] uppercase tracking-[0.14em] text-[#7f9098]">
+      <div className="min-w-0 flex-1">
+        <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-[#808495]">
           {label}
         </p>
 
-        <div className="mt-0.5 flex items-baseline gap-2">
-          <span className="text-xl font-semibold tracking-tight text-[#e5ecee]">
-            {value}
-          </span>
+        <p className="mt-0.5 text-2xl font-bold tracking-tight text-[#F5F5F7]">
+          {value}
+        </p>
 
-          <span className="truncate text-[10px] text-[#718189]">
-            {detail}
-          </span>
-        </div>
+        <p className="mt-0.5 truncate text-[11px] font-medium text-[#9A9DA8]">
+          {detail}
+        </p>
       </div>
 
-      <span
-        className={`ml-auto h-1.5 w-1.5 shrink-0 rounded-full ${current.dot}`}
-      />
+      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${current.bar}`} />
     </div>
   );
 }
@@ -275,50 +254,43 @@ function StrategyRow({
 
   return (
     <div
-      className={`
-        group relative overflow-hidden rounded-2xl
-        border transition-all duration-300
-        ${
-          isKilling
-            ? "border-red-500/40 bg-red-500/[0.035]"
-            : "border-white/[0.07] bg-[#16232B] hover:border-[#074068]/60 hover:bg-[#192a33]"
-        }
-      `}
+      className={`relative overflow-hidden rounded-xl border border-white/[0.08] bg-[#0F1117]/80 ${
+        isKilling ? "border-l-2 border-l-[#F87171]" : "border-l-2 border-l-[#8E88C7]"
+      }`}
     >
-      <div className="absolute left-0 top-0 h-full w-[2px] bg-[#074068]/0 transition-all duration-300 group-hover:bg-[#074068]" />
-
-      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-center gap-4">
+      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3.5">
           <div
-            className={`
-              flex h-11 w-11 shrink-0 items-center justify-center rounded-xl
-              border ${tone.border} ${tone.bg}
-            `}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+            style={{
+              backgroundColor: tone.bg,
+              border: `1px solid ${tone.border}`,
+            }}
           >
             <Terminal className={`h-4 w-4 ${tone.text}`} />
           </div>
 
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="break-words text-sm font-semibold text-[#e3eaec]">
+              <h3 className="break-words text-sm font-semibold text-[#F5F5F7]">
                 {strategy.name}
               </h3>
 
-              <span className="rounded-full border border-white/10 px-2 py-0.5 text-[9px] font-medium tracking-wide text-[#82929a]">
+              <span className="rounded-md border border-white/[0.12] bg-white/[0.03] px-2 py-0.5 font-mono text-[9px] font-semibold tracking-wider text-[#808495]">
                 ACTIVE
               </span>
             </div>
 
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#72838b]">
-              <span>{strategy.version}</span>
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#9A9DA8]">
+              <span className="font-mono text-[11px]">{strategy.version}</span>
 
-              <span className="h-1 w-1 rounded-full bg-[#52626a]" />
+              <span className="h-1 w-1 rounded-full bg-white/20" />
 
               <span>
                 robustness {score?.toFixed(3) ?? "—"}
               </span>
 
-              <span className={tone.text}>
+              <span className={`font-medium ${tone.text}`}>
                 {robustnessLabel(score)}
               </span>
             </div>
@@ -328,19 +300,19 @@ function StrategyRow({
         <div className="flex items-center gap-4">
           {score != null && (
             <div className="hidden min-w-[120px] text-right sm:block">
-              <p className="text-[9px] uppercase tracking-[0.14em] text-[#687980]">
+              <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-[#808495]">
                 Robustness
               </p>
 
               <div className="mt-1.5 flex items-center justify-end gap-2">
-                <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[#0e181e]">
+                <div className="h-1.5 w-20 overflow-hidden rounded-full bg-black/40">
                   <div
                     className={`h-full rounded-full ${
                       score >= 0.8
-                        ? "bg-[#8dd8b8]"
+                        ? "bg-[#34D399]"
                         : score >= 0.7
-                          ? "bg-[#074068]"
-                          : "bg-red-500"
+                          ? "bg-[#38BDF8]"
+                          : "bg-[#F87171]"
                     }`}
                     style={{
                       width: `${Math.min(score * 100, 100)}%`,
@@ -348,7 +320,7 @@ function StrategyRow({
                   />
                 </div>
 
-                <span className={`text-xs font-semibold ${tone.text}`}>
+                <span className={`font-mono text-xs font-semibold ${tone.text}`}>
                   {(score * 100).toFixed(0)}%
                 </span>
               </div>
@@ -358,15 +330,7 @@ function StrategyRow({
           {canKill && !isKilling && (
             <Button
               size="sm"
-              className="
-                h-9 rounded-lg
-                border border-red-500/20
-                bg-red-500/10
-                px-3
-                text-xs font-semibold text-red-300
-                shadow-none
-                hover:bg-red-500/20
-              "
+              className="h-9 rounded-xl border border-[#F87171]/30 bg-[#F87171]/10 px-3 font-mono text-xs font-medium text-[#F87171] shadow-none hover:bg-[#F87171]/20"
               onClick={() => {
                 setKillTarget(strategy.id);
                 setKillReason("");
@@ -381,21 +345,21 @@ function StrategyRow({
       </div>
 
       {canKill && isKilling && (
-        <div className="border-t border-red-500/20 bg-red-500/[0.025] p-5">
-          <div className="mb-4 flex items-start gap-3">
-            <div className="mt-0.5 rounded-lg bg-red-500/10 p-2">
-              <AlertTriangle className="h-4 w-4 text-red-400" />
+        <div className="border-t border-[#F87171]/20 bg-[#F87171]/[0.03] p-4">
+          <div className="mb-3 flex items-start gap-3">
+            <div className="mt-0.5 rounded-lg bg-[#F87171]/10 p-1.5">
+              <AlertTriangle className="h-4 w-4 text-[#F87171]" />
             </div>
 
             <div>
-              <p className="text-sm font-medium text-red-300">
+              <p className="text-xs font-semibold text-[#F87171]">
                 Irreversible strategy termination
               </p>
 
-              <p className="mt-1 max-w-3xl text-xs leading-5 text-[#7f9098]">
-                This immediately retires the strategy and bypasses the normal
+              <p className="mt-0.5 max-w-3xl text-xs leading-5 text-[#9A9DA8]">
+                This immediately retires the strategy and bypasses normal
                 lifecycle checks. Reactivation requires a brand-new draft,
-                candidate, active run and fresh approval.
+                candidate, active run, and fresh approval.
               </p>
             </div>
           </div>
@@ -404,7 +368,7 @@ function StrategyRow({
             <div>
               <Label
                 htmlFor={`kill-reason-${strategy.id}`}
-                className="text-xs text-[#83939a]"
+                className="font-mono text-[10px] uppercase text-[#808495]"
               >
                 Reason
               </Label>
@@ -414,7 +378,7 @@ function StrategyRow({
                 value={killReason}
                 onChange={(e) => setKillReason(e.target.value)}
                 placeholder="e.g. anomalous drawdown detected in live trading"
-                className="mt-1.5 h-10 border-red-500/20 bg-[#101a20]"
+                className="mt-1.5 h-9 border-white/[0.08] bg-[#07080B] text-xs text-[#F5F5F7] focus:border-[#F87171]/40"
               />
             </div>
 
@@ -423,14 +387,7 @@ function StrategyRow({
                 size="sm"
                 disabled={!killReason.trim()}
                 onClick={() => confirmKill(strategy.id)}
-                className="
-                  h-10 rounded-lg
-                  bg-red-600
-                  px-4
-                  font-semibold
-                  text-white
-                  hover:bg-red-600/90
-                "
+                className="h-9 rounded-xl bg-[#F87171] px-4 text-xs font-semibold text-black hover:bg-[#F87171]/90"
                 data-testid={`confirm-kill-${strategy.id}`}
               >
                 <ShieldOff className="mr-1.5 h-4 w-4" />
@@ -441,7 +398,7 @@ function StrategyRow({
                 size="sm"
                 variant="outline"
                 onClick={() => setKillTarget(null)}
-                className="h-10 rounded-lg border-white/10 bg-transparent"
+                className="h-9 rounded-xl border-white/[0.1] bg-transparent text-xs text-[#9A9DA8] hover:bg-white/[0.04] hover:text-[#F5F5F7]"
               >
                 Cancel
               </Button>
@@ -467,38 +424,36 @@ function ApprovalItem({
   const score = candidate.robustness_score ?? null;
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-white/[0.07] bg-[#16232B] p-4 transition-all duration-300 hover:border-[#074068]/60 hover:bg-[#192a33]">
-      <div className="absolute right-0 top-0 h-full w-[2px] bg-[#074068] opacity-30" />
-
+    <div className="relative overflow-hidden rounded-xl border border-white/[0.08] border-l-2 border-l-[#38BDF8] bg-[#0F1117]/80 p-4">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#074068]/20">
-          <FileCheck2 className="h-4 w-4 text-[#74b9df]" />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#38BDF8]/20 bg-[#38BDF8]/10">
+          <FileCheck2 className="h-4 w-4 text-[#38BDF8]" />
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="break-words text-sm font-semibold text-[#e2e9eb]">
+              <p className="break-words text-sm font-semibold text-[#F5F5F7]">
                 {candidate.name}
               </p>
 
-              <p className="mt-1 text-xs text-[#718189]">
+              <p className="mt-0.5 text-xs text-[#9A9DA8]">
                 {candidate.creator}
               </p>
             </div>
 
-            <span className="shrink-0 rounded-full border border-[#074068]/40 bg-[#074068]/15 px-2 py-1 text-[9px] font-medium tracking-wide text-[#74b9df]">
+            <span className="shrink-0 rounded-md border border-[#38BDF8]/30 bg-[#38BDF8]/10 px-2 py-0.5 font-mono text-[9px] font-semibold text-[#38BDF8]">
               REVIEW
             </span>
           </div>
 
-          <div className="mt-4 flex items-end justify-between gap-3">
+          <div className="mt-3 flex items-end justify-between gap-3">
             <div>
-              <p className="text-[9px] uppercase tracking-[0.14em] text-[#687980]">
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#808495]">
                 Robustness
               </p>
 
-              <p className="mt-1 text-lg font-semibold text-[#dce5e7]">
+              <p className="mt-0.5 font-mono text-base font-bold text-[#F5F5F7]">
                 {score?.toFixed(3) ?? "—"}
               </p>
             </div>
@@ -507,18 +462,10 @@ function ApprovalItem({
               <Button
                 size="sm"
                 onClick={() => decide(candidate.id, "approve")}
-                className="
-                  h-9 rounded-lg
-                  bg-[#074068]
-                  px-3
-                  text-xs font-semibold
-                  text-white
-                  shadow-none
-                  hover:bg-[#074068]/85
-                "
+                className="h-8 rounded-lg bg-[#38BDF8] px-3 font-mono text-xs font-semibold text-black hover:bg-[#38BDF8]/90"
                 data-testid={`approve-${candidate.id}`}
               >
-                <Check className="mr-1.5 h-3.5 w-3.5" />
+                <Check className="mr-1 h-3.5 w-3.5" />
                 Approve
               </Button>
 
@@ -526,17 +473,10 @@ function ApprovalItem({
                 size="sm"
                 variant="outline"
                 onClick={() => decide(candidate.id, "reject")}
-                className="
-                  h-9 rounded-lg
-                  border-white/10
-                  bg-transparent
-                  px-3
-                  text-xs
-                  hover:bg-white/[0.04]
-                "
+                className="h-8 rounded-lg border-white/[0.1] bg-transparent px-3 font-mono text-xs text-[#9A9DA8] hover:bg-white/[0.04] hover:text-[#F5F5F7]"
                 data-testid={`reject-${candidate.id}`}
               >
-                <X className="mr-1.5 h-3.5 w-3.5" />
+                <X className="mr-1 h-3.5 w-3.5" />
                 Reject
               </Button>
             </div>
@@ -565,60 +505,56 @@ function AuditEvent({
     row.event_type === "evolution_candidate_approved";
 
   return (
-    <div className="group relative flex gap-4">
+    <div className="relative flex gap-4">
       <div className="relative flex flex-col items-center">
         <div
           className={`
-            z-10 flex h-8 w-8 items-center justify-center rounded-full border
+            z-10 flex h-7 w-7 items-center justify-center rounded-full border text-xs
             ${
               isDanger
-                ? "border-red-500/25 bg-red-500/10 text-red-400"
+                ? "border-[#F87171]/30 bg-[#F87171]/10 text-[#F87171]"
                 : isPositive
-                  ? "border-[#8dd8b8]/20 bg-[#8dd8b8]/10 text-[#8dd8b8]"
-                  : "border-[#074068]/30 bg-[#074068]/20 text-[#74b9df]"
+                  ? "border-[#34D399]/30 bg-[#34D399]/10 text-[#34D399]"
+                  : "border-[#8E88C7]/30 bg-[#8E88C7]/10 text-[#8E88C7]"
             }
           `}
         >
           {isDanger ? (
-            <AlertTriangle className="h-3.5 w-3.5" />
+            <AlertTriangle className="h-3 w-3" />
           ) : isPositive ? (
-            <Check className="h-3.5 w-3.5" />
+            <Check className="h-3 w-3" />
           ) : (
-            <History className="h-3.5 w-3.5" />
+            <History className="h-3 w-3" />
           )}
         </div>
 
-        <div className="mt-1 h-full w-px bg-white/[0.07]" />
+        <div className="mt-1 h-full w-px bg-white/[0.06]" />
       </div>
 
-      <div className="min-w-0 flex-1 pb-6">
+      <div className="min-w-0 flex-1 pb-5">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`
-                rounded-full border px-2 py-0.5
-                text-[10px] font-medium
-                ${
-                  isDanger
-                    ? "border-red-500/20 bg-red-500/5 text-red-300"
-                    : "border-white/10 bg-white/[0.02] text-[#87969d]"
-                }
-              `}
+              className={`rounded-md border px-2 py-0.5 font-mono text-[10px] font-semibold ${
+                isDanger
+                  ? "border-[#F87171]/30 bg-[#F87171]/10 text-[#F87171]"
+                  : "border-white/[0.08] bg-white/[0.03] text-[#9A9DA8]"
+              }`}
             >
               {formatEventType(row.event_type)}
             </span>
 
-            <span className="font-mono text-[10px] text-[#687980]">
+            <span className="font-mono text-[10px] text-[#808495]">
               {row.entity_type}:{row.entity_id.slice(0, 8)}
             </span>
           </div>
 
-          <span className="text-[10px] text-[#687980]">
+          <span className="font-mono text-[10px] text-[#808495]">
             {formatDate(row.created_at)}
           </span>
         </div>
 
-        <p className="mt-2 text-xs leading-5 text-[#829198]">
+        <p className="mt-1.5 text-xs leading-5 text-[#9A9DA8]">
           {row.justification ?? "No justification recorded."}
         </p>
       </div>
@@ -650,7 +586,6 @@ export function GovernanceView() {
   >([]);
 
   const [queue, setQueue] = useState<ApprovalQueueItem[]>([]);
-
   const [killTarget, setKillTarget] = useState<string | null>(null);
   const [killReason, setKillReason] = useState("");
 
@@ -664,11 +599,8 @@ export function GovernanceView() {
   const [auditTotal, setAuditTotal] = useState(0);
   const [eventTypeFilter, setEventTypeFilter] = useState("");
 
-  const [exportStart, setExportStart] =
-    useState("2026-01-01");
-
-  const [exportEnd, setExportEnd] =
-    useState("2026-12-31");
+  const [exportStart, setExportStart] = useState("2026-01-01");
+  const [exportEnd, setExportEnd] = useState("2026-12-31");
 
   const [exportFormat, setExportFormat] =
     useState<ComplianceExportFormat>("json");
@@ -745,9 +677,7 @@ export function GovernanceView() {
     try {
       await killSwitch(strategyId, killReason);
 
-      setMessage(
-        "Kill switch activated — strategy retired.",
-      );
+      setMessage("Kill switch activated — strategy retired.");
 
       setKillTarget(null);
       setKillReason("");
@@ -756,9 +686,7 @@ export function GovernanceView() {
       await loadAuditLog();
     } catch (e) {
       setError(
-        e instanceof Error
-          ? e.message
-          : "Kill switch failed",
+        e instanceof Error ? e.message : "Kill switch failed",
       );
     }
   }
@@ -786,9 +714,7 @@ export function GovernanceView() {
       await loadViews();
     } catch (e) {
       setError(
-        e instanceof Error
-          ? e.message
-          : `Failed to ${action}`,
+        e instanceof Error ? e.message : `Failed to ${action}`,
       );
     }
   }
@@ -807,9 +733,7 @@ export function GovernanceView() {
       setMessage(enqueued.message);
 
       setExportJob(
-        await getComplianceExportJob(
-          enqueued.job_id,
-        ),
+        await getComplianceExportJob(enqueued.job_id),
       );
     } catch (e) {
       setError(
@@ -854,46 +778,15 @@ export function GovernanceView() {
   }
 
   /* ============================================================
-     DERIVED METRICS
-     ============================================================ */
-
-  const averageRobustness = useMemo(() => {
-    if (activeStrategies.length === 0) return 0;
-
-    const valid = activeStrategies
-      .map((s) => s.robustness_score)
-      .filter(
-        (value): value is number =>
-          typeof value === "number",
-      );
-
-    if (valid.length === 0) return 0;
-
-    return (
-      valid.reduce((sum, value) => sum + value, 0) /
-      valid.length
-    );
-  }, [activeStrategies]);
-
-  const highRiskCount = useMemo(() => {
-    return activeStrategies.filter(
-      (s) =>
-        typeof s.robustness_score === "number" &&
-        s.robustness_score < 0.6,
-    ).length;
-  }, [activeStrategies]);
-
-  /* ============================================================
      LOADING
      ============================================================ */
 
   if (!ready) {
     return (
       <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-[#16232B] px-5 py-5">
-          <RefreshCw className="h-4 w-4 animate-spin text-[#74b9df]" />
-
-          <p className="text-sm text-[#829198]">
+        <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 px-5 py-5 backdrop-blur-xl">
+          <RefreshCw className="h-4 w-4 animate-spin text-[#8E88C7]" />
+          <p className="text-xs text-[#9A9DA8]">
             Loading governance controls…
           </p>
         </div>
@@ -906,136 +799,134 @@ export function GovernanceView() {
      ============================================================ */
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 pb-12 pt-6 sm:px-6 lg:px-8">
-      <div className="space-y-6">
+    <div className="relative min-h-full bg-[#07080B] px-4 pb-12 pt-6 text-[#F5F5F7] sm:px-6 lg:px-8">
+      {/* BACKGROUND ATMOSPHERICS */}
+      <div className="pointer-events-none absolute -top-24 left-1/4 h-80 w-80 rounded-full bg-[#5C568E]/10 blur-[120px]" />
+      <div className="pointer-events-none absolute top-40 right-10 h-72 w-72 rounded-full bg-[#38BDF8]/5 blur-[100px]" />
+
+      <div className="relative mx-auto max-w-7xl space-y-6">
 
         {/* HEADER */}
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
-            <div className="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#6f8189]">
-              <ShieldCheck className="h-3.5 w-3.5 text-[#8dd8b8]" />
-              Governance control room
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#34D399] opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#34D399]" />
+              </span>
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[#808495]">
+                Quantix Intelligence • Control Room
+              </p>
             </div>
 
-            <h1 className="text-3xl font-semibold tracking-tight text-[#e6edef]">
+            <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight text-[#F5F5F7]">
               Governance & Compliance
             </h1>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#7e9098]">
-              Monitor strategy authority, approvals, irreversible controls,
-              and the organization&apos;s research audit trail from one place.
+            <p className="mt-1 text-xs text-[#9A9DA8]">
+              Monitor strategy authority, approvals, irreversible kill switches,
+              and institutional audit trails.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 rounded-full border border-[#8dd8b8]/15 bg-[#8dd8b8]/5 px-3.5 py-2">
-              <span className="h-2 w-2 rounded-full bg-[#8dd8b8] shadow-[0_0_10px_rgba(141,216,184,0.7)]" />
-
-              <span className="text-xs font-medium text-[#8dd8b8]">
-                Governance active
-              </span>
-            </div>
-
-            <div className="text-right">
-              <p className="text-[9px] uppercase tracking-[0.16em] text-[#64757d]">
-                Current role
-              </p>
-
-              <p className="mt-0.5 text-xs font-medium text-[#c3ced1]">
-                {role || "unauthenticated"}
-              </p>
+            <div
+              className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-[#0F1117]/80 px-4 py-2 font-mono text-xs font-semibold text-[#F5F5F7] shadow-inner backdrop-blur-md"
+              style={{
+                boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)",
+              }}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-[#34D399]" />
+              <span className="text-[10px] text-[#808495]">ROLE:</span>
+              <span>{role || "unauthenticated"}</span>
             </div>
           </div>
         </div>
 
-        {/* STATUS STRIP */}
+        {/* PORTFOLIO STATUS CARDS (STATIC LAYOUT) */}
         {canView && (
-          <div className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#16232B]">
+          <div
+            className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 shadow-[0_8px_30px_rgb(0,0,0,0.4)] backdrop-blur-xl"
+            style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+          >
             <div className="grid divide-y divide-white/[0.06] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
               <ControlMetric
-                label="Active strategies"
-                value={activeStrategies.length}
-                detail="currently authorized"
-                icon={Zap}
+                label="Portfolio Sharpe"
+                value="0.37"
+                detail="risk-adjusted return"
+                icon={Activity}
                 tone="blue"
               />
 
               <ControlMetric
-                label="Pending approvals"
-                value={queue.length}
-                detail="awaiting decision"
-                icon={Clock3}
-                tone={queue.length > 0 ? "blue" : "mint"}
+                label="Max Drawdown"
+                value="-21.7%"
+                detail="maximum portfolio decline"
+                icon={ArrowDownRight}
+                tone="red"
               />
 
               <ControlMetric
-                label="Avg robustness"
-                value={
-                  activeStrategies.length
-                    ? averageRobustness.toFixed(3)
-                    : "—"
-                }
-                detail="active strategy mean"
-                icon={Activity}
+                label="Active Strategies"
+                value="4"
+                detail="currently in portfolio"
+                icon={Zap}
                 tone="mint"
               />
 
               <ControlMetric
-                label="Risk signals"
-                value={highRiskCount}
-                detail="below 0.60 robustness"
+                label="Risk Alerts"
+                value="4"
+                detail="requires attention"
                 icon={AlertTriangle}
-                tone={highRiskCount > 0 ? "red" : "mint"}
+                tone="red"
               />
             </div>
           </div>
         )}
 
-        {/* ERROR / SUCCESS */}
+        {/* ERROR / SUCCESS ALERTS */}
         {(error || message) && (
           <div
-            className={`
-              flex items-start gap-3 rounded-xl border px-4 py-3
-              ${
-                error
-                  ? "border-red-500/25 bg-red-500/5"
-                  : "border-[#8dd8b8]/20 bg-[#8dd8b8]/5"
-              }
-            `}
+            className="flex items-start gap-3 rounded-2xl border p-4 text-xs font-medium shadow-lg backdrop-blur-md"
+            style={{
+              backgroundColor: error
+                ? "rgba(248, 113, 113, 0.08)"
+                : "rgba(52, 211, 153, 0.08)",
+              borderColor: error
+                ? "rgba(248, 113, 113, 0.25)"
+                : "rgba(52, 211, 153, 0.25)",
+              color: error ? "#F87171" : "#34D399",
+            }}
           >
             {error ? (
-              <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+              <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
             ) : (
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#8dd8b8]" />
+              <Check className="mt-0.5 h-4 w-4 shrink-0" />
             )}
 
-            <p
-              className={`text-xs ${
-                error
-                  ? "text-red-300"
-                  : "text-[#8dd8b8]"
-              }`}
-            >
-              {error ?? message}
-            </p>
+            <p>{error ?? message}</p>
           </div>
         )}
 
-        {/* ACCESS RESTRICTED */}
+        {/* ACCESS RESTRICTED STATE */}
         {!canView && (
-          <div className="flex min-h-[420px] flex-col items-center justify-center rounded-2xl border border-white/[0.07] bg-[#16232B] px-6 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.025]">
-              <LockKeyhole className="h-6 w-6 text-[#65767e]" />
+          <div
+            className="flex min-h-[420px] flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 p-6 text-center backdrop-blur-xl"
+            style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/[0.1] bg-[#0F1117]">
+              <LockKeyhole className="h-5 w-5 text-[#808495]" />
             </div>
 
-            <h2 className="mt-5 text-lg font-semibold text-[#dfe7e9]">
+            <h2 className="mt-4 text-base font-bold text-[#F5F5F7]">
               Governance access restricted
             </h2>
 
-            <p className="mt-2 max-w-md text-sm leading-6 text-[#7b8c94]">
+            <p className="mt-1 max-w-md text-xs text-[#9A9DA8]">
               Your current role does not have access to the governance
               control room. Authorized roles include risk_manager, cio,
-              compliance_officer and admin.
+              compliance_officer, and admin.
             </p>
           </div>
         )}
@@ -1045,53 +936,53 @@ export function GovernanceView() {
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(340px,0.75fr)]">
 
             {/* ACTIVE STRATEGIES */}
-            <section className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#16232B]">
-              <div className="border-b border-white/[0.06] px-5 py-5">
-                <div className="flex items-end justify-between gap-4">
-                  <div>
-                    <SectionEyebrow icon={Siren}>
-                      Live control
-                    </SectionEyebrow>
+            <section
+              className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 shadow-[0_8px_30px_rgb(0,0,0,0.4)] backdrop-blur-xl"
+              style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+            >
+              <div className="flex items-center justify-between border-b border-white/[0.06] p-5">
+                <div>
+                  <SectionEyebrow icon={Siren}>
+                    Live control
+                  </SectionEyebrow>
 
-                    <h2 className="text-xl font-semibold text-[#e2e9eb]">
-                      Active strategies
-                    </h2>
+                  <h2 className="text-sm font-semibold tracking-wide text-[#F5F5F7]">
+                    Active strategies
+                  </h2>
 
-                    <p className="mt-1 text-xs leading-5 text-[#74858d]">
-                      {canKill
-                        ? "Irreversible kill controls for currently active strategies."
-                        : "Read-only strategy governance for your role."}
-                    </p>
-                  </div>
+                  <p className="mt-0.5 text-xs text-[#808495]">
+                    {canKill
+                      ? "Irreversible kill controls for currently active strategies."
+                      : "Read-only strategy governance for your role."}
+                  </p>
+                </div>
 
-                  <div className="hidden items-center gap-2 sm:flex">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#8dd8b8] shadow-[0_0_8px_rgba(141,216,184,0.6)]" />
-
-                    <span className="text-[10px] uppercase tracking-[0.14em] text-[#718189]">
-                      {activeStrategies.length} live
-                    </span>
-                  </div>
+                <div className="hidden items-center gap-2 sm:flex">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#34D399]" />
+                  <span className="font-mono text-[10px] uppercase text-[#808495]">
+                    {activeStrategies.length} live
+                  </span>
                 </div>
               </div>
 
-              <div className="space-y-2 p-4">
+              <div className="p-4">
                 {activeStrategies.length === 0 ? (
-                  <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
-                    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
-                      <ShieldCheck className="h-7 w-7 text-[#63747c]" />
+                  <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
+                    <div className="rounded-2xl border border-white/[0.08] bg-[#0F1117] p-3.5">
+                      <ShieldCheck className="h-6 w-6 text-[#808495]" />
                     </div>
 
-                    <p className="mt-4 text-sm font-medium text-[#cbd5d8]">
+                    <p className="mt-3 text-xs font-semibold text-[#F5F5F7]">
                       No active strategies
                     </p>
 
-                    <p className="mt-1 text-xs text-[#718189]">
+                    <p className="mt-0.5 text-[11px] text-[#808495]">
                       The active strategy surface is currently clear.
                     </p>
                   </div>
                 ) : (
                   <div
-                    className="space-y-2"
+                    className="space-y-3"
                     data-testid="active-strategies"
                   >
                     {activeStrategies.map((strategy) => (
@@ -1112,54 +1003,48 @@ export function GovernanceView() {
             </section>
 
             {/* APPROVAL QUEUE */}
-            <section className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#16232B]">
-              <div className="border-b border-white/[0.06] px-5 py-5">
-                <SectionEyebrow icon={UserCheck}>
-                  Decision queue
-                </SectionEyebrow>
+            <section
+              className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 shadow-[0_8px_30px_rgb(0,0,0,0.4)] backdrop-blur-xl"
+              style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+            >
+              <div className="flex items-center justify-between border-b border-white/[0.06] p-5">
+                <div>
+                  <SectionEyebrow icon={UserCheck}>
+                    Decision queue
+                  </SectionEyebrow>
 
-                <div className="flex items-end justify-between gap-3">
-                  <div>
-                    <h2 className="text-xl font-semibold text-[#e2e9eb]">
-                      Approval queue
-                    </h2>
+                  <h2 className="text-sm font-semibold tracking-wide text-[#F5F5F7]">
+                    Approval queue
+                  </h2>
 
-                    <p className="mt-1 text-xs leading-5 text-[#74858d]">
-                      Candidates awaiting a governance decision.
-                    </p>
-                  </div>
+                  <p className="mt-0.5 text-xs text-[#808495]">
+                    Candidates awaiting governance decision.
+                  </p>
+                </div>
 
-                  <div
-                    className="
-                      flex h-11 min-w-11 items-center justify-center
-                      rounded-2xl border border-[#074068]/40
-                      bg-[#074068]/20 px-3
-                      text-lg font-bold text-[#74b9df]
-                    "
-                  >
-                    {queue.length}
-                  </div>
+                <div className="flex h-8 min-w-8 items-center justify-center rounded-xl border border-[#38BDF8]/30 bg-[#38BDF8]/10 font-mono text-xs font-bold text-[#38BDF8]">
+                  {queue.length}
                 </div>
               </div>
 
               <div className="p-4">
                 {queue.length === 0 ? (
-                  <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#8dd8b8]/15 bg-[#8dd8b8]/5">
-                      <Check className="h-6 w-6 text-[#8dd8b8]" />
+                  <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#34D399]/30 bg-[#34D399]/10">
+                      <Check className="h-5 w-5 text-[#34D399]" />
                     </div>
 
-                    <p className="mt-4 text-sm font-medium text-[#d2dcde]">
+                    <p className="mt-3 text-xs font-semibold text-[#F5F5F7]">
                       Queue is clear
                     </p>
 
-                    <p className="mt-1 max-w-xs text-xs leading-5 text-[#718189]">
+                    <p className="mt-0.5 max-w-xs text-[11px] text-[#808495]">
                       No candidates are currently waiting for approval.
                     </p>
                   </div>
                 ) : (
                   <div
-                    className="space-y-2"
+                    className="space-y-3"
                     data-testid="approval-queue"
                   >
                     {queue.map((candidate) => (
@@ -1178,19 +1063,22 @@ export function GovernanceView() {
 
         {/* AUDIT TRAIL */}
         {canSeeCompliance && (
-          <section className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#16232B]">
-            <div className="border-b border-white/[0.06] px-5 py-5">
+          <section
+            className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 shadow-[0_8px_30px_rgb(0,0,0,0.4)] backdrop-blur-xl"
+            style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+          >
+            <div className="border-b border-white/[0.06] p-5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                   <SectionEyebrow icon={History}>
                     Institutional record
                   </SectionEyebrow>
 
-                  <h2 className="text-xl font-semibold text-[#e2e9eb]">
+                  <h2 className="text-sm font-semibold tracking-wide text-[#F5F5F7]">
                     Governance audit trail
                   </h2>
 
-                  <p className="mt-1 text-xs leading-5 text-[#74858d]">
+                  <p className="mt-0.5 text-xs text-[#808495]">
                     {auditTotal} total organization-wide events recorded.
                   </p>
                 </div>
@@ -1201,17 +1089,7 @@ export function GovernanceView() {
                     onChange={(e) =>
                       setEventTypeFilter(e.target.value)
                     }
-                    className="
-                      h-9 rounded-lg
-                      border border-white/10
-                      bg-[#101a20]
-                      px-3
-                      text-xs
-                      text-[#c8d2d5]
-                      outline-none
-                      transition-colors
-                      focus:border-[#074068]
-                    "
+                    className="h-9 rounded-xl border border-white/[0.08] bg-[#0F1117] px-3 font-mono text-xs text-[#F5F5F7] outline-none focus:border-[#8E88C7]"
                     data-testid="filter-event-type"
                   >
                     <option value="">
@@ -1229,13 +1107,7 @@ export function GovernanceView() {
                     size="sm"
                     variant="outline"
                     onClick={loadAuditLog}
-                    className="
-                      h-9 rounded-lg
-                      border-white/10
-                      bg-transparent
-                      text-[#aebbc0]
-                      hover:bg-white/[0.04]
-                    "
+                    className="h-9 rounded-xl border-white/[0.08] bg-[#0F1117] font-mono text-xs text-[#9A9DA8] hover:bg-white/[0.04] hover:text-[#F5F5F7]"
                   >
                     <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                     Refresh
@@ -1246,28 +1118,25 @@ export function GovernanceView() {
 
             <div className="p-5">
               {auditItems.length === 0 ? (
-                <div className="py-14 text-center">
-                  <History className="mx-auto h-7 w-7 text-[#596a72]" />
+                <div className="py-12 text-center">
+                  <History className="mx-auto h-6 w-6 text-[#808495]" />
 
-                  <p className="mt-3 text-sm font-medium text-[#cbd5d8]">
+                  <p className="mt-2 text-xs font-semibold text-[#F5F5F7]">
                     No audit events found
                   </p>
 
-                  <p className="mt-1 text-xs text-[#718189]">
+                  <p className="mt-0.5 text-[11px] text-[#808495]">
                     Try changing the event filter.
                   </p>
                 </div>
               ) : (
                 <div
-                  className="max-h-[520px] overflow-y-auto pr-2"
+                  className="max-h-[480px] overflow-y-auto pr-2"
                   data-testid="governance-audit-log-table"
                 >
                   <div className="space-y-0">
                     {auditItems.map((row) => (
-                      <AuditEvent
-                        key={row.id}
-                        row={row}
-                      />
+                      <AuditEvent key={row.id} row={row} />
                     ))}
                   </div>
                 </div>
@@ -1276,31 +1145,31 @@ export function GovernanceView() {
           </section>
         )}
 
-        {/* COMPLIANCE EXPORT — COMMAND PANEL */}
+        {/* COMPLIANCE EXPORT */}
         {canSeeCompliance && (
-          <section className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#16232B]">
+          <section
+            className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 shadow-[0_8px_30px_rgb(0,0,0,0.4)] backdrop-blur-xl"
+            style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+          >
             <div className="grid lg:grid-cols-[1fr_320px]">
-
-              <div className="p-6 sm:p-7">
+              <div className="p-6">
                 <SectionEyebrow icon={Download}>
                   Compliance archive
                 </SectionEyebrow>
 
-                <h2 className="text-xl font-semibold text-[#e2e9eb]">
+                <h2 className="text-sm font-semibold tracking-wide text-[#F5F5F7]">
                   Export governance record
                 </h2>
 
-                <p className="mt-1 max-w-xl text-sm leading-6 text-[#74858d]">
-                  Generate an immutable report of governance activity for
-                  a selected date range. Available as structured JSON or
-                  a formatted PDF report.
+                <p className="mt-0.5 max-w-xl text-xs text-[#808495]">
+                  Generate an immutable report of governance activity for a selected date range in JSON or PDF formats.
                 </p>
 
-                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
                   <div>
                     <Label
                       htmlFor="export-start"
-                      className="text-xs text-[#7d8e96]"
+                      className="font-mono text-[10px] uppercase text-[#808495]"
                     >
                       Start date
                     </Label>
@@ -1308,7 +1177,7 @@ export function GovernanceView() {
                     <Input
                       id="export-start"
                       type="date"
-                      className="mt-1.5 h-10 border-white/10 bg-[#101a20]"
+                      className="mt-1.5 h-9 border-white/[0.08] bg-[#0F1117] font-mono text-xs text-[#F5F5F7]"
                       value={exportStart}
                       onChange={(e) =>
                         setExportStart(e.target.value)
@@ -1319,7 +1188,7 @@ export function GovernanceView() {
                   <div>
                     <Label
                       htmlFor="export-end"
-                      className="text-xs text-[#7d8e96]"
+                      className="font-mono text-[10px] uppercase text-[#808495]"
                     >
                       End date
                     </Label>
@@ -1327,7 +1196,7 @@ export function GovernanceView() {
                     <Input
                       id="export-end"
                       type="date"
-                      className="mt-1.5 h-10 border-white/10 bg-[#101a20]"
+                      className="mt-1.5 h-9 border-white/[0.08] bg-[#0F1117] font-mono text-xs text-[#F5F5F7]"
                       value={exportEnd}
                       onChange={(e) =>
                         setExportEnd(e.target.value)
@@ -1338,7 +1207,7 @@ export function GovernanceView() {
                   <div>
                     <Label
                       htmlFor="export-format"
-                      className="text-xs text-[#7d8e96]"
+                      className="font-mono text-[10px] uppercase text-[#808495]"
                     >
                       Format
                     </Label>
@@ -1351,58 +1220,34 @@ export function GovernanceView() {
                           e.target.value as ComplianceExportFormat,
                         )
                       }
-                      className="
-                        mt-1.5 h-10 w-full
-                        rounded-lg
-                        border border-white/10
-                        bg-[#101a20]
-                        px-3
-                        text-xs
-                        text-[#c8d2d5]
-                        outline-none
-                      "
+                      className="mt-1.5 h-9 w-full rounded-xl border border-white/[0.08] bg-[#0F1117] px-3 font-mono text-xs text-[#F5F5F7] outline-none"
                     >
-                      <option value="json">
-                        JSON
-                      </option>
-
-                      <option value="pdf">
-                        PDF
-                      </option>
+                      <option value="json">JSON</option>
+                      <option value="pdf">PDF</option>
                     </select>
                   </div>
                 </div>
               </div>
 
-              <div className="relative overflow-hidden border-t border-white/[0.06] bg-[#101a20] p-6 lg:border-l lg:border-t-0">
-                <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#074068]/20 blur-3xl" />
-
-                <div className="relative flex h-full flex-col justify-between">
+              <div className="relative border-t border-white/[0.06] bg-[#0F1117]/80 p-6 lg:border-l lg:border-t-0">
+                <div className="flex h-full flex-col justify-between">
                   <div>
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#074068]/30 bg-[#074068]/20">
-                      <FileText className="h-5 w-5 text-[#74b9df]" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#8E88C7]/30 bg-[#8E88C7]/10">
+                      <FileText className="h-5 w-5 text-[#8E88C7]" />
                     </div>
 
-                    <p className="mt-5 text-sm font-medium text-[#d5dfe1]">
+                    <p className="mt-4 text-xs font-semibold text-[#F5F5F7]">
                       Compliance package
                     </p>
 
-                    <p className="mt-1 text-xs leading-5 text-[#718189]">
+                    <p className="mt-0.5 text-[11px] text-[#808495]">
                       Includes governance events and audit metadata.
                     </p>
                   </div>
 
                   <Button
                     onClick={submitExport}
-                    className="
-                      mt-8 h-10 rounded-lg
-                      bg-[#074068]
-                      px-4
-                      font-semibold
-                      text-white
-                      shadow-none
-                      hover:bg-[#074068]/85
-                    "
+                    className="mt-6 h-9 rounded-xl bg-[#8E88C7] px-4 font-mono text-xs font-semibold text-black hover:bg-[#8E88C7]/90"
                     data-testid="submit-export"
                   >
                     <Download className="mr-2 h-4 w-4" />
@@ -1413,22 +1258,22 @@ export function GovernanceView() {
             </div>
 
             {exportJob && (
-              <div className="border-t border-white/[0.06] bg-[#101a20] p-5">
+              <div className="border-t border-white/[0.06] bg-[#0F1117] p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-3">
-                    <div className="rounded-lg bg-[#074068]/20 p-2">
-                      <FileCheck2 className="h-4 w-4 text-[#74b9df]" />
+                    <div className="rounded-lg border border-[#38BDF8]/20 bg-[#38BDF8]/10 p-2">
+                      <FileCheck2 className="h-4 w-4 text-[#38BDF8]" />
                     </div>
 
                     <div>
-                      <p className="text-sm font-medium text-[#d5dfe1]">
+                      <p className="text-xs font-semibold text-[#F5F5F7]">
                         Export job{" "}
-                        <span className="font-mono text-xs text-[#718189]">
+                        <span className="font-mono text-[11px] text-[#808495]">
                           {exportJob.id.slice(0, 8)}
                         </span>
                       </p>
 
-                      <p className="mt-1 text-xs text-[#718189]">
+                      <p className="mt-0.5 font-mono text-[11px] text-[#808495]">
                         {exportJob.export_format.toUpperCase()} ·{" "}
                         {exportJob.start_date} →{" "}
                         {exportJob.end_date}
@@ -1453,7 +1298,7 @@ export function GovernanceView() {
                       size="sm"
                       variant="outline"
                       onClick={pollExport}
-                      className="h-8 rounded-lg border-white/10"
+                      className="h-8 rounded-lg border-white/[0.08] bg-[#0F1117] font-mono text-xs text-[#9A9DA8]"
                       data-testid="poll-export"
                     >
                       <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
@@ -1464,11 +1309,7 @@ export function GovernanceView() {
                       <Button
                         size="sm"
                         onClick={downloadExport}
-                        className="
-                          h-8 rounded-lg
-                          bg-[#074068]
-                          hover:bg-[#074068]/85
-                        "
+                        className="h-8 rounded-lg bg-[#38BDF8] font-mono text-xs font-semibold text-black hover:bg-[#38BDF8]/90"
                         data-testid="download-export"
                       >
                         <Download className="mr-1.5 h-3.5 w-3.5" />
@@ -1479,8 +1320,8 @@ export function GovernanceView() {
                 </div>
 
                 {exportJob.error && (
-                  <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2">
-                    <p className="text-xs text-red-300">
+                  <div className="mt-3 rounded-lg border border-[#F87171]/20 bg-[#F87171]/5 px-3 py-2">
+                    <p className="text-xs text-[#F87171]">
                       {exportJob.error}
                     </p>
                   </div>
@@ -1493,15 +1334,14 @@ export function GovernanceView() {
         {/* FOOTER */}
         <div className="flex flex-col gap-3 border-t border-white/[0.06] pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-[#8dd8b8]" />
-
-            <span className="text-xs text-[#718189]">
+            <ShieldCheck className="h-4 w-4 text-[#34D399]" />
+            <span className="text-xs text-[#808495]">
               Governance controls are enforced by the backend role policy.
             </span>
           </div>
 
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-[#596a72]">
-            <span>Stellix</span>
+          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-[#808495]">
+            <span>Quantix</span>
             <ChevronRight className="h-3 w-3" />
             <span>Governance</span>
           </div>
