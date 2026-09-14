@@ -15,38 +15,41 @@
   /* --- Locked application palette ------------------------ */
 
   --stellix-primary: #0a1628;
-  --stellix-accent: #1565c0;
-  --stellix-highlight: #00b4d8;
+  --stellix-accent: #8E88C7;
+  --stellix-highlight: #A79CFF;
 
   /* --- shadcn/ui tokens ---------------------------------- */
 
-  --background: 217 60% 10%;
-  --foreground: 210 40% 96%;
+  --background: 224 27% 7%;
+  --foreground: 210 20% 96%;
 
-  --card: 216 50% 14%;
-  --card-foreground: 210 40% 96%;
+  --card: 224 22% 11%;
+  --card-foreground: 210 20% 96%;
 
-  --popover: 217 55% 12%;
-  --popover-foreground: 210 40% 96%;
+  --popover: 224 24% 9%;
+  --popover-foreground: 210 20% 96%;
 
-  --primary: 212 80% 42%;
-  --primary-foreground: 210 40% 98%;
+  /* Primary: Stellix Labs lavender-purple */
+  --primary: 247 35% 64%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 216 40% 20%;
-  --secondary-foreground: 210 40% 96%;
+  --secondary: 224 20% 16%;
+  --secondary-foreground: 210 20% 96%;
 
-  --muted: 216 35% 22%;
-  --muted-foreground: 215 20% 70%;
+  --muted: 224 18% 18%;
+  --muted-foreground: 215 12% 58%;
 
-  --accent: 190 100% 42%;
-  --accent-foreground: 217 60% 10%;
+  /* Accent: soft purple — replaces the old cyan/blue */
+  --accent: 248 22% 33%;
+  --accent-foreground: 210 20% 96%;
 
-  --destructive: 0 72% 51%;
+  --destructive: 0 68% 58%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 216 35% 24%;
-  --input: 216 35% 24%;
-  --ring: 190 100% 42%;
+  --border: 224 18% 20%;
+  --input: 224 18% 20%;
+  /* Ring: purple instead of cyan */
+  --ring: 247 35% 64%;
 
   --radius: 0.5rem;
 }

@@ -34,13 +34,13 @@ export function MobileNav() {
         aria-label="Open navigation"
         className={cn(
           "flex h-9 w-9 items-center justify-center rounded-xl",
-          "border border-[#d3dbdd]/10",
-          "bg-[#16232b]",
-          "text-[#d3dbdd]/80",
+          "border border-white/[0.08]",
+          "bg-[#0F1117]",
+          "text-[#9A9DA8]",
           "transition-all duration-200",
-          "hover:border-[#d3dbdd]/20",
-          "hover:bg-[#042F34]",
-          "hover:text-[#d3dbdd]",
+          "hover:border-white/[0.18]",
+          "hover:bg-[#14161B]",
+          "hover:text-[#F5F5F7]",
           "md:hidden",
         )}
       >
@@ -49,9 +49,9 @@ export function MobileNav() {
 
       <SheetContent
         side="left"
-        className="w-72 border-r border-[#d3dbdd]/10 bg-[#16232b] p-0 text-[#d3dbdd]"
+        className="w-72 border-r border-white/[0.06] bg-[#08090B] p-0 text-[#F5F5F7] backdrop-blur-xl"
       >
-        <SheetTitle className="px-5 pt-5 text-sm font-semibold tracking-wide text-[#d3dbdd]">
+        <SheetTitle className="px-5 pt-5 text-sm font-semibold tracking-wide text-[#F5F5F7]">
           Stellix Labs
         </SheetTitle>
 
@@ -73,16 +73,16 @@ export function MobileNav() {
                   "text-sm font-medium",
                   "transition-all duration-200",
                   active
-                    ? "bg-[#042F34] text-[#d3dbdd]"
-                    : "text-[#d3dbdd]/75 hover:bg-[#042F34]/70 hover:text-[#d3dbdd]",
+                    ? "bg-[#14161B] text-[#F5F5F7] border border-white/[0.12]"
+                    : "text-[#9A9DA8] hover:bg-[#14161B]/60 hover:text-[#F5F5F7]",
                 )}
               >
                 <Icon
                   className={cn(
                     "h-[18px] w-[18px] shrink-0 transition-colors duration-200",
                     active
-                      ? "text-[#d3dbdd]"
-                      : "text-[#d3dbdd]/65 group-hover:text-[#d3dbdd]",
+                      ? "text-[#F5F5F7]"
+                      : "text-[#666A76] group-hover:text-[#F5F5F7]",
                   )}
                 />
 
