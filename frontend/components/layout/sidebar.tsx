@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useUiStore } from "@/store/ui-store";
 import { useAuthStore } from "@/store/auth-store";
 import { getNavLinks } from "@/components/layout/nav-config";
+import { SidebarCarousel } from "@/components/layout/sidebar-carousel";
 
 const PALETTE = {
   mainBg: "#08090B",
@@ -175,6 +176,9 @@ export function Sidebar() {
           </Link>
         )}
       </nav>
+
+      {/* Sidebar summary card carousel (for non-superadmin roles when expanded) */}
+      {sidebarOpen && !isSuperAdmin && <SidebarCarousel />}
 
       {/* Sidebar collapse control */}
       <div
