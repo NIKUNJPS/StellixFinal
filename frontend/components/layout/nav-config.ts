@@ -25,25 +25,20 @@ export interface NavLink {
 
 /** The dashboard's left sidebar (Page 10, Batch 12) — every real page in the
  * app gets a nav entry; nothing here is a placeholder/dead link. */
-export const NAV_LINKS: NavLink[] = [
+export const ADMIN_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/strategies", label: "Strategy Explorer", icon: FlaskConical },
   { href: "/admin/portfolio", label: "Portfolio", icon: PieChart },
   { href: "/admin/failures", label: "Failure Intelligence", icon: AlertTriangle },
-  { href: "/admin/evolution", label: "Evolution Engine", icon: Dna },
-  { href: "/admin/regimes", label: "Regime Monitor", icon: Waves },
   { href: "/admin/governance", label: "Governance & Compliance", icon: ShieldCheck },
-  { href: "/admin/graph", label: "Knowledge Graph", icon: Share2 },
-  { href: "/admin/assistant", label: "Research Assistant", icon: Sparkles },
   { href: "/admin/llm-audit", label: "LLM Audit Log", icon: ScrollText },
-  { href: "/admin/research", label: "Research Notebook", icon: NotebookText },
-  { href: "/admin/data-ingest", label: "Data Ingest", icon: Database },
-  { href: "/admin/system", label: "System Monitoring", icon: ServerCog },
   { href: "/admin/billing", label: "Billing", icon: CreditCard },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/admin/system", label: "System Monitoring", icon: ServerCog },
 ];
 
+export const NAV_LINKS = ADMIN_NAV_LINKS;
+
 export const COMPLIANCE_NAV_LINKS: NavLink[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/compliance/governance", label: "Governance & Compliance", icon: ShieldCheck },
   { href: "/compliance/llm-audit", label: "LLM Audit Log", icon: ScrollText },
   { href: "/compliance/graph", label: "Knowledge Graph", icon: Share2 },
@@ -59,11 +54,13 @@ export const RESEARCHER_NAV_LINKS: NavLink[] = [
 ];
 
 export const RISK_MANAGER_NAV_LINKS: NavLink[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/risk-manager/failures", label: "Failure Intelligence", icon: AlertTriangle },
   { href: "/risk-manager/graph", label: "Knowledge Graph", icon: Share2 },
 ];
 
 export const CIO_NAV_LINKS: NavLink[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/cio/failures", label: "Failure Intelligence", icon: AlertTriangle },
   { href: "/cio/graph", label: "Knowledge Graph", icon: Share2 },
 ];
@@ -81,7 +78,10 @@ export function getNavLinks(role?: string): NavLink[] {
   if (role === "cio") {
     return CIO_NAV_LINKS;
   }
-  return NAV_LINKS;
+  if (role === "admin") {
+    return ADMIN_NAV_LINKS;
+  }
+  return ADMIN_NAV_LINKS;
 }
 
 /** Label lookup for the breadcrumb — includes non-sidebar path segments too. */

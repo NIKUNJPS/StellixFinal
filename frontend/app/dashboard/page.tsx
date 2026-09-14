@@ -149,15 +149,23 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user?.role === "compliance_officer") {
-      router.replace("/compliance/governance");
-    } else if (user?.role === "risk_manager") {
-      router.replace("/risk-manager/failures");
-    } else if (user?.role === "cio") {
-      router.replace("/cio/failures");
+  const formatRoleName = (role?: string) => {
+    if (!role) return "User";
+    switch (role) {
+      case "admin":
+        return "Tenant Admin (demo org)";
+      case "compliance_officer":
+        return "Compliance Officer";
+      case "risk_manager":
+        return "Risk Manager";
+      case "cio":
+        return "CIO";
+      case "researcher":
+        return "Researcher";
+      default:
+        return role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
     }
-  }, [user, router]);
+  };
 
   const symbol = useMemo(
     () =>
@@ -367,11 +375,11 @@ export default function DashboardPage() {
             </div>
 
             <h1 className="mt-1.5 text-3xl font-extrabold tracking-tight text-[#F5F5F7]">
-              Dashboard
+              Hello, {user?.full_name || user?.email?.split("@")[0] || "User"}
             </h1>
 
-            <p className="mt-1 text-xs text-[#9A9DA8]">
-              Live monitoring for regimes, autonomous strategies, and failure density.
+            <p className="mt-1 text-sm font-semibold text-[#A79CFF]">
+              {formatRoleName(user?.role)}
             </p>
           </div>
 

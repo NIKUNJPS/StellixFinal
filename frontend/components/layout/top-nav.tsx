@@ -16,17 +16,8 @@ textSecondary: "#9A9DA8",
 glowLavender: "#6F6B9B",
 };
 export function TopNav() {
-const user = useAuthStore((s) => s.user);
-const homeHref =
-user?.role === "compliance_officer"
-? "/compliance/governance"
-: user?.role === "researcher"
-? "/researcher/strategies"
-: user?.role === "risk_manager"
-? "/risk-manager/failures"
-: user?.role === "cio"
-? "/cio/failures"
-: "/dashboard";
+  const user = useAuthStore((s) => s.user);
+  const homeHref = user?.is_super_admin ? "/superadmin" : "/dashboard";
 return (
 <header
 className="flex h-16 shrink-0 items-center gap-4 border-b px-4 backdrop-blur-xl transition-colors duration-200 sm:px-6"
