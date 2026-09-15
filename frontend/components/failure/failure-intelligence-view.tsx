@@ -1,17 +1,45 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Bar, BarChart, Cell, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { AlertCircle, AlertTriangle, Activity, Zap, RefreshCw, Layers, ShieldAlert, Sparkles, Terminal } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  Cell,
+  CartesianGrid,
+  LabelList,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { AlertCircle } from "lucide-react";
 
 import { FailureClusterChart } from "@/components/failure/failure-cluster-chart";
-import { RegimeTimeline, type TimelineMarker } from "@/components/regime/regime-timeline";
+import {
+  RegimeTimeline,
+  type TimelineMarker,
+} from "@/components/regime/regime-timeline";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { getFailure, getFailureClusters, listFailures } from "@/lib/failure";
-import { TRIGGER_LABELS, type Failure, type FailureCluster, type FailureListItem } from "@/lib/failure-types";
+import {
+  getFailure,
+  getFailureClusters,
+  listFailures,
+} from "@/lib/failure";
+import {
+  TRIGGER_LABELS,
+  type Failure,
+  type FailureCluster,
+  type FailureListItem,
+} from "@/lib/failure-types";
 import { getRegimeHistory } from "@/lib/regime";
 import type { RegimePoint } from "@/lib/regime-types";
 
@@ -31,6 +59,16 @@ const PALETTE = {
   warning: "#FBBF24",
 };
 
+const REGIME_OPTIONS = [
+  "All Regimes",
+  "Bull",
+  "Bear",
+  "High-Volatility",
+  "Low-Volatility",
+  "Sideways",
+  "Crisis",
+];
+
 function getTriggerColor(trigger: string) {
   const label = trigger.toLowerCase();
 
@@ -48,6 +86,7 @@ export function FailureIntelligenceView() {
   const [selected, setSelected] = useState<Failure | null>(null);
   const [symbol, setSymbol] = useState("SPY");
   const [regimePoints, setRegimePoints] = useState<RegimePoint[]>([]);
+  const [regimeFilter, setRegimeFilter] = useState("All Regimes");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -60,6 +99,27 @@ export function FailureIntelligenceView() {
         setError(e instanceof Error ? e.message : "Failed to load"),
       );
   }, []);
+
+  const filteredFailures = useMemo(() => {
+    if (regimeFilter === "All Regimes") {
+      return failures;
+    }
+
+    return failures.filter(
+      (failure) =>
+        failure.regime_at_failure?.toLowerCase() ===
+        regimeFilter.toLowerCase(),
+    );
+  }, [failures, regimeFilter]);
+
+  useEffect(() => {
+    if (
+      selected &&
+      !filteredFailures.some((failure) => failure.id === selected.id)
+    ) {
+      setSelected(null);
+    }
+  }, [filteredFailures, selected]);
 
   const loadTimeline = useCallback(async () => {
     try {
@@ -82,7 +142,7 @@ export function FailureIntelligenceView() {
     }
   }
 
-  const markers: TimelineMarker[] = failures.map((f) => ({
+  const markers: TimelineMarker[] = filteredFailures.map((f) => ({
     timestamp: f.failure_timestamp,
     color: getTriggerColor(TRIGGER_LABELS[f.trigger_condition]),
     label: TRIGGER_LABELS[f.trigger_condition],
@@ -99,31 +159,34 @@ export function FailureIntelligenceView() {
           : PALETTE.danger,
     })) ?? [];
 
-  const drawdownCount = failures.filter((f) =>
+  const drawdownCount = filteredFailures.filter((f) =>
     TRIGGER_LABELS[f.trigger_condition]
       .toLowerCase()
       .includes("drawdown"),
   ).length;
 
-  const sharpeCount = failures.filter((f) =>
+  const sharpeCount = filteredFailures.filter((f) =>
     TRIGGER_LABELS[f.trigger_condition]
       .toLowerCase()
       .includes("sharpe"),
   ).length;
 
-  const regimeCount = failures.filter((f) =>
+  const regimeCount = filteredFailures.filter((f) =>
     TRIGGER_LABELS[f.trigger_condition]
       .toLowerCase()
       .includes("regime"),
   ).length;
 
-  const manualCount = failures.filter((f) =>
+  const manualCount = filteredFailures.filter((f) =>
     TRIGGER_LABELS[f.trigger_condition]
       .toLowerCase()
       .includes("manual"),
   ).length;
 
-  const cardClass = "relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 p-0 shadow-[0_8px_30px_rgb(0,0,0,0.4)] backdrop-blur-xl";
+  const cardClass =
+    "relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0D0F14]/70 p-0 shadow-[0_8px_30px_rgb(0,0,0,0.4)] backdrop-blur-xl";
+
+  const hasFilteredFailures = filteredFailures.length > 0;
 
   return (
     <div
@@ -160,8 +223,9 @@ export function FailureIntelligenceView() {
                 className="mt-1 text-xs"
                 style={{ color: PALETTE.textSecondary }}
               >
-                Failed strategies are preserved as research assets. Investigate failure patterns,
-                triggers and their relationship with market regimes.
+                Failed strategies are preserved as research assets. Investigate
+                failure patterns, triggers and their relationship with market
+                regimes.
               </p>
             </div>
 
@@ -178,7 +242,7 @@ export function FailureIntelligenceView() {
                   className="mt-0.5 font-mono text-2xl font-bold tracking-tight"
                   style={{ color: PALETTE.textPrimary }}
                 >
-                  {failures.length}
+                  {filteredFailures.length}
                 </p>
               </div>
 
@@ -222,7 +286,10 @@ export function FailureIntelligenceView() {
             {/* Signature Distribution Card */}
             <div
               className={cardClass}
-              style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+              style={{
+                boxShadow:
+                  "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)",
+              }}
             >
               <div className="p-6">
                 <div className="flex items-start justify-between">
@@ -261,7 +328,8 @@ export function FailureIntelligenceView() {
                         className="h-2 w-2 rounded-full"
                         style={{
                           backgroundColor: PALETTE.danger,
-                          boxShadow: "0 0 6px rgba(248, 113, 113, 0.7)",
+                          boxShadow:
+                            "0 0 6px rgba(248, 113, 113, 0.7)",
                         }}
                       />
                       <span
@@ -286,7 +354,8 @@ export function FailureIntelligenceView() {
                         className="h-2 w-2 rounded-full"
                         style={{
                           backgroundColor: PALETTE.warning,
-                          boxShadow: "0 0 6px rgba(251, 191, 36, 0.7)",
+                          boxShadow:
+                            "0 0 6px rgba(251, 191, 36, 0.7)",
                         }}
                       />
                       <span
@@ -311,7 +380,8 @@ export function FailureIntelligenceView() {
                         className="h-2 w-2 rounded-full"
                         style={{
                           backgroundColor: PALETTE.success,
-                          boxShadow: "0 0 6px rgba(52, 211, 153, 0.7)",
+                          boxShadow:
+                            "0 0 6px rgba(52, 211, 153, 0.7)",
                         }}
                       />
                       <span
@@ -361,14 +431,18 @@ export function FailureIntelligenceView() {
                     borderColor: PALETTE.borderSubtle,
                   }}
                 >
-                  {failures.length > 0 && (
+                  {filteredFailures.length > 0 && (
                     <>
                       {drawdownCount > 0 && (
                         <div
                           className="h-full transition-all duration-300"
                           style={{
                             backgroundColor: PALETTE.danger,
-                            width: `${(drawdownCount / failures.length) * 100}%`,
+                            width: `${
+                              (drawdownCount /
+                                filteredFailures.length) *
+                              100
+                            }%`,
                           }}
                         />
                       )}
@@ -378,7 +452,11 @@ export function FailureIntelligenceView() {
                           className="h-full transition-all duration-300"
                           style={{
                             backgroundColor: PALETTE.warning,
-                            width: `${(sharpeCount / failures.length) * 100}%`,
+                            width: `${
+                              (sharpeCount /
+                                filteredFailures.length) *
+                              100
+                            }%`,
                           }}
                         />
                       )}
@@ -388,7 +466,11 @@ export function FailureIntelligenceView() {
                           className="h-full transition-all duration-300"
                           style={{
                             backgroundColor: PALETTE.success,
-                            width: `${(regimeCount / failures.length) * 100}%`,
+                            width: `${
+                              (regimeCount /
+                                filteredFailures.length) *
+                              100
+                            }%`,
                           }}
                         />
                       )}
@@ -398,7 +480,11 @@ export function FailureIntelligenceView() {
                           className="h-full transition-all duration-300"
                           style={{
                             backgroundColor: "#808495",
-                            width: `${(manualCount / failures.length) * 100}%`,
+                            width: `${
+                              (manualCount /
+                                filteredFailures.length) *
+                              100
+                            }%`,
                           }}
                         />
                       )}
@@ -411,7 +497,10 @@ export function FailureIntelligenceView() {
             {/* Research Signal Panel */}
             <div
               className={cardClass}
-              style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+              style={{
+                boxShadow:
+                  "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)",
+              }}
             >
               <div className="relative flex h-full flex-col justify-between p-6">
                 <div>
@@ -457,13 +546,16 @@ export function FailureIntelligenceView() {
           {/* Table Card */}
           <Card
             className={cardClass}
-            style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+            style={{
+              boxShadow:
+                "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)",
+            }}
           >
             <CardHeader
               className="border-b px-5 py-4"
               style={{ borderColor: PALETTE.borderSubtle }}
             >
-              <div className="flex items-end justify-between gap-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                   <CardTitle
                     className="text-sm font-semibold tracking-wide"
@@ -480,23 +572,61 @@ export function FailureIntelligenceView() {
                   </CardDescription>
                 </div>
 
-                <span
-                  className="hidden font-mono text-[10px] uppercase tracking-[0.14em] sm:block"
-                  style={{ color: PALETTE.textMuted }}
-                >
-                  Select an event to investigate
-                </span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="whitespace-nowrap font-mono text-[9px] uppercase tracking-[0.14em]"
+                      style={{ color: PALETTE.textMuted }}
+                    >
+                      Regime
+                    </span>
+
+                    <select
+                      value={regimeFilter}
+                      onChange={(e) => setRegimeFilter(e.target.value)}
+                      className="h-9 rounded-xl border border-white/[0.08] bg-[#0F1117] px-3 font-mono text-[10px] font-semibold text-[#F5F5F7] outline-none transition-colors focus:border-[#8E88C7]/50"
+                    >
+                      {REGIME_OPTIONS.map((regime) => (
+                        <option
+                          key={regime}
+                          value={regime}
+                          className="bg-[#0F1117] text-[#F5F5F7]"
+                        >
+                          {regime}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <span
+                    className="hidden font-mono text-[10px] uppercase tracking-[0.14em] sm:block"
+                    style={{ color: PALETTE.textMuted }}
+                  >
+                    Select an event to investigate
+                  </span>
+                </div>
               </div>
             </CardHeader>
 
             <CardContent className="p-0">
-              {failures.length === 0 ? (
+              {!hasFilteredFailures ? (
                 <div className="px-5 py-16 text-center">
                   <p
-                    className="font-mono text-xs"
+                    className="text-xs font-semibold"
+                    style={{ color: PALETTE.textSecondary }}
+                  >
+                    {regimeFilter === "All Regimes"
+                      ? "No failure events recorded."
+                      : `No failures recorded for ${regimeFilter}.`}
+                  </p>
+
+                  <p
+                    className="mx-auto mt-2 max-w-md text-xs leading-relaxed"
                     style={{ color: PALETTE.textMuted }}
                   >
-                    No failures detected — strategies performing well.
+                    {regimeFilter === "All Regimes"
+                      ? "Failure events will appear here when a strategy triggers a defined failure condition."
+                      : "No failure event has been observed under this market regime."}
                   </p>
                 </div>
               ) : (
@@ -510,7 +640,8 @@ export function FailureIntelligenceView() {
                         className="border-b text-left font-mono text-[10px] uppercase tracking-[0.14em]"
                         style={{
                           borderColor: PALETTE.borderSubtle,
-                          backgroundColor: "rgba(15, 17, 23, 0.4)",
+                          backgroundColor:
+                            "rgba(15, 17, 23, 0.4)",
                           color: PALETTE.textMuted,
                         }}
                       >
@@ -523,7 +654,7 @@ export function FailureIntelligenceView() {
                     </thead>
 
                     <tbody className="divide-y divide-white/[0.04]">
-                      {failures.map((f) => {
+                      {filteredFailures.map((f) => {
                         const triggerLabel =
                           TRIGGER_LABELS[f.trigger_condition];
 
@@ -537,13 +668,17 @@ export function FailureIntelligenceView() {
                             key={f.id}
                             onClick={() => selectFailure(f.id)}
                             className={`cursor-pointer transition-colors ${
-                              isSelected ? "bg-[#8E88C7]/15" : "hover:bg-white/[0.02]"
+                              isSelected
+                                ? "bg-[#8E88C7]/15"
+                                : "hover:bg-white/[0.02]"
                             }`}
                           >
                             <td className="px-5 py-3.5 font-mono">
                               <span
                                 className="font-mono text-xs font-medium"
-                                style={{ color: PALETTE.textPrimary }}
+                                style={{
+                                  color: PALETTE.textPrimary,
+                                }}
                               >
                                 {f.id.slice(0, 8)}
                               </span>
@@ -552,7 +687,9 @@ export function FailureIntelligenceView() {
                             <td className="px-4 py-3.5">
                               <span
                                 className="text-xs font-medium"
-                                style={{ color: PALETTE.textPrimary }}
+                                style={{
+                                  color: PALETTE.textPrimary,
+                                }}
                               >
                                 {f.regime_at_failure}
                               </span>
@@ -562,7 +699,8 @@ export function FailureIntelligenceView() {
                               <span
                                 className="inline-flex rounded-full border px-2.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wider"
                                 style={{
-                                  background: "rgba(255, 255, 255, 0.04)",
+                                  background:
+                                    "rgba(255, 255, 255, 0.04)",
                                   borderColor: `${triggerColor}40`,
                                   color: triggerColor,
                                 }}
@@ -573,7 +711,9 @@ export function FailureIntelligenceView() {
 
                             <td
                               className="whitespace-nowrap px-4 py-3.5 font-mono text-xs"
-                              style={{ color: PALETTE.textMuted }}
+                              style={{
+                                color: PALETTE.textMuted,
+                              }}
                             >
                               {f.failure_timestamp.slice(0, 10)}
                             </td>
@@ -581,7 +721,9 @@ export function FailureIntelligenceView() {
                             <td className="max-w-[480px] px-5 py-3.5">
                               <p
                                 className="line-clamp-2 text-xs leading-relaxed"
-                                style={{ color: PALETTE.textSecondary }}
+                                style={{
+                                  color: PALETTE.textSecondary,
+                                }}
                               >
                                 {f.llm_generated_explanation ??
                                   "Explanation pending"}
@@ -600,7 +742,10 @@ export function FailureIntelligenceView() {
           {/* Profile Sidebar */}
           <div
             className={cardClass}
-            style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+            style={{
+              boxShadow:
+                "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)",
+            }}
           >
             <div className="p-5">
               <p
@@ -609,6 +754,15 @@ export function FailureIntelligenceView() {
               >
                 Failure profile
               </p>
+
+              {regimeFilter !== "All Regimes" && (
+                <p
+                  className="mt-2 text-[10px]"
+                  style={{ color: PALETTE.textMuted }}
+                >
+                  Showing failures for {regimeFilter}
+                </p>
+              )}
 
               <div className="mt-5 space-y-4">
                 <div>
@@ -640,8 +794,12 @@ export function FailureIntelligenceView() {
                       style={{
                         backgroundColor: PALETTE.danger,
                         width:
-                          failures.length > 0
-                            ? `${(drawdownCount / failures.length) * 100}%`
+                          filteredFailures.length > 0
+                            ? `${
+                                (drawdownCount /
+                                  filteredFailures.length) *
+                                100
+                              }%`
                             : "0%",
                       }}
                     />
@@ -677,8 +835,12 @@ export function FailureIntelligenceView() {
                       style={{
                         backgroundColor: PALETTE.warning,
                         width:
-                          failures.length > 0
-                            ? `${(sharpeCount / failures.length) * 100}%`
+                          filteredFailures.length > 0
+                            ? `${
+                                (sharpeCount /
+                                  filteredFailures.length) *
+                                100
+                              }%`
                             : "0%",
                       }}
                     />
@@ -714,8 +876,12 @@ export function FailureIntelligenceView() {
                       style={{
                         backgroundColor: PALETTE.success,
                         width:
-                          failures.length > 0
-                            ? `${(regimeCount / failures.length) * 100}%`
+                          filteredFailures.length > 0
+                            ? `${
+                                (regimeCount /
+                                  filteredFailures.length) *
+                                100
+                              }%`
                             : "0%",
                       }}
                     />
@@ -751,8 +917,12 @@ export function FailureIntelligenceView() {
                       style={{
                         backgroundColor: "#808495",
                         width:
-                          failures.length > 0
-                            ? `${(manualCount / failures.length) * 100}%`
+                          filteredFailures.length > 0
+                            ? `${
+                                (manualCount /
+                                  filteredFailures.length) *
+                                100
+                              }%`
                             : "0%",
                       }}
                     />
@@ -775,7 +945,8 @@ export function FailureIntelligenceView() {
                   className="mt-1.5 text-xs leading-relaxed"
                   style={{ color: PALETTE.textSecondary }}
                 >
-                  Trigger frequency provides an initial signal before investigating individual failures.
+                  Trigger frequency provides an initial signal before
+                  investigating individual failures.
                 </p>
               </div>
             </div>
@@ -787,7 +958,10 @@ export function FailureIntelligenceView() {
           <section className="mb-6 grid grid-cols-1 gap-5 xl:grid-cols-[0.8fr_1.2fr]">
             <Card
               className={cardClass}
-              style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+              style={{
+                boxShadow:
+                  "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)",
+              }}
               data-testid="llm-explanation"
             >
               <CardHeader
@@ -856,7 +1030,10 @@ export function FailureIntelligenceView() {
             {/* SHAP Chart */}
             <Card
               className={cardClass}
-              style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+              style={{
+                boxShadow:
+                  "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)",
+              }}
               data-testid="shap-chart"
             >
               <CardHeader
@@ -890,11 +1067,19 @@ export function FailureIntelligenceView() {
                   </div>
                 ) : (
                   <div className="h-52 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer
+                      width="100%"
+                      height="100%"
+                    >
                       <BarChart
                         data={shapData}
                         layout="vertical"
-                        margin={{ left: 24, right: 30, top: 4, bottom: 4 }}
+                        margin={{
+                          left: 24,
+                          right: 30,
+                          top: 4,
+                          bottom: 4,
+                        }}
                       >
                         <CartesianGrid
                           strokeDasharray="3 3"
@@ -927,16 +1112,23 @@ export function FailureIntelligenceView() {
 
                         <Tooltip
                           contentStyle={{
-                            background: "rgba(13, 15, 20, 0.95)",
-                            border: "1px solid rgba(255, 255, 255, 0.12)",
+                            background:
+                              "rgba(13, 15, 20, 0.95)",
+                            border:
+                              "1px solid rgba(255, 255, 255, 0.12)",
                             borderRadius: "0.875rem",
                             color: "#F5F5F7",
-                            boxShadow: "0 20px 40px -10px rgba(0, 0, 0, 0.8)",
+                            boxShadow:
+                              "0 20px 40px -10px rgba(0, 0, 0, 0.8)",
                             backdropFilter: "blur(12px)",
                             fontSize: 12,
                           }}
-                          labelStyle={{ color: PALETTE.textPrimary }}
-                          itemStyle={{ color: PALETTE.textSecondary }}
+                          labelStyle={{
+                            color: PALETTE.textPrimary,
+                          }}
+                          itemStyle={{
+                            color: PALETTE.textSecondary,
+                          }}
                         />
 
                         <Bar
@@ -950,7 +1142,9 @@ export function FailureIntelligenceView() {
                           <LabelList
                             dataKey="value"
                             position="right"
-                            formatter={(v: number) => v.toFixed(3)}
+                            formatter={(v: number) =>
+                              v.toFixed(3)
+                            }
                             style={{
                               fontSize: 10,
                               fill: PALETTE.textMuted,
@@ -971,7 +1165,10 @@ export function FailureIntelligenceView() {
         <section className="mb-6">
           <Card
             className={cardClass}
-            style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+            style={{
+              boxShadow:
+                "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)",
+            }}
           >
             <CardHeader
               className="border-b px-5 py-4"
@@ -1015,7 +1212,10 @@ export function FailureIntelligenceView() {
         <section>
           <Card
             className={cardClass}
-            style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
+            style={{
+              boxShadow:
+                "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)",
+            }}
           >
             <CardHeader
               className="border-b px-5 py-4"
@@ -1027,7 +1227,8 @@ export function FailureIntelligenceView() {
                     <span
                       className="h-2 w-2 rounded-full bg-[#8E88C7]"
                       style={{
-                        boxShadow: "0 0 8px rgba(142, 136, 199, 0.8)",
+                        boxShadow:
+                          "0 0 8px rgba(142, 136, 199, 0.8)",
                       }}
                     />
 
@@ -1043,7 +1244,8 @@ export function FailureIntelligenceView() {
                     className="mt-0.5 text-xs"
                     style={{ color: PALETTE.textSecondary }}
                   >
-                    Failure events overlaid on the selected market regime.
+                    Failure events overlaid on the selected market
+                    regime.
                   </CardDescription>
                 </div>
 
@@ -1073,9 +1275,7 @@ export function FailureIntelligenceView() {
                   markers={markers}
                 />
               ) : (
-                <div
-                  className="flex min-h-48 items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.01]"
-                >
+                <div className="flex min-h-48 items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.01]">
                   <div className="text-center">
                     <p
                       className="text-xs font-semibold"
@@ -1088,7 +1288,8 @@ export function FailureIntelligenceView() {
                       className="mt-1 max-w-sm text-xs"
                       style={{ color: PALETTE.textMuted }}
                     >
-                      Enter a symbol above to overlay failure events on its regime timeline.
+                      Enter a symbol above to overlay failure events
+                      on its regime timeline.
                     </p>
                   </div>
                 </div>
