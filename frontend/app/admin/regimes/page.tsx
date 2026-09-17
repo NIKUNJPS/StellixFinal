@@ -1370,7 +1370,7 @@ export default function RegimeMonitorPage() {
               "
             >
               Ingest data for this symbol
-              or click "Re-run detection".
+              or click &ldquo;Re-run detection&rdquo;.
             </p>
           </motion.div>
         )}

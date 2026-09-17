@@ -78,6 +78,14 @@ celery_app.conf.beat_schedule = {
     # day's closing bar is available. On weekends/holidays the sweep runs but finds no
     # new bars and skips the (expensive) regime recompute — see market_refresh.py.
     # Mon-Fri only (day_of_week="1-5"): no US session Sat/Sun.
+    # Batch 25: delayed global index quotes for the dashboard. Every
+    # MARKET_QUOTES_REFRESH_SECONDS (default 120s): free providers delay index prices
+    # and throttle aggressive polling, so a faster schedule would add load without
+    # adding freshness. The task itself skips weekend closures.
+    "global-index-quotes": {
+        "task": "refresh_global_index_quotes",
+        "schedule": float(settings.MARKET_QUOTES_REFRESH_SECONDS),
+    },
     "daily-market-refresh": {
         "task": "refresh_market_universe",
         "schedule": crontab(day_of_week="1-5", hour=22, minute=30),

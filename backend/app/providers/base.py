@@ -12,6 +12,7 @@ on this contract — never on a specific vendor.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from datetime import date
 
 import pandas as pd
@@ -22,6 +23,28 @@ OHLCV_COLUMNS: list[str] = ["timestamp", "open", "high", "low", "close", "volume
 
 class ProviderError(Exception):
     """Raised when a provider cannot return usable data (network, auth, empty, ...)."""
+
+
+@dataclass(frozen=True)
+class LatestQuote:
+    """The most recent price a provider can report for one symbol (Batch 25).
+
+    Deliberately NOT a "live tick": free providers report delayed prices, and
+    ``session_date`` is the exchange session the price belongs to — not a
+    wall-clock trade time the provider never gave us. Exactly one of
+    ``last_price`` / ``error`` is meaningful: a symbol the provider could not
+    price carries an ``error`` and no numbers, never a guessed value.
+    """
+
+    symbol: str
+    last_price: float | None = None
+    previous_close: float | None = None
+    session_date: date | None = None
+    error: str | None = None
+
+    @property
+    def ok(self) -> bool:
+        return self.error is None and self.last_price is not None
 
 
 class MarketDataProvider(ABC):
@@ -45,6 +68,16 @@ class MarketDataProvider(ABC):
         failure rather than returning an empty/garbage frame.
         """
         raise NotImplementedError
+
+    def fetch_latest_quotes(self, symbols: list[str]) -> list[LatestQuote]:
+        """Latest delayed price + previous close for each symbol, in one lightweight
+        call (Batch 25) — distinct from ``fetch_ohlcv``'s bulk historical path.
+
+        Returns one ``LatestQuote`` per requested symbol, in order; a symbol that
+        could not be priced carries ``error``. Providers that cannot serve quotes
+        keep this default, which raises ``ProviderError``.
+        """
+        raise ProviderError(f"Provider {self.name!r} does not support latest quotes")
 
     @staticmethod
     def _normalize(frame: pd.DataFrame) -> pd.DataFrame:

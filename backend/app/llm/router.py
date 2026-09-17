@@ -120,6 +120,22 @@ class LLMCostRouter:
             return "claude"
         return "gemini"
 
+    def is_provider_configured(self, model_key: str) -> bool:
+        key = settings.GEMINI_API_KEY if model_key == "gemini" else settings.ANTHROPIC_API_KEY
+        return bool(key and key.strip())
+
+    def can_serve(self, request_type: str, stakes: str = "low") -> bool:
+        """Batch 25: whether a call of this type could reach a configured provider.
+
+        Mirrors ``call_tool``'s fallback exactly: Gemini-routed work can fall back to
+        Claude, but Claude-routed (high-stakes) work never falls back to Gemini — so
+        e.g. ``explain_failure`` needs ANTHROPIC_API_KEY specifically.
+        """
+        model_key = self.route(request_type, stakes)
+        if self.is_provider_configured(model_key):
+            return True
+        return model_key == "gemini" and self.is_provider_configured("claude")
+
     def cost_usd(
         self, model_key: str, input_tokens: int | None, output_tokens: int | None
     ) -> float | None:

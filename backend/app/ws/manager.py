@@ -102,6 +102,17 @@ class WebSocketManager:
         """Send to every socket in an org. Returns how many actually received it."""
         return await self._send_many(org_id, await self._snapshot(org_id), payload)
 
+    async def broadcast_all(self, payload: dict) -> int:
+        """Batch 25: send PUBLIC, non-tenant data (market index quotes) to every socket
+        in every org. Only the bridge's global scope calls this; tenant events keep
+        using the org-keyed paths above."""
+        async with self._lock:
+            org_ids = list(self._connections.keys())
+        delivered = 0
+        for org_id in org_ids:
+            delivered += await self._send_many(org_id, await self._snapshot(org_id), payload)
+        return delivered
+
     async def send_to_user(self, org_id: str, user_id: str, payload: dict) -> int:
         """Send to one user's sockets (every tab). Returns how many received it.
 

@@ -12,6 +12,12 @@ export interface FeatureAttribution {
   direction: "positive" | "negative";
 }
 
+/** Batch 25: honest state of a failure's AI explanation.
+ * generated — real model output is stored.
+ * queued — a capable provider is configured; generation is (or can be) queued.
+ * unavailable — no provider that can explain failures is configured on the server. */
+export type ExplanationStatus = "generated" | "queued" | "unavailable";
+
 export interface FailureListItem {
   id: string;
   strategy_id: string;
@@ -21,6 +27,10 @@ export interface FailureListItem {
   llm_generated_explanation: string | null;
   llm_numeric_validation_passed: boolean | null;
   created_at: string;
+  llm_explanation_status: ExplanationStatus;
+  /** Instrument the failure was detected on; null for records made before it was captured. */
+  symbol: string | null;
+  strategy_name: string | null;
 }
 
 export interface FailureList {
@@ -30,6 +40,8 @@ export interface FailureList {
 }
 
 export interface Failure extends FailureListItem {
+  /** Only meaningful while status is "queued": is a background worker alive to run it? */
+  background_worker_online: boolean | null;
   strategy_version: string;
   performance_metrics_at_failure: Record<string, number | null>;
   feature_attribution: FeatureAttribution[] | null;
@@ -74,3 +86,10 @@ export const TRIGGER_LABELS: Record<FailureTrigger, string> = {
   regime_mismatch: "Regime mismatch",
   manual: "Manual",
 };
+
+export interface ExplanationEnqueued {
+  failure_id: string;
+  llm_explanation_status: ExplanationStatus;
+  message: string;
+  task_id: string | null;
+}

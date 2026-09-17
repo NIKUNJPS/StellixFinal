@@ -14,16 +14,12 @@ Guard failures carry an HTTP status so routes map them uniformly.
 from __future__ import annotations
 
 from app.models.strategy import Strategy, StrategyStatus
-from app.models.user import UserRole
 from app.strategy.dsl import DSLError, validate_rule
 
 ROBUSTNESS_THRESHOLD = 0.70
-GOVERNANCE_ROLES = {UserRole.RISK_MANAGER, UserRole.CIO, UserRole.ADMIN}
-# Batch 10 RBAC audit fix: approve/reject must ALSO admit compliance_officer (the
-# Governance & Compliance Panel's approval queue is explicitly restricted to
-# ComplianceOfficer/Admin and reuses this exact approve() path) — retire and the
-# kill switch stay on the narrower GOVERNANCE_ROLES, unchanged.
-APPROVAL_ROLES = GOVERNANCE_ROLES | {UserRole.COMPLIANCE_OFFICER}
+# Batch 26: who may approve / retire / override is decided by permissions
+# (strategy.approve, strategy.retire, strategy.retire_override — app/rbac/catalog.py),
+# resolved by the caller and passed in. This module stays free of any RBAC lookup.
 _REQUIRED_RISK_KEYS = ["max_drawdown_pct", "max_position_size_pct", "stop_loss_pct"]
 
 # (from, to) pairs that are legal at all.
@@ -107,14 +103,15 @@ def assert_activatable(strategy: Strategy, *, has_approval: bool) -> None:
 
 
 def assert_retire_permitted(
-    strategy: Strategy, *, role: UserRole, reason: str | None, is_admin: bool
+    strategy: Strategy, *, can_retire: bool, can_override: bool, reason: str | None
 ) -> None:
-    """any -> retired guard: governance role + reason; failed needs parent OR admin."""
-    if role not in GOVERNANCE_ROLES:
-        raise PermissionDenied("Only risk_manager, cio, or admin may retire a strategy")
+    """any -> retired guard: retire permission + reason; a parentless failed strategy
+    additionally needs the override permission."""
+    if not can_retire:
+        raise PermissionDenied("You do not have permission to retire a strategy")
     if not reason or not reason.strip():
         raise ReasonRequired("A reason is required to retire a strategy")
-    if strategy.status == StrategyStatus.FAILED and strategy.parent_strategy_id is None and not is_admin:
+    if strategy.status == StrategyStatus.FAILED and strategy.parent_strategy_id is None and not can_override:
         raise PermissionDenied(
             "Retiring a failed strategy with no parent requires an admin override"
         )

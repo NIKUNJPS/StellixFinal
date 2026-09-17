@@ -29,8 +29,9 @@ from app.models.notification import NotificationType
 from app.models.organization import TIER_MAX_STRATEGIES, Organization, OrganizationTier
 from app.models.strategy import Strategy, StrategyStatus
 from app.models.subscription import Subscription, SubscriptionStatus
-from app.models.user import User, UserRole
-from app.services.notification import notify_users_with_roles
+from app.models.user import User
+from app.rbac.catalog import P
+from app.services.notification import notify_users_with_permission
 
 logger = logging.getLogger(__name__)
 
@@ -329,10 +330,10 @@ async def handle_invoice_payment_failed(session: AsyncSession, data_object: dict
         return
 
     subscription.status = SubscriptionStatus.PAST_DUE
-    await notify_users_with_roles(
+    await notify_users_with_permission(
         session,
         organization_id=subscription.organization_id,
-        roles={UserRole.ADMIN, UserRole.CIO},
+        permission=P.NOTIFY_BILLING_ALERTS,
         type=NotificationType.PAYMENT_FAILED,
         message="A payment on your Stellix Labs subscription failed. Please update your billing details.",
         link="/admin/billing",

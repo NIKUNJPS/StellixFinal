@@ -1,4 +1,4 @@
-"""Strategy service: create/version/update, lifecycle transitions, and backtest run."""
+"""Strategy service: create/version/update/delete, lifecycle transitions, and backtest run."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from app.features.engineering import FEATURE_COLUMNS
 from app.graph.sync_service import GraphSyncService
 from app.models.approval_record import ApprovalAction, ApprovalRecord
 from app.models.audit_log import AuditEventType
+from app.models.failure import Failure
 from app.models.feature_matrix import FeatureMatrix
 from app.models.market_data import MarketData
 from app.models.notification import NotificationType
@@ -22,9 +23,11 @@ from app.models.performance_snapshot import AGGREGATE_LABEL, PerformanceSnapshot
 from app.models.regime_label import RegimeLabelRecord
 from app.models.strategy import Strategy, StrategyCreator, StrategyStatus
 from app.models.strategy_version import StrategyVersion
-from app.models.user import User, UserRole
+from app.models.user import User
+from app.rbac.catalog import P
 from app.services.audit import write_audit_log
-from app.services.notification import notify_users_with_roles
+from app.services.notification import notify_users_with_permission
+from app.services.rbac import has_permission, users_with_permission
 from app.strategy import lifecycle
 from app.ws import events as ws_events
 
@@ -51,6 +54,14 @@ class StrategyLimitError(Exception):
     http_status = 403
 
 
+class StrategyEditError(lifecycle.LifecycleError):
+    """A save-as-new-version or delete request the strategy's state does not allow."""
+
+    http_status = 409
+
+
+
+
 def bump_version(version: str) -> str:
     try:
         major, minor = version.lstrip("v").split(".")
@@ -68,15 +79,25 @@ def _snapshot(strategy: Strategy) -> dict:
     }
 
 
+async def latest_version_saved_at(session: AsyncSession, strategy_id: uuid.UUID):
+    """When the strategy's current version was saved (None if it has no versions)."""
+    return await session.scalar(
+        select(func.max(StrategyVersion.created_at)).where(StrategyVersion.strategy_id == strategy_id)
+    )
+
+
 async def _has_approve_record(session: AsyncSession, strategy_id: uuid.UUID) -> bool:
-    row = (
-        await session.execute(
-            select(ApprovalRecord.id)
-            .where(ApprovalRecord.strategy_id == strategy_id)
-            .where(ApprovalRecord.action == ApprovalAction.APPROVE)
-            .limit(1)
-        )
-    ).first()
+    """An approval only counts for the version it was given to (Batch 25): once a new
+    version is saved, an approval of the previous rules must not activate the new ones."""
+    stmt = (
+        select(ApprovalRecord.id)
+        .where(ApprovalRecord.strategy_id == strategy_id)
+        .where(ApprovalRecord.action == ApprovalAction.APPROVE)
+    )
+    version_saved_at = await latest_version_saved_at(session, strategy_id)
+    if version_saved_at is not None:
+        stmt = stmt.where(ApprovalRecord.created_at >= version_saved_at)
+    row = (await session.execute(stmt.limit(1))).first()
     return row is not None
 
 
@@ -92,10 +113,10 @@ async def maybe_notify_approval_requested(session: AsyncSession, strategy: Strat
         return
     if strategy.robustness_score is None or strategy.robustness_score < lifecycle.ROBUSTNESS_THRESHOLD:
         return
-    await notify_users_with_roles(
+    await notify_users_with_permission(
         session,
         organization_id=strategy.organization_id,
-        roles=lifecycle.APPROVAL_ROLES,
+        permission=P.NOTIFY_APPROVAL_REQUESTS,
         type=NotificationType.APPROVAL_REQUESTED,
         message=(
             f"Strategy '{strategy.name}' is ready for approval "
@@ -153,6 +174,16 @@ async def create_strategy(
             change_reason="Initial version",
         )
     )
+    await write_audit_log(
+        session,
+        organization_id=strategy.organization_id,
+        actor=user,
+        event_type=AuditEventType.STRATEGY_CREATED,
+        entity_type="strategy",
+        entity_id=strategy.id,
+        entity_name=strategy.name,
+        after_state={"status": strategy.status.value, "version": strategy.version, "creator": creator.value},
+    )
     await session.commit()
     await session.refresh(strategy)
     await GraphSyncService().sync_strategy_node(session, strategy)
@@ -160,36 +191,43 @@ async def create_strategy(
     return strategy
 
 
+def _changed_tunable_keys(strategy: Strategy, data: dict) -> list[str]:
+    return [
+        key
+        for key in _TUNABLE_KEYS
+        if key in data and data[key] is not None and data[key] != getattr(strategy, key)
+    ]
+
+
 async def update_strategy(
-    session: AsyncSession, *, strategy: Strategy, data: dict, change_reason: str | None
+    session: AsyncSession,
+    *,
+    strategy: Strategy,
+    data: dict,
+    change_reason: str | None,
+    user: User | None = None,
 ) -> Strategy:
+    """Generic edit (``PUT``). Name/description edits keep the version; any rule or
+    parameter change bumps ``vX.Y`` -> ``vX.(Y+1)`` and snapshots a StrategyVersion."""
+    if strategy.status == StrategyStatus.RETIRED:
+        raise StrategyEditError("Retired strategies are immutable research records and cannot be edited")
     if "name" in data and data["name"] is not None:
         strategy.name = data["name"]
     if "description" in data:
         strategy.description = data["description"]
 
-    tunable_changed = any(
-        key in data and data[key] is not None and data[key] != getattr(strategy, key)
-        for key in _TUNABLE_KEYS
-    )
+    changed_keys = _changed_tunable_keys(strategy, data)
     for key in _TUNABLE_KEYS:
         if key in data and data[key] is not None:
             setattr(strategy, key, data[key])
 
-    if tunable_changed:
-        strategy.version = bump_version(strategy.version)
-        # Editing rules/params invalidates any prior validation.
-        if strategy.status in (StrategyStatus.CANDIDATE, StrategyStatus.ACTIVE):
-            strategy.status = StrategyStatus.DRAFT
-            strategy.robustness_score = None
-            strategy.regime_compatibility = None
-        session.add(
-            StrategyVersion(
-                strategy_id=strategy.id,
-                version_number=strategy.version,
-                parameters_snapshot=_snapshot(strategy),
-                change_reason=change_reason or "Parameters/rules updated",
-            )
+    if changed_keys:
+        await _record_new_version(
+            session,
+            strategy=strategy,
+            user=user,
+            change_reason=change_reason or "Parameters/rules updated",
+            changed_keys=changed_keys,
         )
     await session.commit()
     await session.refresh(strategy)
@@ -197,13 +235,181 @@ async def update_strategy(
     return strategy
 
 
+async def _record_new_version(
+    session: AsyncSession,
+    *,
+    strategy: Strategy,
+    user: User | None,
+    change_reason: str,
+    changed_keys: list[str],
+) -> None:
+    before_version = strategy.version
+    before_status = strategy.status.value
+    strategy.version = bump_version(strategy.version)
+    # Editing rules/params invalidates any prior validation: the new version must go
+    # back through submit -> validation -> approval before it can trade. (Failed ->
+    # draft is the lifecycle's documented "revert on edit" path; the failure records
+    # themselves are untouched.)
+    if strategy.status in (StrategyStatus.CANDIDATE, StrategyStatus.ACTIVE, StrategyStatus.FAILED):
+        strategy.status = StrategyStatus.DRAFT
+        strategy.robustness_score = None
+        strategy.regime_compatibility = None
+    session.add(
+        StrategyVersion(
+            strategy_id=strategy.id,
+            version_number=strategy.version,
+            parameters_snapshot=_snapshot(strategy),
+            change_reason=change_reason,
+        )
+    )
+    await write_audit_log(
+        session,
+        organization_id=strategy.organization_id,
+        actor=user,
+        event_type=AuditEventType.STRATEGY_VERSION_SAVED,
+        entity_type="strategy",
+        entity_id=strategy.id,
+        entity_name=strategy.name,
+        before_state={"version": before_version, "status": before_status},
+        after_state={"version": strategy.version, "status": strategy.status.value, "changed_keys": changed_keys},
+        justification=change_reason,
+    )
+
+
+async def save_new_version(
+    session: AsyncSession,
+    *,
+    strategy: Strategy,
+    user: User,
+    data: dict,
+    change_reason: str,
+) -> Strategy:
+    """Batch 25: the explicit "save changes as a new version" action.
+
+    Unlike ``update_strategy`` this REQUIRES a rule/parameter change and a written
+    change reason — it never produces an empty version, and it never creates a second
+    strategy row (a brand-new, unrelated strategy is ``create_strategy``, at v1.0).
+    """
+    # Segregation of duties: governance roles review strategies, authors rewrite them.
+    if not await has_permission(session, user, P.STRATEGY_VERSION):
+        raise lifecycle.PermissionDenied("You do not have permission to save a new strategy version")
+    if strategy.status == StrategyStatus.RETIRED:
+        raise StrategyEditError("Retired strategies are immutable research records; create a new strategy instead")
+    if not change_reason or not change_reason.strip():
+        raise lifecycle.ReasonRequired("A change reason is required to save a new version")
+
+    changed_keys = _changed_tunable_keys(strategy, data)
+    if not changed_keys:
+        raise lifecycle.RulesInvalid("No rule, parameter, or risk-constraint changes to save as a new version")
+    if data.get("name"):
+        strategy.name = data["name"]
+    if "description" in data:
+        strategy.description = data["description"]
+    for key in changed_keys:
+        setattr(strategy, key, data[key])
+
+    await _record_new_version(
+        session, strategy=strategy, user=user, change_reason=change_reason.strip(), changed_keys=changed_keys
+    )
+    await session.commit()
+    await session.refresh(strategy)
+    await GraphSyncService().sync_strategy_node(session, strategy)
+    return strategy
+
+
+async def _preserved_history(session: AsyncSession, strategy_id: uuid.UUID) -> list[str]:
+    """What a strategy has accumulated that Pillars 2/3 require the platform to keep."""
+    from app.models.validation_result import ValidationResult
+
+    checks = (
+        ("failure records", select(func.count()).select_from(Failure).where(Failure.strategy_id == strategy_id)),
+        (
+            "approval decisions",
+            select(func.count()).select_from(ApprovalRecord).where(ApprovalRecord.strategy_id == strategy_id),
+        ),
+        (
+            "validation results",
+            select(func.count()).select_from(ValidationResult).where(ValidationResult.strategy_id == strategy_id),
+        ),
+        (
+            "derived strategies",
+            select(func.count()).select_from(Strategy).where(Strategy.parent_strategy_id == strategy_id),
+        ),
+    )
+    found: list[str] = []
+    for label, stmt in checks:
+        if (await session.scalar(stmt) or 0) > 0:
+            found.append(label)
+    return found
+
+
+async def delete_draft_strategy(session: AsyncSession, *, strategy: Strategy, user: User) -> None:
+    """Batch 25: permanently discard a draft that never became part of the record.
+
+    Allowed only for a DRAFT with no failures, approvals, validation results or
+    descendants, and only by the researcher who created it or an admin. Anything that
+    reached review is permanent research memory (PROJECT_CONSTITUTION Pillars 2 and
+    3) — it can be retired, never deleted. The audit row written here snapshots what
+    was discarded, so even a deleted draft stays accountable.
+    """
+    is_creator = strategy.created_by_user_id is not None and strategy.created_by_user_id == user.id
+    if not (is_creator or await has_permission(session, user, P.STRATEGY_DELETE_ANY_DRAFT)):
+        raise lifecycle.PermissionDenied("Only the researcher who created this draft, or an admin, can delete it")
+    if strategy.status != StrategyStatus.DRAFT:
+        raise StrategyEditError(
+            f"Only draft strategies can be deleted (this one is {strategy.status.value}). "
+            "Strategies that reached review are permanent research records — retire them instead."
+        )
+    preserved = await _preserved_history(session, strategy.id)
+    if preserved:
+        raise StrategyEditError(
+            f"This draft has history that must be preserved ({', '.join(preserved)}). Retire it instead."
+        )
+
+    strategy_id = strategy.id
+    organization_id = strategy.organization_id
+    await write_audit_log(
+        session,
+        organization_id=organization_id,
+        actor=user,
+        event_type=AuditEventType.STRATEGY_DELETED,
+        entity_type="strategy",
+        entity_id=strategy_id,
+        entity_name=strategy.name,
+        before_state={"status": strategy.status.value, "version": strategy.version, **_snapshot(strategy)},
+    )
+    await session.delete(strategy)
+    await session.commit()
+
+    await GraphSyncService().delete_strategy_node(organization_id, strategy_id)
+    from app.services.backtest_cache import delete_backtest_charts
+
+    await delete_backtest_charts(strategy_id)
+
+
 # --------------------------------------------------------------------------- #
 # Lifecycle transitions
 # --------------------------------------------------------------------------- #
-async def submit(session: AsyncSession, *, strategy: Strategy) -> Strategy:
+async def submit(session: AsyncSession, *, strategy: Strategy, user: User | None = None) -> Strategy:
     lifecycle.assert_transition_legal(strategy.status, StrategyStatus.CANDIDATE)
     lifecycle.assert_submittable(strategy)
+    before_status = strategy.status.value
     strategy.status = StrategyStatus.CANDIDATE
+    # Batch 25: submitting for review is a status change a person made, so it is
+    # audited like every other transition (seed scripts call this with no user).
+    if user is not None:
+        await write_audit_log(
+            session,
+            organization_id=strategy.organization_id,
+            actor=user,
+            event_type=AuditEventType.STRATEGY_STATUS_CHANGE,
+            entity_type="strategy",
+            entity_id=strategy.id,
+            entity_name=strategy.name,
+            before_state={"status": before_status},
+            after_state={"status": strategy.status.value},
+            justification="Submitted for review",
+        )
     await session.commit()
     await session.refresh(strategy)
     await GraphSyncService().sync_strategy_node(session, strategy)
@@ -211,19 +417,18 @@ async def submit(session: AsyncSession, *, strategy: Strategy) -> Strategy:
     # Batch 19: a strategy reaching candidate is ready for review. Target the users
     # who can actually approve it (same role set the approval queue uses), so the
     # toast lands with the approvers rather than the whole org.
-    approver_ids = (
-        await session.execute(
-            select(User.id)
-            .where(User.role.in_(lifecycle.APPROVAL_ROLES))
-            .where(User.is_active.is_(True))
+    approver_ids = [
+        u.id
+        for u in await users_with_permission(
+            session, organization_id=strategy.organization_id, key=P.STRATEGY_APPROVE
         )
-    ).scalars().all()
+    ]
     _fire(
         ws_events.publish_approval_request(
             org_id=str(strategy.organization_id),
             strategy_id=str(strategy.id),
             strategy_name=strategy.name,
-            requested_by_name=strategy.name,  # submit has no acting user; name the strategy
+            requested_by_name=(user.full_name or user.email) if user else strategy.name,
             robustness_score=strategy.robustness_score or 0.0,
             approver_user_ids=[str(u) for u in approver_ids],
         )
@@ -242,10 +447,8 @@ async def approve(
     # Batch 10 RBAC audit fix: compliance_officer must also be able to approve/reject
     # (the Governance Panel's approval queue is restricted to ComplianceOfficer/Admin
     # and reuses this exact function) — was GOVERNANCE_ROLES (excluded compliance_officer).
-    if user.role not in lifecycle.APPROVAL_ROLES:
-        raise lifecycle.PermissionDenied(
-            "Only risk_manager, cio, compliance_officer, or admin may approve"
-        )
+    if not await has_permission(session, user, P.STRATEGY_APPROVE):
+        raise lifecycle.PermissionDenied("You do not have permission to approve or reject strategies")
     if not justification or not justification.strip():
         raise lifecycle.ReasonRequired("A justification is required")
 
@@ -279,10 +482,11 @@ async def approve(
     await write_audit_log(
         session,
         organization_id=strategy.organization_id,
-        actor_user_id=user.id,
+        actor=user,
         event_type=event_type,
         entity_type="strategy",
         entity_id=strategy.id,
+        entity_name=strategy.name,
         before_state={"status": before_status},
         after_state={"status": strategy.status.value},
         justification=justification,
@@ -310,17 +514,21 @@ async def retire(
 ) -> Strategy:
     lifecycle.assert_transition_legal(strategy.status, StrategyStatus.RETIRED)
     lifecycle.assert_retire_permitted(
-        strategy, role=user.role, reason=reason, is_admin=(user.role == UserRole.ADMIN)
+        strategy,
+        can_retire=await has_permission(session, user, P.STRATEGY_RETIRE),
+        can_override=await has_permission(session, user, P.STRATEGY_RETIRE_OVERRIDE),
+        reason=reason,
     )
     before_status = strategy.status.value
     strategy.status = StrategyStatus.RETIRED
     await write_audit_log(
         session,
         organization_id=strategy.organization_id,
-        actor_user_id=user.id,
+        actor=user,
         event_type=AuditEventType.STRATEGY_STATUS_CHANGE,
         entity_type="strategy",
         entity_id=strategy.id,
+        entity_name=strategy.name,
         before_state={"status": before_status},
         after_state={"status": strategy.status.value},
         justification=reason,
@@ -360,16 +568,17 @@ async def transition(
         # researcher could flip candidate->active via this generic endpoint as long
         # as someone else had approved it at some point. Now requires the same role
         # set as the dedicated /approve endpoint.
-        if user.role not in lifecycle.APPROVAL_ROLES:
-            raise lifecycle.PermissionDenied(
-                "Only risk_manager, cio, compliance_officer, or admin may activate a strategy"
-            )
+        if not await has_permission(session, user, P.STRATEGY_APPROVE):
+            raise lifecycle.PermissionDenied("You do not have permission to activate a strategy")
         lifecycle.assert_activatable(
             strategy, has_approval=await _has_approve_record(session, strategy.id)
         )
     elif target == StrategyStatus.RETIRED:
         lifecycle.assert_retire_permitted(
-            strategy, role=user.role, reason=reason, is_admin=(user.role == UserRole.ADMIN)
+            strategy,
+            can_retire=await has_permission(session, user, P.STRATEGY_RETIRE),
+            can_override=await has_permission(session, user, P.STRATEGY_RETIRE_OVERRIDE),
+            reason=reason,
         )
     elif target == StrategyStatus.DRAFT:
         strategy.robustness_score = None
@@ -379,10 +588,11 @@ async def transition(
     await write_audit_log(
         session,
         organization_id=strategy.organization_id,
-        actor_user_id=user.id,
+        actor=user,
         event_type=AuditEventType.STRATEGY_STATUS_CHANGE,
         entity_type="strategy",
         entity_id=strategy.id,
+        entity_name=strategy.name,
         before_state={"status": before_status},
         after_state={"status": strategy.status.value},
         justification=reason,

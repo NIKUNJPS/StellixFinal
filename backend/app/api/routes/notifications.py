@@ -12,11 +12,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_tenant_db, require_role
+from app.api.deps import get_current_user, get_tenant_db, require_permission
 from app.core.config import settings
 from app.models.notification import Notification
 from app.models.organization import Organization
-from app.models.user import User, UserRole
+from app.models.user import User
+from app.rbac.catalog import P
 from app.schemas.notification import MarkAllReadResponse, NotificationListResponse, NotificationRead
 from app.services import notification as svc
 from app.services.webhook import post_webhook
@@ -30,7 +31,7 @@ router = APIRouter(prefix="/notifications", tags=["Notifications"])
     summary="Build + deliver this org's weekly digest now (admin only)",
 )
 async def preview_weekly_digest(
-    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    current_user: User = Depends(require_permission(P.DIGEST_SEND)),
     db: AsyncSession = Depends(get_tenant_db),
 ) -> dict:
     """Batch 22: gather the caller's org's weekly stats, render the digest, deliver it

@@ -13,7 +13,8 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { getNavLinks } from "@/components/layout/nav-config";
+import { navLinksForAccess } from "@/components/layout/nav-config";
+import { useNavAccess } from "@/hooks/use-permissions";
 import { listStrategies } from "@/lib/strategy";
 import type { StrategyListItem } from "@/lib/strategy-types";
 import { useAuthStore } from "@/store/auth-store";
@@ -37,7 +38,8 @@ export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [strategies, setStrategies] = useState<StrategyListItem[]>([]);
   const user = useAuthStore((s) => s.user);
-  const navLinks = getNavLinks(user?.role);
+  const navAccess = useNavAccess();
+  const navLinks = navLinksForAccess(navAccess);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -52,11 +54,12 @@ export function GlobalSearch() {
 
   useEffect(() => {
     if (!open) return;
-    if (user?.role === "compliance_officer") return;
+    // Unchanged for the Compliance Officer system role, which never loads strategies here.
+    if (navAccess.roleKey === "compliance_officer") return;
     listStrategies()
       .then((res) => setStrategies(res.items))
       .catch(() => setStrategies([]));
-  }, [open, user]);
+  }, [open, navAccess.roleKey]);
 
   function go(href: string) {
     setOpen(false);

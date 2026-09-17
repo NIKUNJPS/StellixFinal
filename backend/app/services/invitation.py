@@ -71,6 +71,7 @@ async def create_invitation(
     email: str,
     role: UserRole,
     invited_by: User,
+    role_id: uuid.UUID | None = None,
 ) -> tuple[Invitation, str]:
     """Invite ``email`` into ``organization_id``. Returns (invitation, raw_token).
 
@@ -79,6 +80,16 @@ async def create_invitation(
     keeps at most one live invitation per address.
     """
     email_normalized = email.strip().lower()
+
+    if role_id is not None:
+        # Batch 26: only a system role or one of THIS organization's custom roles.
+        from app.services.rbac import RoleNotFound, roles_visible_to_org
+
+        chosen = next((r for r in await roles_visible_to_org(session, organization_id) if r.id == role_id), None)
+        if chosen is None:
+            raise RoleNotFound("Role not found")
+        if chosen.system_key:
+            role = UserRole(chosen.system_key)
 
     existing_user = (
         await session.execute(
@@ -108,6 +119,7 @@ async def create_invitation(
         organization_id=organization_id,
         email=email_normalized,
         role=role,
+        role_id=role_id,
         status=InvitationStatus.PENDING,
         token_hash=hash_refresh_token(raw_token),
         invited_by=invited_by.id,
@@ -205,6 +217,7 @@ async def accept_invitation(
         hashed_password=hash_password(password),
         full_name=full_name,
         role=invitation.role,
+        role_id=invitation.role_id,
         is_active=True,
         # Opening a link sent only to this address IS the proof of ownership, so a
         # separate verification round-trip would be redundant.

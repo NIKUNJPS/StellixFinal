@@ -16,6 +16,9 @@ class InvitationCreate(BaseModel):
     email: EmailStr
     # Defaults to the least-privileged role — an admin must opt in to anything more.
     role: UserRole = UserRole.RESEARCHER
+    # Batch 26: a system role or one of this organization's custom roles. When set it
+    # takes precedence over ``role``.
+    role_id: uuid.UUID | None = None
 
 
 class InvitationRead(BaseModel):
@@ -24,6 +27,7 @@ class InvitationRead(BaseModel):
     id: uuid.UUID
     email: str
     role: UserRole
+    role_id: uuid.UUID | None = None
     status: InvitationStatus
     invited_by: uuid.UUID | None
     expires_at: datetime

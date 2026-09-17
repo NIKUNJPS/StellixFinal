@@ -57,6 +57,8 @@ extend-immutable-calls = [
     "fastapi.Cookie",
     "fastapi.Security",
     "app.api.deps.require_role",
+    "app.api.deps.require_permission",
+    "app.api.deps.require_any_permission",
     "app.api.deps.require_scope",
 ]
 

@@ -94,6 +94,16 @@ class Neo4jGraphRepository:
         async with self._driver.session() as session:
             await run_scoped(session, query, **params)
 
+    async def delete_node(self, organization_id: str, *, label: str, key_value: str) -> None:
+        _check_label(label)
+        key_prop = NODE_KEY_PROP[label]
+        query = (
+            f"MATCH (n:{label} {{organization_id: $organization_id, {key_prop}: $key_value}}) "
+            "DETACH DELETE n"
+        )
+        async with self._driver.session() as session:
+            await run_scoped(session, query, organization_id=organization_id, key_value=key_value)
+
     # --- the 5 named research queries ---------------------------------------- #
     async def failed_strategies_by_regime(
         self, organization_id: str, *, regime: str, since: datetime

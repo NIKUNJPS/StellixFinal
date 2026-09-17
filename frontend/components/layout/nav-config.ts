@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
+  ClipboardCheck,
   CreditCard,
   Database,
   Dna,
@@ -14,6 +15,7 @@ import {
   Share2,
   ShieldCheck,
   Sparkles,
+  Users,
   Waves,
 } from "lucide-react";
 
@@ -31,6 +33,7 @@ export const ADMIN_NAV_LINKS: NavLink[] = [
   { href: "/admin/failures", label: "Failure Intelligence", icon: AlertTriangle },
   { href: "/admin/governance", label: "Governance & Compliance", icon: ShieldCheck },
   { href: "/admin/llm-audit", label: "LLM Audit Log", icon: ScrollText },
+  { href: "/admin/members", label: "Organization Members", icon: Users },
   { href: "/admin/billing", label: "Billing", icon: CreditCard },
   { href: "/admin/system", label: "System Monitoring", icon: ServerCog },
 ];
@@ -41,6 +44,7 @@ export const COMPLIANCE_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/compliance/governance", label: "Governance & Compliance", icon: ShieldCheck },
   { href: "/compliance/llm-audit", label: "LLM Audit Log", icon: ScrollText },
+  { href: "/compliance/members", label: "Organization Members", icon: Users },
   { href: "/compliance/graph", label: "Knowledge Graph", icon: Share2 },
 ];
 
@@ -53,17 +57,61 @@ export const RESEARCHER_NAV_LINKS: NavLink[] = [
   { href: "/researcher/graph", label: "Knowledge Graph", icon: Share2 },
 ];
 
+/* Batch 25: the risk roles previously saw only Failure Intelligence + Graph, and
+ * app/admin/layout.tsx bounced them off every /admin page — so Portfolio, the approval
+ * queue and the kill switch existed but were unreachable. Every link below points at
+ * a page whose backend endpoints already admit the role. */
 export const RISK_MANAGER_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/risk-manager/portfolio", label: "Portfolio Risk", icon: PieChart },
+  { href: "/risk-manager/governance", label: "Approvals & Kill Switch", icon: ShieldCheck },
   { href: "/risk-manager/failures", label: "Failure Intelligence", icon: AlertTriangle },
   { href: "/risk-manager/graph", label: "Knowledge Graph", icon: Share2 },
 ];
 
 export const CIO_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/cio/portfolio", label: "Performance & Portfolio", icon: PieChart },
+  { href: "/cio/governance", label: "Approvals & Kill Switch", icon: ShieldCheck },
+  { href: "/cio/kill-switch-reviews", label: "Kill Switch Reviews", icon: ClipboardCheck },
   { href: "/cio/failures", label: "Failure Intelligence", icon: AlertTriangle },
   { href: "/cio/graph", label: "Knowledge Graph", icon: Share2 },
 ];
+
+/**
+ * Batch 26: users holding one of the five system roles keep exactly the navigation they
+ * had before dynamic RBAC. Users on an organization custom role get a navigation built
+ * from their permissions, pointing at the generic /admin pages (the admin layout only
+ * redirects system-role users to their role-specific trees).
+ */
+export interface NavAccess {
+  /** Effective system role key, or null for a custom role. Legacy role before /auth/me loads. */
+  roleKey?: string | null;
+  isCustomRole?: boolean;
+  permissions?: ReadonlySet<string> | null;
+}
+
+export function navLinksForAccess({ roleKey, isCustomRole, permissions }: NavAccess): NavLink[] {
+  if (!isCustomRole) return getNavLinks(roleKey ?? undefined);
+  const can = (key: string) => permissions?.has(key) ?? false;
+  const links: NavLink[] = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/strategies", label: "Strategy Explorer", icon: FlaskConical },
+    { href: "/admin/portfolio", label: "Portfolio", icon: PieChart },
+    { href: "/admin/failures", label: "Failure Intelligence", icon: AlertTriangle },
+    { href: "/admin/research", label: "Research Notebook", icon: NotebookText },
+    { href: "/admin/assistant", label: "Research Assistant", icon: Sparkles },
+  ];
+  if (["governance.view", "audit.view.all", "audit.view.org_risk", "audit.view.own_risk", "compliance.export"].some(can)) {
+    links.push({ href: "/admin/governance", label: "Governance & Compliance", icon: ShieldCheck });
+  }
+  if (can("llm_audit.view")) links.push({ href: "/admin/llm-audit", label: "LLM Audit Log", icon: ScrollText });
+  if (can("members.view")) links.push({ href: "/admin/members", label: "Organization Members", icon: Users });
+  if (can("billing.manage")) links.push({ href: "/admin/billing", label: "Billing", icon: CreditCard });
+  if (can("system.monitor")) links.push({ href: "/admin/system", label: "System Monitoring", icon: ServerCog });
+  links.push({ href: "/admin/graph", label: "Knowledge Graph", icon: Share2 });
+  return links;
+}
 
 export function getNavLinks(role?: string): NavLink[] {
   if (role === "compliance_officer") {
@@ -109,6 +157,9 @@ export const BREADCRUMB_LABELS: Record<string, string> = {
   new: "New",
   validation: "Validation",
   "backtest-results": "Backtest Results",
+  members: "Organization Members",
+  "kill-switch-reviews": "Kill Switch Reviews",
+  edit: "New Version",
 };
 
 /**

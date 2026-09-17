@@ -7,7 +7,8 @@ import { ChevronLeft, ChevronRight, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/store/ui-store";
 import { useAuthStore } from "@/store/auth-store";
-import { getNavLinks } from "@/components/layout/nav-config";
+import { navLinksForAccess } from "@/components/layout/nav-config";
+import { useNavAccess } from "@/hooks/use-permissions";
 import { SidebarCarousel } from "@/components/layout/sidebar-carousel";
 
 const PALETTE = {
@@ -30,7 +31,8 @@ export function Sidebar() {
   const user = useAuthStore((s) => s.user);
 
   const isSuperAdmin = user?.is_super_admin ?? false;
-  const navLinks = getNavLinks(user?.role);
+  const navAccess = useNavAccess();
+  const navLinks = navLinksForAccess(navAccess);
 
   return (
     <aside

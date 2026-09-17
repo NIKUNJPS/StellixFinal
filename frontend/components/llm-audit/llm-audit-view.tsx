@@ -1,13 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { type LucideIcon, Bot, Check, ChevronDown, Copy, Database, Filter, RefreshCw, Search, Terminal, User, FileText, Sparkles, AlertCircle } from "lucide-react";
+import { type LucideIcon, AlertCircle, Check, ChevronDown, Copy, RefreshCw, Sparkles, Terminal } from "lucide-react";
 
+import { MemberPicker } from "@/components/members/member-picker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { getAuditLog } from "@/lib/llm";
 import type { AuditLogEntry } from "@/lib/llm-types";
+import { listOrganizationMembers, type OrganizationMember } from "@/lib/members";
+
+function callerLabel(entry: AuditLogEntry): string {
+  if (!entry.user_id) return "System (background task)";
+  if (entry.user_name) return `${entry.user_name} (${entry.user_email})`;
+  return entry.user_email ?? "Deleted user";
+}
 
 const FUNCTION_NAMES = [
   "generate_hypothesis",
@@ -29,7 +36,10 @@ export function LLMAuditView() {
   const [items, setItems] = useState<AuditLogEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [functionFilter, setFunctionFilter] = useState<string>("");
-  const [userIdFilter, setUserIdFilter] = useState<string>("");
+  // Batch 25: the filter is chosen by name/email; only the resulting user_id is sent.
+  const [userIdFilter, setUserIdFilter] = useState<string | null>(null);
+  const [members, setMembers] = useState<OrganizationMember[]>([]);
+  const [membersLoading, setMembersLoading] = useState(true);
   const [selected, setSelected] = useState<AuditLogEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +68,13 @@ export function LLMAuditView() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    listOrganizationMembers()
+      .then((res) => setMembers(res.items))
+      .catch(() => setMembers([]))
+      .finally(() => setMembersLoading(false));
+  }, []);
 
   const copyToClipboard = (text: string, type: "prompt" | "response") => {
     navigator.clipboard.writeText(text);
@@ -189,16 +206,15 @@ export function LLMAuditView() {
                   )}
                 </div>
 
-                {/* User ID Filter Input */}
-                <div className="relative">
-                  <User className="pointer-events-none absolute left-3 top-3 h-3.5 w-3.5 text-[#808495]" />
-                  <Input
-                    value={userIdFilter}
-                    onChange={(e) => setUserIdFilter(e.target.value)}
-                    placeholder="Filter by user_id"
-                    className="h-10 w-64 rounded-xl border-white/[0.08] bg-[#0F1117]/80 pl-9 font-mono text-xs text-[#F5F5F7] placeholder-[#666A76] focus-visible:ring-[#8E88C7]/40"
-                  />
-                </div>
+                {/* Person filter: search by name or email, never by raw UUID */}
+                <MemberPicker
+                  members={members}
+                  value={userIdFilter}
+                  onChange={setUserIdFilter}
+                  loading={membersLoading}
+                  placeholder="Filter by person (name or email)"
+                  testId="filter-user"
+                />
               </div>
 
               <Button
@@ -221,6 +237,7 @@ export function LLMAuditView() {
                 <thead>
                   <tr className="border-b border-white/[0.06] bg-[#0F1117]/40 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-[#808495]">
                     <th className="px-4 py-3">Function</th>
+                    <th className="px-4 py-3">Called by</th>
                     <th className="px-4 py-3">Model</th>
                     <th className="px-4 py-3">Tokens</th>
                     <th className="px-4 py-3">Numeric OK</th>
@@ -243,6 +260,9 @@ export function LLMAuditView() {
                             <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-[#8E88C7]" : "bg-transparent"}`} />
                             {row.function_name}
                           </div>
+                        </td>
+                        <td className="max-w-[180px] truncate px-4 py-3 text-[#C9CBD3]" title={callerLabel(row)}>
+                          {row.user_id ? row.user_name ?? row.user_email ?? "Deleted user" : "System"}
                         </td>
                         <td className="px-4 py-3 font-mono text-[#808495]">{row.model_used}</td>
                         <td className="px-4 py-3 font-mono text-[#9A9DA8]">
@@ -270,7 +290,7 @@ export function LLMAuditView() {
 
                   {items.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-16 text-center text-xs text-[#666A76]">
+                      <td colSpan={6} className="px-4 py-16 text-center text-xs text-[#666A76]">
                         No LLM calls recorded yet — the research assistant logs every call here once used.
                       </td>
                     </tr>
@@ -318,9 +338,9 @@ export function LLMAuditView() {
                       <span className="text-[#808495]">Model: </span>
                       <span className="text-[#F5F5F7]">{selected.model_used}</span>
                     </div>
-                    <div>
-                      <span className="text-[#808495]">User ID: </span>
-                      <span className="text-[#F5F5F7]">{selected.user_id || "system"}</span>
+                    <div className="min-w-0">
+                      <span className="text-[#808495]">Called by: </span>
+                      <span className="break-all text-[#F5F5F7]">{callerLabel(selected)}</span>
                     </div>
                   </div>
 

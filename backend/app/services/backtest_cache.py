@@ -47,6 +47,15 @@ async def record_backtest_charts(
     await redis.set(f"{_KEY_PREFIX}{strategy_id}", json.dumps(payload), ex=_TTL_SECONDS)
 
 
+async def delete_backtest_charts(strategy_id: uuid.UUID) -> None:
+    """Drop a deleted draft's cached chart series. Best-effort: the cache expires on
+    its own, so a Redis hiccup here must not fail the delete that already committed."""
+    try:
+        await redis_client.get_client().delete(f"{_KEY_PREFIX}{strategy_id}")
+    except Exception:  # noqa: BLE001
+        return
+
+
 async def get_backtest_charts(strategy_id: uuid.UUID) -> dict | None:
     """None means "never run" (or the cache expired) — distinct from an empty
     backtest, which still has a flat equity curve and would return real data."""

@@ -53,10 +53,11 @@ async def create_export_job(
     await write_audit_log(
         session,
         organization_id=organization_id,
-        actor_user_id=user.id,
+        actor=user,
         event_type=AuditEventType.DATA_EXPORT,
         entity_type="compliance_export_job",
         entity_id=job.id,
+        entity_name=f"{export_format.upper()} export {start_date.isoformat()} to {end_date.isoformat()}",
         after_state={
             "start_date": start_date.isoformat(),
             "end_date": end_date.isoformat(),

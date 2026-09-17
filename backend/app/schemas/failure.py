@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -26,6 +27,11 @@ class FailureRead(BaseModel):
     llm_numeric_validation_passed: bool | None
     related_failure_ids: list
     created_at: datetime
+    # Batch 25 (derived, not stored): see app/services/llm_explain.explanation_status.
+    llm_explanation_status: Literal["generated", "queued", "unavailable"] = "queued"
+    symbol: str | None = None
+    strategy_name: str | None = None
+    background_worker_online: bool | None = None
 
 
 class FailureListItem(BaseModel):
@@ -39,6 +45,11 @@ class FailureListItem(BaseModel):
     llm_generated_explanation: str | None
     llm_numeric_validation_passed: bool | None
     created_at: datetime
+    # Batch 25 (derived): explanation state, the instrument the failure was detected
+    # on (None for failures recorded before it was captured), and the strategy name.
+    llm_explanation_status: Literal["generated", "queued", "unavailable"] = "queued"
+    symbol: str | None = None
+    strategy_name: str | None = None
 
 
 class FailureListResponse(BaseModel):
@@ -67,6 +78,13 @@ class FailureHeatmapCell(BaseModel):
 
 class FailureHeatmapResponse(BaseModel):
     cells: list[FailureHeatmapCell]
+
+
+class ExplanationEnqueued(BaseModel):
+    failure_id: uuid.UUID
+    llm_explanation_status: Literal["generated", "queued", "unavailable"]
+    message: str
+    task_id: str | None = None
 
 
 class ManualFailRequest(BaseModel):

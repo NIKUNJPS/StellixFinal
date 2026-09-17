@@ -6,6 +6,8 @@ import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { useCan } from "@/hooks/use-permissions";
+import { PERM } from "@/lib/rbac";
 import {
   previewWeeklyDigest,
   setWeeklyDigestEnabled,
@@ -15,13 +17,15 @@ import { useAuthStore } from "@/store/auth-store";
 
 export function DigestCard() {
   const { user, organization, setSession } = useAuthStore();
+  const canManageOrganization = useCan(PERM.ORGANIZATION_MANAGE);
+  const canSendDigest = useCan(PERM.DIGEST_SEND);
   const [preview, setPreview] = useState<WeeklyDigestContent | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   if (!user || !organization) return null;
-  const isAdmin = user.role === "admin";
+  const isAdmin = canManageOrganization;
 
   async function toggle(enabled: boolean) {
     if (!user || !organization) return;
@@ -82,7 +86,7 @@ export function DigestCard() {
           />
         </div>
 
-        {isAdmin && (
+        {canSendDigest && (
           <div className="flex items-center gap-3">
             <Button variant="outline" onClick={runPreview} disabled={busy}>
               {busy ? "Building…" : "Preview this week's digest"}

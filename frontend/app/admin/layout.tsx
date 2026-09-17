@@ -6,26 +6,37 @@ import { usePathname, useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { useAuthStore } from "@/store/auth-store";
 
+const ROLE_ROUTE_ROOTS: Record<string, string> = { risk_manager: "/risk-manager", cio: "/cio" };
+const RISK_ROLE_SECTIONS = ["portfolio", "governance", "failures", "graph"];
+
 /**
  * Chrome + auth gate for every /admin/* route.
  *
  * Redirects Compliance Officer users to their dedicated /compliance/* routes.
+ * Batch 25: risk_manager/cio are mapped to their own equivalents of every /admin page
+ * they are allowed to use (portfolio, governance, failures, graph) instead of being
+ * bounced to Failure Intelligence regardless of what they asked for.
  */
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const user = useAuthStore((s) => s.user);
+  // Batch 26: redirects apply only to the five system roles, keyed on the EFFECTIVE role —
+  // a member on an organization custom role uses the generic /admin pages.
+  const effectiveRole = useAuthStore((s) => s.effectiveRole);
+  const roleKey = effectiveRole?.system_key ?? null;
 
   useEffect(() => {
-    if (user?.role === "compliance_officer") {
+    if (roleKey === "compliance_officer") {
       if (pathname === "/admin/llm-audit") {
         router.replace("/compliance/llm-audit");
+      } else if (pathname === "/admin/members") {
+        router.replace("/compliance/members");
       } else if (pathname === "/admin/graph") {
         router.replace("/compliance/graph");
       } else {
         router.replace("/compliance/governance");
       }
-    } else if (user?.role === "researcher") {
+    } else if (roleKey === "researcher") {
       if (pathname?.startsWith("/admin/strategies")) {
         router.replace(pathname.replace("/admin/strategies", "/researcher/strategies"));
       } else if (pathname?.startsWith("/admin/failures")) {
@@ -39,20 +50,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       } else {
         router.replace("/researcher/strategies");
       }
-    } else if (user?.role === "risk_manager") {
-      if (pathname?.startsWith("/admin/graph")) {
-        router.replace(pathname.replace("/admin/graph", "/risk-manager/graph"));
-      } else {
-        router.replace("/risk-manager/failures");
-      }
-    } else if (user?.role === "cio") {
-      if (pathname?.startsWith("/admin/graph")) {
-        router.replace(pathname.replace("/admin/graph", "/cio/graph"));
-      } else {
-        router.replace("/cio/failures");
-      }
+    } else if (roleKey && roleKey in ROLE_ROUTE_ROOTS) {
+      const root = ROLE_ROUTE_ROOTS[roleKey] as string;
+      const section = RISK_ROLE_SECTIONS.find((s) => pathname?.startsWith(`/admin/${s}`));
+      router.replace(section ? pathname!.replace("/admin", root) : `${root}/failures`);
     }
-  }, [user, pathname, router]);
+  }, [roleKey, pathname, router]);
 
   return <DashboardShell>{children}</DashboardShell>;
 }

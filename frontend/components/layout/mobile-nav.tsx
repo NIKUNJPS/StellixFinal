@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, ShieldAlert } from "lucide-react";
 
-import { getNavLinks } from "@/components/layout/nav-config";
+import { navLinksForAccess } from "@/components/layout/nav-config";
+import { useNavAccess } from "@/hooks/use-permissions";
 import {
   Sheet,
   SheetContent,
@@ -26,7 +27,8 @@ export function MobileNav() {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const isSuperAdmin = user?.is_super_admin ?? false;
-  const navLinks = getNavLinks(user?.role);
+  const navAccess = useNavAccess();
+  const navLinks = navLinksForAccess(navAccess);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>

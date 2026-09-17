@@ -18,7 +18,7 @@ import json
 import logging
 
 from app.clients import redis_client
-from app.ws.events import WS_CHANNEL
+from app.ws.events import SCOPE_GLOBAL, WS_CHANNEL
 from app.ws.manager import ws_manager
 
 logger = logging.getLogger(__name__)
@@ -34,10 +34,21 @@ async def _dispatch(raw: str) -> None:
     """Route one Redis message to the local sockets it belongs to."""
     try:
         envelope = json.loads(raw)
-        org_id = envelope["organization_id"]
         payload = envelope["payload"]
+        scope = envelope.get("scope")
+        org_id = envelope["organization_id"]
     except (ValueError, KeyError, TypeError):
         logger.warning("WS bridge: dropping malformed message", exc_info=True)
+        return
+
+    if scope == SCOPE_GLOBAL:
+        # Batch 25: public market data. Delivered to every socket, and target lists
+        # are ignored on purpose — a global envelope must never become a way to
+        # address specific users in another tenant.
+        await ws_manager.broadcast_all(payload)
+        return
+    if not org_id:
+        logger.warning("WS bridge: dropping org-scoped message without an organization_id")
         return
 
     # Delivery stays org-keyed either way, so a target list can only ever narrow

@@ -13,21 +13,28 @@ import uuid
 from datetime import UTC
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_tenant_db, require_role
+from app.api.deps import get_current_user, get_tenant_db, require_permission
 from app.core.config import settings
 from app.models.organization import Organization
 from app.models.refresh_token import RefreshToken
-from app.models.user import User, UserRole
+from app.models.user import User
+from app.rbac.catalog import P
 from app.schemas.invitation import (
     InvitationCreate,
     InvitationListResponse,
     InvitationRead,
 )
-from app.schemas.user import UserRead
+from app.schemas.rbac import RoleAssignmentRequest
+from app.schemas.user import (
+    EffectiveRole,
+    OrganizationMemberListResponse,
+    OrganizationMemberRead,
+    UserRead,
+)
 from app.schemas.user_settings import (
     ChangePasswordRequest,
     PreferencesUpdateRequest,
@@ -37,6 +44,7 @@ from app.schemas.user_settings import (
 )
 from app.services import auth as auth_service
 from app.services import invitation as invitation_service
+from app.services import rbac as rbac_service
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -205,6 +213,75 @@ async def get_avatar(filename: str):
 
 
 # --------------------------------------------------------------------------- #
+# Organization member directory (Batch 25). Read-only, tenant-scoped. Registered
+# before /{user_id} for the same reason /me/* is.
+# --------------------------------------------------------------------------- #
+@router.get(
+    "/members",
+    response_model=OrganizationMemberListResponse,
+    summary="Read-only directory of this organization's members (admin/compliance_officer)",
+)
+async def list_organization_members(
+    _viewer: User = Depends(require_permission(P.MEMBERS_VIEW)),
+    db: AsyncSession = Depends(get_tenant_db),
+    q: str | None = Query(default=None, max_length=200, description="Filter by name or email"),
+) -> OrganizationMemberListResponse:
+    """Lets a compliance officer see who ``user_id`` values belong to (and filter the
+    audit logs by person) without admin powers. The session is org-bound, so another
+    tenant's users are structurally unreachable."""
+    stmt = select(User).order_by(User.full_name.is_(None), User.full_name, User.email)
+    if q and q.strip():
+        pattern = f"%{q.strip().lower()}%"
+        stmt = stmt.where(or_(func.lower(User.email).like(pattern), func.lower(User.full_name).like(pattern)))
+    members = (await db.execute(stmt)).scalars().all()
+    roles = {r.id: r for r in await rbac_service.roles_visible_to_org(db, _viewer.organization_id)}
+
+    def _read(member: User) -> OrganizationMemberRead:
+        role = roles.get(rbac_service.effective_role_id(member))
+        effective = (
+            EffectiveRole(id=role.id, name=role.name, is_system_default=role.is_system_default, system_key=role.system_key)
+            if role
+            else None
+        )
+        return OrganizationMemberRead.model_validate(member).model_copy(update={"effective_role": effective})
+
+    return OrganizationMemberListResponse(total=len(members), items=[_read(m) for m in members])
+
+
+@router.put(
+    "/{user_id}/role",
+    response_model=OrganizationMemberRead,
+    summary="Assign a system role or one of this organization's custom roles to a member",
+)
+async def assign_member_role(
+    user_id: uuid.UUID,
+    payload: RoleAssignmentRequest,
+    actor: User = Depends(require_permission(P.ROLES_MANAGE)),
+    db: AsyncSession = Depends(get_tenant_db),
+) -> OrganizationMemberRead:
+    """Takes effect on the target's very next request: permissions are resolved from
+    the database, never from a token claim, so no re-login is needed."""
+    target = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    try:
+        target = await rbac_service.assign_role(db, actor=actor, target=target, role_id=payload.role_id)
+    except rbac_service.RbacError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=exc.http_status, detail=str(exc)) from exc
+    role = await rbac_service.get_effective_role(db, target)
+    return OrganizationMemberRead.model_validate(target).model_copy(
+        update={
+            "effective_role": EffectiveRole(
+                id=role.id, name=role.name, is_system_default=role.is_system_default, system_key=role.system_key
+            )
+            if role
+            else None
+        }
+    )
+
+
+# --------------------------------------------------------------------------- #
 # Team invitations (Batch 25). Admin-only, tenant-scoped. Registered BEFORE the
 # /{user_id} route below for the same reason /me/* is: otherwise FastAPI matches
 # "invitations" as a user_id path param and 422s.
@@ -217,7 +294,7 @@ async def get_avatar(filename: str):
 )
 async def create_invitation(
     payload: InvitationCreate,
-    admin: User = Depends(require_role(UserRole.ADMIN)),
+    admin: User = Depends(require_permission(P.MEMBERS_INVITE)),
     db: AsyncSession = Depends(get_tenant_db),
 ) -> InvitationRead:
     try:
@@ -227,7 +304,10 @@ async def create_invitation(
             email=payload.email,
             role=payload.role,
             invited_by=admin,
+            role_id=payload.role_id,
         )
+    except rbac_service.RbacError as exc:
+        raise HTTPException(status_code=exc.http_status, detail=str(exc)) from exc
     except invitation_service.AlreadyMemberError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -252,7 +332,7 @@ async def create_invitation(
     summary="List this organization's invitations (admin only)",
 )
 async def list_invitations(
-    _admin: User = Depends(require_role(UserRole.ADMIN)),
+    _admin: User = Depends(require_permission(P.MEMBERS_INVITE)),
     db: AsyncSession = Depends(get_tenant_db),
 ) -> InvitationListResponse:
     invitations = await invitation_service.list_invitations(db)
@@ -268,7 +348,7 @@ async def list_invitations(
 )
 async def revoke_invitation(
     invitation_id: uuid.UUID,
-    _admin: User = Depends(require_role(UserRole.ADMIN)),
+    _admin: User = Depends(require_permission(P.MEMBERS_INVITE)),
     db: AsyncSession = Depends(get_tenant_db),
 ) -> InvitationRead:
     try:
@@ -291,7 +371,7 @@ async def revoke_invitation(
 )
 async def get_user(
     user_id: uuid.UUID,
-    _admin: User = Depends(require_role(UserRole.ADMIN)),
+    _admin: User = Depends(require_permission(P.MEMBERS_INVITE)),
     db: AsyncSession = Depends(get_tenant_db),
 ) -> User:
     user = (

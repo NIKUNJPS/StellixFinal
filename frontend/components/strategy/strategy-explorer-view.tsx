@@ -1,11 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { Plus, ArrowUpDown, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { Plus, ArrowUpDown, ArrowUp, ArrowDown, GitBranch, Trash2 } from "lucide-react";
 
-import { listStrategies } from "@/lib/strategy";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { deleteStrategy, listStrategies } from "@/lib/strategy";
+import { PERM } from "@/lib/rbac";
 import type { StrategyListItem, StrategyStatus } from "@/lib/strategy-types";
+import { useAuthStore } from "@/store/auth-store";
+import { useCan } from "@/hooks/use-permissions";
 
 type SortKey = "name" | "robustness_score" | "created_at";
 
@@ -38,16 +50,26 @@ function robustnessWidth(v: number | null): string {
   return `${Math.min(Math.max(v * 100, 0), 100)}%`;
 }
 
+/** Versions are stored as "v1.2"; older rows may lack the prefix. Never render "vv1.2". */
+function displayVersion(version: string): string {
+  return version.startsWith("v") ? version : `v${version}`;
+}
+
+
 export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: string }) {
   const [rows, setRows] = useState<StrategyListItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StrategyStatus | "all">("all");
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [pendingDelete, setPendingDelete] = useState<StrategyListItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const user = useAuthStore((s) => s.user);
 
-  useEffect(() => {
-    listStrategies()
+  const load = useCallback(() => {
+    return listStrategies()
       .then((data) => setRows(data.items))
       .catch((e) =>
         setError(
@@ -56,6 +78,43 @@ export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: strin
       )
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    void load();
+    // Confirmation banner after "save as new version" redirects back here. Read from
+    // window.location rather than useSearchParams so the page needs no Suspense boundary.
+    const params = new URLSearchParams(window.location.search);
+    const version = params.get("version");
+    if (params.get("versioned") && version) setNotice(`New version ${displayVersion(version)} saved.`);
+  }, [load]);
+
+  const canDeleteAnyDraft = useCan(PERM.STRATEGY_DELETE_ANY_DRAFT);
+  const canAuthor = useCan(PERM.STRATEGY_VERSION);
+  const canDelete = useCallback(
+    (s: StrategyListItem) =>
+      s.status === "draft" &&
+      !!user &&
+      (canDeleteAnyDraft || (s.created_by_user_id !== null && s.created_by_user_id === user.id)),
+    [user, canDeleteAnyDraft],
+  );
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      await deleteStrategy(pendingDelete.id);
+      setNotice(`Draft '${pendingDelete.name}' was permanently deleted.`);
+      setRows((prev) => prev.filter((r) => r.id !== pendingDelete.id));
+      setPendingDelete(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to delete strategy");
+      setPendingDelete(null);
+      await load();
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   const view = useMemo(() => {
     let items = rows;
@@ -261,6 +320,18 @@ export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: strin
           </div>
         </div>
 
+        {notice && (
+          <div className="px-7 pt-5 md:px-9">
+            <p
+              className="rounded-xl border px-4 py-3 text-sm font-medium"
+              style={{ borderColor: "rgba(53, 199, 122, 0.3)", backgroundColor: "rgba(53, 199, 122, 0.08)", color: PALETTE.success }}
+              role="status"
+            >
+              {notice}
+            </p>
+          </div>
+        )}
+
         {/* Error Alert */}
         {error && (
           <div className="px-7 pt-5 md:px-9">
@@ -448,7 +519,7 @@ export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: strin
                             borderColor: PALETTE.borderSubtle,
                           }}
                         >
-                          v{s.version}
+                          {displayVersion(s.version)}
                         </span>
                       </td>
 
@@ -512,19 +583,15 @@ export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: strin
                         </div>
                       </td>
 
-                      {/* Delete Action Column */}
+                      {/* Actions Column */}
                       <td className="px-5 py-4 text-right">
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150 hover:bg-red-500/10 hover:text-[#E45B5B]"
-                          style={{
-                            color: PALETTE.textMuted,
-                          }}
-                          title="Delete strategy"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          <span>Delete</span>
-                        </button>
+                        <RowActions
+                          strategy={s}
+                          basePath={basePath}
+                          canAuthor={canAuthor}
+                          canDelete={canDelete(s)}
+                          onDelete={setPendingDelete}
+                        />
                       </td>
                     </tr>
                   );
@@ -534,9 +601,96 @@ export function StrategyExplorerView({ basePath = "/admin" }: { basePath?: strin
           </div>
         )}
       </section>
+
+      <Dialog open={pendingDelete !== null} onOpenChange={(open) => !open && !deleting && setPendingDelete(null)}>
+        <DialogContent className="border-white/[0.1] bg-[#0F1115] text-[#F5F5F7]">
+          <DialogHeader>
+            <DialogTitle>Delete this draft permanently?</DialogTitle>
+            <DialogDescription className="text-[#9A9DA8]">
+              <strong className="text-[#F5F5F7]">{pendingDelete?.name}</strong> ({pendingDelete && displayVersion(pendingDelete.version)})
+              and its backtest results will be removed. This cannot be undone. A record of the deletion, including its
+              rules, is kept in the audit trail.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setPendingDelete(null)}
+              disabled={deleting}
+              className="border-white/[0.12] bg-transparent text-[#9A9DA8]"
+            >
+              Keep draft
+            </Button>
+            <Button
+              onClick={confirmDelete}
+              disabled={deleting}
+              className="bg-[#E45B5B] text-white hover:bg-[#E45B5B]/90"
+              data-testid="confirm-delete-strategy"
+            >
+              {deleting ? "Deleting…" : "Delete draft"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+const RowActions = memo(function RowActions({
+  strategy,
+  basePath,
+  canAuthor,
+  canDelete,
+  onDelete,
+}: {
+  strategy: StrategyListItem;
+  basePath: string;
+  canAuthor: boolean;
+  canDelete: boolean;
+  onDelete: (strategy: StrategyListItem) => void;
+}) {
+  return (
+    <div className="inline-flex items-center gap-1">
+      {canAuthor && strategy.status !== "retired" && (
+        <Link
+          href={`${basePath}/strategies/${strategy.id}/edit`}
+          className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors hover:bg-white/[0.06] hover:text-white"
+          style={{ color: PALETTE.textSecondary }}
+          title="Save changes as a new version"
+          data-testid={`new-version-${strategy.id}`}
+        >
+          <GitBranch className="h-3.5 w-3.5" />
+          <span>New version</span>
+        </Link>
+      )}
+      {canDelete ? (
+        <button
+          type="button"
+          onClick={() => onDelete(strategy)}
+          className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150 hover:bg-red-500/10 hover:text-[#E45B5B]"
+          style={{ color: PALETTE.textMuted }}
+          title="Delete this unsubmitted draft"
+          data-testid={`delete-${strategy.id}`}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          <span>Delete</span>
+        </button>
+      ) : (
+        <span
+          className="inline-flex cursor-help items-center gap-1 px-2.5 py-1 text-xs"
+          style={{ color: "rgba(102, 106, 118, 0.6)" }}
+          title={
+            strategy.status === "draft"
+              ? "Only the researcher who created this draft, or an admin, can delete it"
+              : "Strategies that reached review are permanent records — retire them instead of deleting"
+          }
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </span>
+      )}
+    </div>
+  );
+});
 
 function Th({
   children,

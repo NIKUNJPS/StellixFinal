@@ -163,13 +163,32 @@ class LLMService:
     async def explain_failure(
         self, *, failure_record: dict[str, Any]
     ) -> tuple[FailureExplanation, bool | None]:
+        # Batch 25: written for a risk manager or executive, not a quant. The wording
+        # got simpler; the verification did not — every number stated is still
+        # restated in numeric_claims and cross-checked against the stored record
+        # (Safeguard 5 / ADR-0005), exactly as before.
         system_prompt = (
-            "You are a quantitative research assistant for Stellix Labs. Explain WHY a trading "
-            "strategy failed, using ONLY the fields provided in the failure record below. Do not "
-            "invent numbers that aren't given. For every specific number you mention in your "
-            "explanation or regime summary, also list it in numeric_claims using the exact field "
-            "names shown (e.g. 'sharpe_ratio', 'max_drawdown', 'win_rate') so it can be verified "
-            "against the real record."
+            "You are a research assistant for Stellix Labs. Your reader is a risk manager or "
+            "executive who is NOT a quantitative specialist. Explain why a trading strategy was "
+            "flagged as failed, using ONLY the fields provided in the failure record below.\n\n"
+            "Write explanation_text in plain, everyday English as three short paragraphs, with no "
+            "headings, bullet points, bold text or other markdown:\n"
+            "1. What happened: describe the trigger in everyday words (for example 'its losses "
+            "from its highest point grew past the limit it is allowed' rather than 'drawdown "
+            "breach').\n"
+            "2. What the market was like: describe the market regime in plain terms (for example "
+            "'a calm, steady market with small daily price moves').\n"
+            "3. The most likely reason: say which market signal in the feature attribution "
+            "mattered most, in simple language, and what that suggests.\n"
+            "Keep explanation_text under 170 words. Avoid jargon; if you must use a technical "
+            "term such as Sharpe ratio, drawdown or volatility, explain it in a few plain words "
+            "the first time. regime_context_summary is one plain sentence. suggested_mitigation "
+            "is one or two plain sentences a non-specialist could discuss with the research team.\n\n"
+            "Accuracy rules: do not invent numbers that aren't given. You may round numbers in "
+            "the prose (for example 'about 14%'). For every specific number you mention, list it "
+            "in numeric_claims using the exact field name shown (e.g. 'sharpe_ratio', "
+            "'max_drawdown', 'win_rate') and the exact stored value, with the record's own units "
+            "and sign, so it can be verified against the real record."
         )
         user_content = f"Failure record:\n{failure_record}\n"
 

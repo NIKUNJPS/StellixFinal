@@ -62,14 +62,12 @@ def _now() -> datetime:
 async def _org_admin_email(session: AsyncSession, org_id: uuid.UUID) -> str | None:
     """Best target for a client-facing notification: the org's oldest admin (its
     creator), else any user. Returns None for an org with no users."""
-    email = await session.scalar(
-        select(User.email)
-        .where(User.organization_id == org_id, User.role == UserRole.ADMIN)
-        .order_by(User.created_at.asc())
-        .limit(1)
-    )
-    if email:
-        return email
+    from app.rbac.catalog import P
+    from app.services.rbac import users_with_permission
+
+    managers = await users_with_permission(session, organization_id=org_id, key=P.ORGANIZATION_MANAGE, active_only=False)
+    if managers:
+        return managers[0].email
     return await session.scalar(
         select(User.email).where(User.organization_id == org_id).order_by(User.created_at.asc()).limit(1)
     )

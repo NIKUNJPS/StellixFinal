@@ -309,7 +309,7 @@ export default function ArchitecturePage() {
             style={{ color: "rgba(244,243,247,0.46)" }}
           >
             The worst kind of multi-tenancy bug is a silent one — a query that
-            returns another tenant's data without error. Stellix is designed so
+            returns another tenant&apos;s data without error. Stellix is designed so
             that cannot happen.
           </p>
 

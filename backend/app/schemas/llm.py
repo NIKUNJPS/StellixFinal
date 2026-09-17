@@ -58,6 +58,9 @@ class AuditLogEntry(BaseModel):
     estimated_cost_usd: Decimal | None = None
     numeric_validation_passed: bool | None
     created_at: datetime
+    # Batch 25: who made the call, readable (None = a system/background call).
+    user_email: str | None = None
+    user_name: str | None = None
 
 
 class AuditLogListResponse(BaseModel):

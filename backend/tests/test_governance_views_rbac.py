@@ -1,8 +1,10 @@
 """RBAC matrix for the governance read/export endpoints (Batch 10): a wrong-role
 user gets 403, a correct-role user gets through. Three tiers, per schemas.md:
 kill-switch (covered in test_governance_kill_switch.py) is its own tier;
-active-strategies/approval-queue are APPROVAL_ROLES; audit-log/export are
-admin+compliance_officer only."""
+active-strategies/approval-queue are APPROVAL_ROLES; export is
+admin+compliance_officer only. Batch 25: the audit-log READ view also admits cio and
+risk_manager, server-side narrowed to risk actions (asserted in
+test_audit_trail_actor_identity.py) — researchers are still refused."""
 
 from __future__ import annotations
 
@@ -13,6 +15,7 @@ from tests.helpers import bearer, create_org_user, login
 
 _VIEW_ROLES = (UserRole.RISK_MANAGER, UserRole.CIO, UserRole.COMPLIANCE_OFFICER, UserRole.ADMIN)
 _COMPLIANCE_ROLES = (UserRole.ADMIN, UserRole.COMPLIANCE_OFFICER)
+_AUDIT_VIEW_ROLES = (*_COMPLIANCE_ROLES, UserRole.CIO, UserRole.RISK_MANAGER)
 _ALL_ROLES = (UserRole.RESEARCHER, UserRole.RISK_MANAGER, UserRole.CIO, UserRole.COMPLIANCE_OFFICER, UserRole.ADMIN)
 
 
@@ -50,7 +53,7 @@ async def test_approval_queue_view_rbac(client, db_session_factory, role):
 async def test_audit_log_view_rbac(client, db_session_factory, role):
     token = await _token_for(client, db_session_factory, role=role, tag=f"audit-{role.value}")
     resp = await client.get("/governance/audit-log", headers=bearer(token))
-    expected = 200 if role in _COMPLIANCE_ROLES else 403
+    expected = 200 if role in _AUDIT_VIEW_ROLES else 403
     assert resp.status_code == expected
 
 

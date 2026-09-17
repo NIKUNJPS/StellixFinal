@@ -34,6 +34,9 @@ ruptures>=1.1,<2
 arch>=6.3,<8              
 
 vectorbt==1.0.0
+# vectorbt 1.0.0 builds plotly templates with "scattermapbox", removed in plotly 7 —
+# without this cap a fresh install breaks every backtest/validation/evolution path.
+plotly>=5.18,<7
 
 lightgbm>=4.3,<5           
 shap>=0.51,<0.52          

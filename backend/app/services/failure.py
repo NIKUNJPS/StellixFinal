@@ -18,10 +18,11 @@ from app.models.failure import Failure, FailureTrigger
 from app.models.market_data import MarketData
 from app.models.notification import NotificationType
 from app.models.strategy import Strategy, StrategyStatus
+from app.rbac.catalog import P
 from app.services.audit import write_audit_log
-from app.services.notification import notify_creator_and_roles
+from app.services.notification import notify_creator_and_permission
 from app.services.strategy import _load_backtest_frames
-from app.strategy.lifecycle import GOVERNANCE_ROLES, assert_transition_legal
+from app.strategy.lifecycle import assert_transition_legal
 from app.ws import events as ws_events
 
 
@@ -43,6 +44,7 @@ async def persist_failure(
     assessment: detection.FailureAssessment,
     manual_reason: str | None = None,
     actor_user_id: uuid.UUID | None = None,
+    symbol: str | None = None,
 ) -> Failure:
     """Create a Failure and flip the strategy to failed via the active→failed hook."""
     # Only an ACTIVE strategy may fail — and only via the automatic (manual=False) hook.
@@ -52,6 +54,10 @@ async def persist_failure(
     market_context = dict(assessment.market_context)
     if manual_reason is not None:
         market_context["manual_reason"] = manual_reason
+    # Batch 25: record the instrument the failure was detected on, so the failure
+    # timeline can overlay a failure on the right symbol instead of on every symbol.
+    if symbol is not None:
+        market_context["symbol"] = symbol
 
     failure = Failure(
         strategy_id=strategy.id,
@@ -77,11 +83,11 @@ async def persist_failure(
     # Batch 12: notify the strategy's creator (if any) + governance-role users —
     # a failure is relevant to whoever owns the strategy and to risk oversight,
     # regardless of which of the four trigger paths detected it.
-    await notify_creator_and_roles(
+    await notify_creator_and_permission(
         session,
         organization_id=strategy.organization_id,
         creator_user_id=strategy.created_by_user_id,
-        roles=GOVERNANCE_ROLES,
+        permission=P.NOTIFY_FAILURE_ALERTS,
         type=NotificationType.FAILURE_DETECTED,
         message=(
             f"Strategy '{strategy.name}' failed ({assessment.trigger.value}) "
@@ -101,6 +107,7 @@ async def persist_failure(
             event_type=AuditEventType.STRATEGY_STATUS_CHANGE,
             entity_type="strategy",
             entity_id=strategy.id,
+            entity_name=strategy.name,
             before_state={"status": before_status},
             after_state={"status": strategy.status.value},
             justification=manual_reason,
@@ -199,6 +206,7 @@ async def monitor_and_fail(
             assessment=assessment,
             manual_reason=manual_reason,
             actor_user_id=actor_user_id,
+            symbol=symbol,
         )
         await session.commit()
         return str(failure.id)

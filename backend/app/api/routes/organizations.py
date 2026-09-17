@@ -11,9 +11,10 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_tenant_db, require_role
+from app.api.deps import get_tenant_db, require_permission
 from app.models.organization import Organization
-from app.models.user import User, UserRole
+from app.models.user import User
+from app.rbac.catalog import P
 from app.schemas.organization import OrganizationRead, OrganizationUpdateRequest
 
 router = APIRouter(prefix="/organizations", tags=["Organization"])
@@ -22,7 +23,7 @@ router = APIRouter(prefix="/organizations", tags=["Organization"])
 @router.patch("/me", response_model=OrganizationRead, summary="Update the current org's settings (admin only)")
 async def update_my_organization(
     payload: OrganizationUpdateRequest,
-    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    current_user: User = Depends(require_permission(P.ORGANIZATION_MANAGE)),
     db: AsyncSession = Depends(get_tenant_db),
 ) -> Organization:
     organization = await db.get(Organization, current_user.organization_id)

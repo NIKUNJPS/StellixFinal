@@ -13,7 +13,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_tenant_db, require_role
+from app.api.deps import get_current_user, get_tenant_db, require_permission
 from app.db.session import get_tenant_session
 from app.graph.sync_service import GraphSyncService
 from app.llm.guard import PricePredictionRejected, check_price_prediction_guard
@@ -24,7 +24,8 @@ from app.models.llm_audit_log import LLMAuditLog
 from app.models.regime_label import RegimeLabelRecord
 from app.models.research_note import ResearchNote
 from app.models.strategy import Strategy
-from app.models.user import User, UserRole
+from app.models.user import User
+from app.rbac.catalog import P
 from app.schemas.llm import (
     AuditLogEntry,
     AuditLogListResponse,
@@ -328,7 +329,7 @@ async def graph_summary(
 
 @router.get("/audit-log", response_model=AuditLogListResponse)
 async def list_audit_log(
-    current_user: User = Depends(require_role(UserRole.ADMIN, UserRole.COMPLIANCE_OFFICER)),
+    current_user: User = Depends(require_permission(P.LLM_AUDIT_VIEW)),
     db: AsyncSession = Depends(get_tenant_db),
     function_name: str | None = Query(default=None, max_length=64),
     user_id: uuid.UUID | None = Query(default=None),
@@ -344,15 +345,19 @@ async def list_audit_log(
     total = await db.scalar(select(func.count()).select_from(LLMAuditLog).where(*conditions))
     rows = (
         await db.execute(
-            select(LLMAuditLog)
+            select(LLMAuditLog, User.email, User.full_name)
+            .outerjoin(User, User.id == LLMAuditLog.user_id)
             .where(*conditions)
             .order_by(LLMAuditLog.created_at.desc())
             .limit(limit)
             .offset(offset)
         )
-    ).scalars().all()
+    ).all()
     return AuditLogListResponse(
         total=total or 0,
         count=len(rows),
-        items=[AuditLogEntry.model_validate(r) for r in rows],
+        items=[
+            AuditLogEntry.model_validate(entry).model_copy(update={"user_email": email, "user_name": name})
+            for entry, email, name in rows
+        ],
     )

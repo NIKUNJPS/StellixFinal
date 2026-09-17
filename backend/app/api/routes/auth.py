@@ -286,7 +286,9 @@ async def logout(
         body.refresh_token if body else None
     )
     if raw:
-        await auth_service.revoke_refresh_token(db, raw_token=raw)
+        await auth_service.revoke_refresh_token(
+            db, raw_token=raw, ip_address=request.client.host if request.client else None
+        )
     _clear_refresh_cookie(response)
     response.status_code = status.HTTP_204_NO_CONTENT
     return response
@@ -302,9 +304,19 @@ async def me(
             select(Organization).where(Organization.id == current_user.organization_id)
         )
     ).scalar_one()
+    from app.schemas.user import EffectiveRole
+    from app.services.rbac import get_effective_role, permission_keys_for_user
+
+    role = await get_effective_role(db, current_user)
     return MeResponse(
         user=UserRead.model_validate(current_user),
         organization=organization,
+        effective_role=EffectiveRole(
+            id=role.id, name=role.name, is_system_default=role.is_system_default, system_key=role.system_key
+        )
+        if role
+        else None,
+        permissions=sorted(await permission_keys_for_user(db, current_user)),
     )
 
 

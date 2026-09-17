@@ -1,8 +1,14 @@
 import { apiFetch, errorMessage } from "@/lib/api-client";
-import type { Failure, FailureClusters, FailureHeatmapResponse, FailureList } from "@/lib/failure-types";
+import type {
+  ExplanationEnqueued,
+  Failure,
+  FailureClusters,
+  FailureHeatmapResponse,
+  FailureList,
+} from "@/lib/failure-types";
 
-export async function listFailures(): Promise<FailureList> {
-  const res = await apiFetch("/failures?limit=200");
+export async function listFailures(limit = 200): Promise<FailureList> {
+  const res = await apiFetch(`/failures?limit=${limit}`);
   if (!res.ok) throw new Error(await errorMessage(res, "Failed to load failures"));
   return (await res.json()) as FailureList;
 }
@@ -23,4 +29,11 @@ export async function getFailureHeatmap(): Promise<FailureHeatmapResponse> {
   const res = await apiFetch("/failures/heatmap");
   if (!res.ok) throw new Error(await errorMessage(res, "Failed to load failure heatmap"));
   return (await res.json()) as FailureHeatmapResponse;
+}
+
+/** Batch 25: queue AI explanation generation for a failure that has none yet. */
+export async function requestFailureExplanation(id: string): Promise<ExplanationEnqueued> {
+  const res = await apiFetch(`/failures/${id}/explanation`, { method: "POST" });
+  if (!res.ok) throw new Error(await errorMessage(res, "Failed to request an explanation"));
+  return (await res.json()) as ExplanationEnqueued;
 }

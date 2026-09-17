@@ -253,3 +253,37 @@ async def create_org_user(
         await session.refresh(user)
         await session.refresh(organization)
         return organization, user
+
+
+async def add_user_to_org(
+    maker: async_sessionmaker,
+    *,
+    organization_id: uuid.UUID,
+    email: str,
+    role: UserRole,
+    full_name: str | None = None,
+    password: str = DEFAULT_PASSWORD,
+) -> User:
+    """Add another user with a given role to an ALREADY-EXISTING org (Batch 25:
+    governance tests need several roles acting inside one tenant)."""
+    async with maker() as session:
+        mark_session_unscoped(session.sync_session)
+        user = User(
+            organization_id=organization_id,
+            email=email.lower(),
+            hashed_password=hash_password(password),
+            full_name=full_name,
+            role=role,
+            is_active=True,
+            email_verified=True,
+        )
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+        return user
+
+
+async def token_for(client: AsyncClient, email: str) -> str:
+    resp = await login(client, email=email)
+    assert resp.status_code == 200, resp.text
+    return resp.json()["access_token"]

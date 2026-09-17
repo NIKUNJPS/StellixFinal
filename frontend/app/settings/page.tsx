@@ -39,6 +39,8 @@ import { UsageTab } from "@/components/settings/usage-tab";
 import { DigestCard } from "@/components/settings/digest-card";
 import { TeamTab } from "@/components/settings/team-tab";
 import { useAuthStore } from "@/store/auth-store";
+import { useCan, useCanAny } from "@/hooks/use-permissions";
+import { PERM } from "@/lib/rbac";
 
 function ErrorBanner({ message }: { message: string | null }) {
   if (!message) return null;
@@ -51,6 +53,8 @@ function ErrorBanner({ message }: { message: string | null }) {
 
 function ProfileTab() {
   const { user, organization, setSession } = useAuthStore();
+  const canManageOrganization = useCan(PERM.ORGANIZATION_MANAGE);
+  const roleName = useAuthStore((st) => st.effectiveRole?.name);
   const [fullName, setFullName] = useState(user?.full_name ?? "");
   const [benchmarkSymbol, setBenchmarkSymbol] = useState(organization?.benchmark_symbol ?? "SPY");
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +62,7 @@ function ProfileTab() {
   const [busy, setBusy] = useState(false);
 
   if (!user || !organization) return null;
-  const isAdmin = user.role === "admin";
+  const isAdmin = canManageOrganization;
   const currentUser = user;
   const currentOrganization = organization;
 
@@ -149,7 +153,7 @@ function ProfileTab() {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>Role</Label>
-            <Input value={user.role} disabled />
+            <Input value={roleName ?? user.role} disabled />
           </div>
         </div>
         <Button onClick={onSaveProfile} disabled={busy} className="w-fit">
@@ -631,10 +635,9 @@ function PreferencesTab() {
 }
 
 export default function SettingsPage() {
-  // Team management is admin-only. Hiding the tab is a UX affordance, not the
-  // control — the backend gates every /users/invitations route with require_role.
-  const user = useAuthStore((s) => s.user);
-  const isAdmin = user?.role === "admin";
+  // Team management needs members.invite or roles.manage. Hiding the tab is a UX
+  // affordance, not the control — the backend enforces both permissions itself.
+  const isAdmin = useCanAny(PERM.MEMBERS_INVITE, PERM.ROLES_MANAGE);
 
   return (
     <DashboardShell>

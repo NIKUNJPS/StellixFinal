@@ -80,6 +80,9 @@ export async function loadMe(): Promise<MeResponse | null> {
   }
   const data = (await res.json()) as MeResponse;
   useAuthStore.getState().setSession(data.user, data.organization);
+  // Batch 26: only /auth/me carries the live permission set (MFA responses reuse the
+  // MeResponse shape without it, so they must not overwrite access).
+  useAuthStore.getState().setAccess(data.effective_role, data.permissions);
   return data;
 }
 

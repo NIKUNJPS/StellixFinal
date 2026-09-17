@@ -97,6 +97,19 @@ async def _check_celery_worker() -> None:
         raise RuntimeError(f"last heartbeat was {int(age)}s ago (stale)")
 
 
+async def is_worker_online() -> bool | None:
+    """Batch 25: True when a Celery heartbeat landed recently, False when it is
+    missing or stale, None when Redis itself could not be asked. Lets queued-job
+    UIs say "nothing is processing this" instead of spinning forever."""
+    try:
+        await _check_celery_worker()
+    except RuntimeError:
+        return False
+    except Exception:  # noqa: BLE001 — Redis unreachable: genuinely unknown
+        return None
+    return True
+
+
 async def record_heartbeat() -> None:
     """Called by the `system_heartbeat` Celery beat task, every 60s."""
     redis = redis_client.get_client()

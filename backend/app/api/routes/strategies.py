@@ -4,19 +4,20 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_tenant_db, require_scope
+from app.api.deps import get_current_user, get_tenant_db, require_permission, require_scope
 from app.core.logging import get_current_request_id
 from app.core.rate_limit import backtest_rate_limiter, validate_rate_limiter
 from app.models.organization import Organization
 from app.models.performance_snapshot import PerformanceSnapshot
 from app.models.strategy import Strategy, StrategyCreator, StrategyStatus
 from app.models.strategy_version import StrategyVersion
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.models.validation_result import ValidationResult
+from app.rbac.catalog import P
 from app.schemas.failure import ManualFailEnqueued, ManualFailRequest
 from app.schemas.strategy import (
     ApproveRequest,
@@ -32,6 +33,7 @@ from app.schemas.strategy import (
     StrategyListItem,
     StrategyListResponse,
     StrategyRead,
+    StrategySaveVersionRequest,
     StrategyUpdateRequest,
     StrategyVersionRead,
     TopPerformerItem,
@@ -175,9 +177,54 @@ async def update_strategy(
 ) -> Strategy:
     strategy = await _get_or_404(db, strategy_id)
     data = payload.model_dump(exclude_unset=True)
-    return await svc.update_strategy(
-        db, strategy=strategy, data=data, change_reason=data.get("change_reason")
-    )
+    try:
+        return await svc.update_strategy(
+            db, strategy=strategy, data=data, change_reason=data.get("change_reason"), user=current_user
+        )
+    except LifecycleError as exc:
+        raise _lifecycle_http(exc) from exc
+
+
+@router.delete(
+    "/{strategy_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Permanently delete an unsubmitted draft (its creator or an admin only)",
+    dependencies=[Depends(require_scope("strategies:write"))],
+)
+async def delete_strategy(
+    strategy_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_tenant_db),
+) -> Response:
+    strategy = await _get_or_404(db, strategy_id)
+    try:
+        await svc.delete_draft_strategy(db, strategy=strategy, user=current_user)
+    except LifecycleError as exc:
+        raise _lifecycle_http(exc) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/{strategy_id}/versions",
+    response_model=StrategyRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Save rule/parameter changes as a new version (change reason required)",
+    dependencies=[Depends(require_scope("strategies:write"))],
+)
+async def save_strategy_version(
+    strategy_id: uuid.UUID,
+    payload: StrategySaveVersionRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_tenant_db),
+) -> Strategy:
+    strategy = await _get_or_404(db, strategy_id)
+    data = payload.model_dump(exclude_unset=True, exclude={"change_reason"})
+    try:
+        return await svc.save_new_version(
+            db, strategy=strategy, user=current_user, data=data, change_reason=payload.change_reason
+        )
+    except LifecycleError as exc:
+        raise _lifecycle_http(exc) from exc
 
 
 @router.get("/{strategy_id}/versions", response_model=list[VersionDiff])
@@ -223,7 +270,7 @@ async def submit_strategy(
 ) -> Strategy:
     strategy = await _get_or_404(db, strategy_id)
     try:
-        return await svc.submit(db, strategy=strategy)
+        return await svc.submit(db, strategy=strategy, user=current_user)
     except LifecycleError as exc:
         raise _lifecycle_http(exc) from exc
 
@@ -338,14 +385,9 @@ async def get_backtest_results(
 async def fail_strategy(
     strategy_id: uuid.UUID,
     payload: ManualFailRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(P.STRATEGY_FAIL_MANUAL)),
     db: AsyncSession = Depends(get_tenant_db),
 ) -> ManualFailEnqueued:
-    if current_user.role not in {UserRole.RISK_MANAGER, UserRole.CIO, UserRole.ADMIN}:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only risk_manager, cio, or admin may fail a strategy",
-        )
     strategy = await _get_or_404(db, strategy_id)
     if strategy.status != StrategyStatus.ACTIVE:
         # Only active strategies can fail (active→failed hook).

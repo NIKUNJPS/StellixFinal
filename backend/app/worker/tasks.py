@@ -121,11 +121,16 @@ def _enqueue_clustering(organization_id: str, failure_ids: list[str]) -> None:
             logger.warning("Could not enqueue clustering for failure %s", fid, exc_info=True)
 
 
-def _enqueue_explanation(organization_id: str, failure_ids: list[str]) -> None:
+def _enqueue_explanation(
+    organization_id: str, failure_ids: list[str], requested_by_user_id: str | None = None
+) -> None:
     for fid in failure_ids:
         try:
             run_failure_explanation.delay(
-                organization_id=organization_id, failure_id=fid, request_id=get_current_request_id()
+                organization_id=organization_id,
+                failure_id=fid,
+                requested_by_user_id=requested_by_user_id,
+                request_id=get_current_request_id(),
             )
         except Exception:  # noqa: BLE001
             logger.warning("Could not enqueue LLM explanation for failure %s", fid, exc_info=True)
@@ -177,7 +182,7 @@ def run_manual_failure(
     failure_id = asyncio.run(_main())
     if failure_id:
         _enqueue_clustering(organization_id, [failure_id])
-        _enqueue_explanation(organization_id, [failure_id])
+        _enqueue_explanation(organization_id, [failure_id], requested_by_user_id=user_id)
     return {"strategy_id": strategy_id, "failure_id": failure_id}
 
 
@@ -198,12 +203,21 @@ def run_failure_clustering(organization_id: str, failure_id: str, request_id: st
 
 @celery_app.task(name="run_failure_explanation")
 @with_log_context
-def run_failure_explanation(organization_id: str, failure_id: str, request_id: str | None = None) -> dict:
+def run_failure_explanation(
+    organization_id: str,
+    failure_id: str,
+    requested_by_user_id: str | None = None,
+    request_id: str | None = None,
+) -> dict:
     from app.services.llm_explain import explain_failure_and_persist
 
     async def _main() -> dict:
         try:
-            return await explain_failure_and_persist(uuid.UUID(organization_id), uuid.UUID(failure_id))
+            return await explain_failure_and_persist(
+                uuid.UUID(organization_id),
+                uuid.UUID(failure_id),
+                uuid.UUID(requested_by_user_id) if requested_by_user_id else None,
+            )
         finally:
             await dispose_engine()
 
@@ -264,6 +278,20 @@ def refresh_market_universe(request_id: str | None = None) -> dict:
         "symbols_refreshed": sum(s["symbols_refreshed"] for s in summaries),
         "regimes_recomputed": sum(s["regimes_recomputed"] for s in summaries),
     }
+
+
+@celery_app.task(name="refresh_global_index_quotes")
+@with_log_context
+def refresh_global_index_quotes(request_id: str | None = None) -> dict:
+    """Batch 25: refresh delayed quotes for the global indices on the dashboard and
+    publish them on the realtime bridge's global scope. See
+    app/services/market_quotes.py for the honesty contract (delayed, never synthesized)."""
+    from app.services.market_quotes import refresh_quotes
+
+    async def _main() -> dict:
+        return await refresh_quotes()
+
+    return asyncio.run(_main())
 
 
 @celery_app.task(name="run_strategy_backtest")

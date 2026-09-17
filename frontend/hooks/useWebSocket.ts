@@ -37,7 +37,9 @@ export type WSEvent = {
     | "evolution_progress"
     | "backtest_progress"
     | "strategy_status"
-    | "approval_request";
+    | "approval_request"
+    // Batch 25: public delayed index quotes, delivered on the bridge's global scope.
+    | "market_quotes";
   [key: string]: unknown;
 };
 

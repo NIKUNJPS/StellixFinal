@@ -18,6 +18,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_system_db, require_super_admin
 from app.models.user import User
+from app.schemas.rbac import (
+    PermissionCatalogResponse,
+    PermissionCreateRequest,
+    PermissionRead,
+    RoleCreateRequest,
+    RolePermissionsUpdateRequest,
+    RoleRead,
+    RoleUpdateRequest,
+    SystemRoleListResponse,
+)
 from app.schemas.superadmin import (
     ApproveDemoRequest,
     ApproveOrgRequest,
@@ -29,6 +39,7 @@ from app.schemas.superadmin import (
     TerminateOrgRequest,
     UpdateOrgLimitsRequest,
 )
+from app.services import rbac as rbac_svc
 from app.services import superadmin as svc
 
 router = APIRouter(prefix="/superadmin", tags=["SuperAdmin (Internal)"])
@@ -366,3 +377,184 @@ async def reject_demo(
     except svc.SuperAdminError as exc:
         raise _handle(exc) from exc
     return {"id": str(demo.id), "status": demo.status.value}
+
+
+# --------------------------------------------------------------------------- #
+# Roles & permissions (Batch 26) — the platform catalog and system roles.
+# Organization custom roles are managed by org admins (app/api/routes/roles.py).
+# --------------------------------------------------------------------------- #
+def _rbac_http(exc: rbac_svc.RbacError) -> HTTPException:
+    return HTTPException(status_code=exc.http_status, detail=str(exc))
+
+
+async def _system_role_read(db: AsyncSession, role) -> RoleRead:
+    from app.api.routes.roles import role_reads
+
+    return (await role_reads(db, [role], None))[0]
+
+
+@router.get("/permissions", response_model=PermissionCatalogResponse, summary="Permission catalog")
+async def list_permissions(
+    admin: User = Depends(require_super_admin),
+    db: AsyncSession = Depends(get_system_db),
+) -> PermissionCatalogResponse:
+    from sqlalchemy import select
+
+    from app.models.rbac import Permission
+
+    rows = (await db.execute(select(Permission).order_by(Permission.category, Permission.key))).scalars().all()
+    return PermissionCatalogResponse(items=[PermissionRead.model_validate(p) for p in rows])
+
+
+@router.post("/permissions", response_model=PermissionRead, status_code=status.HTTP_201_CREATED, summary="Add a catalog permission")
+async def create_permission(
+    payload: PermissionCreateRequest,
+    request: Request,
+    admin: User = Depends(require_super_admin),
+    db: AsyncSession = Depends(get_system_db),
+) -> PermissionRead:
+    try:
+        perm = await rbac_svc.create_permission(
+            db, key=payload.key, category=payload.category, description=payload.description
+        )
+    except rbac_svc.RbacError as exc:
+        raise _rbac_http(exc) from exc
+    await svc.log_action(
+        db, super_admin_id=admin.id, action="permission_created", target_type="permission", target_id=perm.id,
+        after={"key": perm.key, "category": perm.category}, ip_address=_client_ip(request),
+    )
+    await db.commit()
+    return PermissionRead.model_validate(perm)
+
+
+@router.get("/roles", response_model=SystemRoleListResponse, summary="System roles + custom role counts per organization")
+async def list_system_roles(
+    admin: User = Depends(require_super_admin),
+    db: AsyncSession = Depends(get_system_db),
+) -> SystemRoleListResponse:
+    from sqlalchemy import func, select
+
+    from app.api.routes.roles import role_reads
+    from app.models.organization import Organization
+    from app.models.rbac import Role
+
+    roles = (
+        await db.execute(
+            select(Role).where(Role.organization_id.is_(None)).order_by(Role.is_system_default.desc(), Role.name)
+        )
+    ).scalars().all()
+    custom = (
+        await db.execute(
+            select(Organization.id, Organization.name, func.count(Role.id))
+            .join(Role, Role.organization_id == Organization.id)
+            .group_by(Organization.id, Organization.name)
+            .order_by(Organization.name)
+        )
+    ).all()
+    await svc.log_action(db, super_admin_id=admin.id, action="roles_viewed", target_type="role")
+    await db.commit()
+    return SystemRoleListResponse(
+        items=await role_reads(db, list(roles), None),
+        custom_roles_by_organization=[
+            {"organization_id": str(oid), "organization_name": name, "custom_role_count": n} for oid, name, n in custom
+        ],
+    )
+
+
+@router.post("/roles", response_model=RoleRead, status_code=status.HTTP_201_CREATED, summary="Create a system role")
+async def create_system_role(
+    payload: RoleCreateRequest,
+    request: Request,
+    admin: User = Depends(require_super_admin),
+    db: AsyncSession = Depends(get_system_db),
+) -> RoleRead:
+    try:
+        role, perms = await rbac_svc.create_system_role(
+            db, name=payload.name, description=payload.description, permission_keys=payload.permissions,
+            created_by=admin.id,
+        )
+    except rbac_svc.RbacError as exc:
+        await db.rollback()
+        raise _rbac_http(exc) from exc
+    await svc.log_action(
+        db, super_admin_id=admin.id, action="system_role_created", target_type="role", target_id=role.id,
+        after={"name": role.name, "permissions": perms}, ip_address=_client_ip(request),
+    )
+    await db.commit()
+    await db.refresh(role)
+    return await _system_role_read(db, role)
+
+
+@router.patch("/roles/{role_id}", response_model=RoleRead, summary="Edit a system role's name/description")
+async def update_system_role(
+    role_id: uuid.UUID,
+    payload: RoleUpdateRequest,
+    request: Request,
+    admin: User = Depends(require_super_admin),
+    db: AsyncSession = Depends(get_system_db),
+) -> RoleRead:
+    try:
+        role, before, after = await rbac_svc.update_system_role(
+            db, role_id=role_id, name=payload.name, description=payload.description
+        )
+        if payload.permissions is not None:
+            _, p_before, p_after = await rbac_svc.set_system_role_permissions(
+                db, role_id=role_id, permission_keys=payload.permissions
+            )
+            before, after = {**before, "permissions": p_before}, {**after, "permissions": p_after}
+    except rbac_svc.RbacError as exc:
+        await db.rollback()
+        raise _rbac_http(exc) from exc
+    await svc.log_action(
+        db, super_admin_id=admin.id, action="system_role_updated", target_type="role", target_id=role.id,
+        before=before, after=after, ip_address=_client_ip(request),
+    )
+    await db.commit()
+    await db.refresh(role)
+    return await _system_role_read(db, role)
+
+
+@router.put("/roles/{role_id}/permissions", response_model=RoleRead, summary="Set a system role's permission set")
+async def set_system_role_permissions(
+    role_id: uuid.UUID,
+    payload: RolePermissionsUpdateRequest,
+    request: Request,
+    admin: User = Depends(require_super_admin),
+    db: AsyncSession = Depends(get_system_db),
+) -> RoleRead:
+    try:
+        role, before, after = await rbac_svc.set_system_role_permissions(
+            db, role_id=role_id, permission_keys=payload.permissions
+        )
+    except rbac_svc.RbacError as exc:
+        await db.rollback()
+        raise _rbac_http(exc) from exc
+    await svc.log_action(
+        db, super_admin_id=admin.id, action="system_role_permissions_changed", target_type="role", target_id=role.id,
+        before={"permissions": before}, after={"permissions": after}, ip_address=_client_ip(request),
+    )
+    await db.commit()
+    await db.refresh(role)
+    return await _system_role_read(db, role)
+
+
+@router.delete("/roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete an unused, non-default system role")
+async def delete_system_role(
+    role_id: uuid.UUID,
+    request: Request,
+    admin: User = Depends(require_super_admin),
+    db: AsyncSession = Depends(get_system_db),
+):
+    from fastapi import Response
+
+    try:
+        role = await rbac_svc.delete_system_role(db, role_id=role_id)
+    except rbac_svc.RbacError as exc:
+        await db.rollback()
+        raise _rbac_http(exc) from exc
+    await svc.log_action(
+        db, super_admin_id=admin.id, action="system_role_deleted", target_type="role", target_id=role_id,
+        before={"name": role.name}, ip_address=_client_ip(request),
+    )
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

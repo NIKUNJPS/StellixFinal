@@ -307,14 +307,31 @@ async def rotate_refresh_token(
     return user, new_raw
 
 
-async def revoke_refresh_token(session: AsyncSession, *, raw_token: str) -> None:
-    """Revoke a refresh token (logout). Idempotent — unknown tokens are a no-op."""
+async def revoke_refresh_token(
+    session: AsyncSession, *, raw_token: str, ip_address: str | None = None
+) -> None:
+    """Revoke a refresh token (logout). Idempotent — unknown tokens are a no-op.
+
+    Batch 25: revoking a live session is audited as ``logout`` (a repeat logout of an
+    already-revoked token is not a new event and writes nothing)."""
     token_hash = hash_refresh_token(raw_token)
     record = (
         await session.execute(select(RefreshToken).where(RefreshToken.token_hash == token_hash))
     ).scalar_one_or_none()
     if record is not None and record.revoked_at is None:
         record.revoked_at = _utcnow()
+        user = await session.get(User, record.user_id)
+        if user is not None:
+            await write_audit_log(
+                session,
+                organization_id=user.organization_id,
+                actor=user,
+                event_type=AuditEventType.LOGOUT,
+                entity_type="user",
+                entity_id=user.id,
+                entity_name=user.email,
+                ip_address=ip_address,
+            )
         await session.commit()
 
 

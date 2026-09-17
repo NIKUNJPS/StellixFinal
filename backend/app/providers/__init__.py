@@ -7,12 +7,14 @@ implementing this interface — zero downstream code changes.
 
 from app.providers.base import (
     OHLCV_COLUMNS,
+    LatestQuote,
     MarketDataProvider,
     ProviderError,
 )
 from app.providers.registry import AVAILABLE_PROVIDERS, get_provider
 
 __all__ = [
+    "LatestQuote",
     "MarketDataProvider",
     "ProviderError",
     "OHLCV_COLUMNS",

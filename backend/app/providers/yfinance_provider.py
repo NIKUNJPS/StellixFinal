@@ -10,7 +10,7 @@ from datetime import date
 import pandas as pd
 import yfinance as yf
 
-from app.providers.base import OHLCV_COLUMNS, MarketDataProvider, ProviderError
+from app.providers.base import OHLCV_COLUMNS, LatestQuote, MarketDataProvider, ProviderError
 
 
 class YFinanceProvider(MarketDataProvider):
@@ -47,3 +47,49 @@ class YFinanceProvider(MarketDataProvider):
             }
         )
         return self._normalize(out.loc[:, OHLCV_COLUMNS])
+
+    def fetch_latest_quotes(self, symbols: list[str]) -> list[LatestQuote]:
+        """One batched download of the last 5 daily bars per symbol.
+
+        For a session in progress, Yahoo's newest daily bar carries the latest
+        DELAYED price; the bar before it is the previous close. A 5-day window
+        covers weekends and single-market holidays. Symbols with fewer than two
+        priced bars get an error instead of a fabricated change.
+        """
+        if not symbols:
+            return []
+        try:
+            frame = yf.download(
+                tickers=list(symbols),
+                period="5d",
+                interval="1d",
+                group_by="ticker",
+                auto_adjust=False,
+                progress=False,
+                threads=True,
+            )
+        except Exception as exc:  # noqa: BLE001 - normalize any client error
+            raise ProviderError(f"yfinance quote download failed: {exc}") from exc
+        if frame is None or frame.empty:
+            raise ProviderError("yfinance returned no quote data")
+
+        quotes: list[LatestQuote] = []
+        for symbol in symbols:
+            try:
+                bars = frame[symbol] if isinstance(frame.columns, pd.MultiIndex) else frame
+                closes = bars["Close"].dropna()
+            except KeyError:
+                quotes.append(LatestQuote(symbol=symbol, error="No data returned for this symbol"))
+                continue
+            if len(closes) < 2:
+                quotes.append(LatestQuote(symbol=symbol, error="Not enough recent sessions to compute a change"))
+                continue
+            quotes.append(
+                LatestQuote(
+                    symbol=symbol,
+                    last_price=float(closes.iloc[-1]),
+                    previous_close=float(closes.iloc[-2]),
+                    session_date=pd.Timestamp(closes.index[-1]).date(),
+                )
+            )
+        return quotes

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import type { OrganizationRead, UserRead } from "@/lib/auth-types";
+import type { EffectiveRole, OrganizationRead, UserRead } from "@/lib/auth-types";
 
 /**
  * Auth state.
@@ -15,8 +15,12 @@ interface AuthState {
   user: UserRead | null;
   organization: OrganizationRead | null;
   isAuthenticated: boolean;
+  /** Batch 26: null until /auth/me has resolved — "not loaded" is distinct from "no permissions". */
+  permissions: ReadonlySet<string> | null;
+  effectiveRole: EffectiveRole | null;
   setAccessToken: (token: string | null) => void;
   setSession: (user: UserRead, organization: OrganizationRead) => void;
+  setAccess: (effectiveRole: EffectiveRole | null, permissions: string[]) => void;
   clear: () => void;
 }
 
@@ -25,14 +29,19 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   organization: null,
   isAuthenticated: false,
+  permissions: null,
+  effectiveRole: null,
   setAccessToken: (token) =>
     set({ accessToken: token, isAuthenticated: token !== null }),
   setSession: (user, organization) => set({ user, organization }),
+  setAccess: (effectiveRole, permissions) => set({ effectiveRole, permissions: new Set(permissions) }),
   clear: () =>
     set({
       accessToken: null,
       user: null,
       organization: null,
       isAuthenticated: false,
+      permissions: null,
+      effectiveRole: null,
     }),
 }));

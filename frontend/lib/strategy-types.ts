@@ -26,6 +26,7 @@ export interface StrategyListItem {
   name: string;
   status: StrategyStatus;
   creator: StrategyCreator;
+  created_by_user_id: string | null;
   version: string;
   robustness_score: number | null;
   regime_compatibility: Record<string, number | null> | null;
@@ -113,8 +114,47 @@ export interface PerformanceSnapshotRead {
   volatility: number | null;
 }
 
+export interface StrategyVersionRead {
+  id: string;
+  version_number: string;
+  parameters_snapshot: Record<string, unknown>;
+  change_reason: string | null;
+  created_at: string;
+}
+
 export interface StrategyDetailResponse {
   strategy: StrategyRead;
-  versions: unknown[];
+  versions: StrategyVersionRead[];
   performance: PerformanceSnapshotRead[];
+}
+
+/** One entry of GET /strategies/{id}/versions (Batch 25 version history). */
+export interface StrategyVersionDiff {
+  version_number: string;
+  change_reason: string | null;
+  created_at: string;
+  changed_keys: string[];
+}
+
+/** Batch 25: body of POST /strategies/{id}/versions. `change_reason` is mandatory. */
+export interface SaveStrategyVersionInput {
+  name?: string;
+  description?: string | null;
+  parameters?: Record<string, unknown>;
+  entry_rules?: Record<string, unknown>;
+  exit_rules?: Record<string, unknown>;
+  risk_constraints?: RiskConstraints;
+  change_reason: string;
+}
+
+/** A backend DSL rule group, converted back into the builder's shape. */
+export function ruleGroupFromDSL(dsl: Record<string, unknown> | null | undefined): RuleGroup {
+  const operator = dsl?.operator === "OR" ? "OR" : "AND";
+  const raw = Array.isArray(dsl?.conditions) ? (dsl?.conditions as Record<string, unknown>[]) : [];
+  const conditions: Condition[] = raw.map((c) => ({
+    indicator: String(c.indicator ?? "rsi_14"),
+    comparator: String(c.comparator ?? "<"),
+    ...(typeof c.value_ref === "string" ? { value_ref: c.value_ref } : { value: Number(c.value ?? 0) }),
+  }));
+  return { operator, conditions: conditions.length ? conditions : [{ indicator: "rsi_14", comparator: "<", value: 30 }] };
 }

@@ -51,20 +51,46 @@ def _now() -> str:
     return datetime.now(UTC).isoformat()
 
 
-async def _publish(org_id: str, payload: dict[str, Any]) -> None:
-    """Publish one event envelope to Redis. Never raises."""
+# Envelope scopes. "organization" (the default, and the only scope before Batch 25)
+# is delivered to one tenant's sockets. "global" is reserved for genuinely public,
+# non-tenant data — currently only market index quotes — and reaches every
+# connected socket. Tenant data must never be published with the global scope.
+SCOPE_ORGANIZATION = "organization"
+SCOPE_GLOBAL = "global"
+
+
+async def _publish_envelope(envelope: dict[str, Any], *, log_label: str) -> None:
     try:
         client = redis_client.get_client()
-        await client.publish(
-            WS_CHANNEL, json.dumps({"organization_id": str(org_id), "payload": payload})
-        )
+        await client.publish(WS_CHANNEL, json.dumps(envelope))
     except Exception:  # noqa: BLE001 — realtime is best-effort; see module docstring
         logger.warning(
-            "WS publish failed for org=%s type=%s; event dropped",
-            org_id,
-            payload.get("type"),
+            "WS publish failed for %s type=%s; event dropped",
+            log_label,
+            envelope["payload"].get("type"),
             exc_info=True,
         )
+
+
+async def _publish(org_id: str, payload: dict[str, Any]) -> None:
+    """Publish one org-scoped event envelope to Redis. Never raises."""
+    await _publish_envelope(
+        {"scope": SCOPE_ORGANIZATION, "organization_id": str(org_id), "payload": payload},
+        log_label=f"org={org_id}",
+    )
+
+
+async def _publish_global(payload: dict[str, Any]) -> None:
+    """Publish public, non-tenant data to every connected user. Never raises."""
+    await _publish_envelope(
+        {"scope": SCOPE_GLOBAL, "organization_id": None, "payload": payload}, log_label="global"
+    )
+
+
+async def publish_market_quotes(quotes: list[dict[str, Any]], metadata: dict[str, Any]) -> None:
+    """Batch 25: refreshed global index quotes. Public data, so global scope — scoping
+    it by org would be structurally wrong (every tenant sees the same market)."""
+    await _publish_global({"type": "market_quotes", **metadata, "quotes": quotes, "timestamp": _now()})
 
 
 async def publish_regime_change(

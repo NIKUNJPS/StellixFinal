@@ -99,7 +99,7 @@ export function UseCasesContent() {
 
           <p className="mt-7 max-w-2xl text-[16px] leading-[1.75] text-white/50">
             Whether your edge is speed, breadth, or discretion, it decays the
-            same way — through amnesia. Here's what changes when it doesn't.
+            same way — through amnesia. Here&apos;s what changes when it doesn&apos;t.
           </p>
         </div>
 

@@ -67,6 +67,9 @@ export interface AuditLogEntry {
   estimated_cost_usd: string | null;
   numeric_validation_passed: boolean | null;
   created_at: string;
+  /** Batch 25: readable identity of the user who made the call (null = system call). */
+  user_email: string | null;
+  user_name: string | null;
 }
 
 export type ChatStakes = "low" | "medium" | "high";

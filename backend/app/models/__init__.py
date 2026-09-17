@@ -21,12 +21,14 @@ from app.models.failure import Failure, FailureTrigger
 from app.models.feature_matrix import FeatureMatrix
 from app.models.ingestion_job import IngestionJob, IngestionStatus
 from app.models.invitation import Invitation, InvitationStatus
+from app.models.kill_switch_review import KillSwitchReview
 from app.models.llm_audit_log import LLMAuditLog
 from app.models.market_data import MarketData
 from app.models.notification import Notification, NotificationType
 from app.models.organization import Organization, OrganizationStatus, OrganizationTier
 from app.models.password_reset_token import PasswordResetToken
 from app.models.performance_snapshot import PerformanceSnapshot
+from app.models.rbac import Permission, Role, RolePermission
 from app.models.refresh_token import RefreshToken
 from app.models.regime_label import RegimeLabelRecord
 from app.models.research_note import ResearchNote, ResearchNoteStatus
@@ -73,11 +75,15 @@ __all__ = [
     "AuditEventType",
     "ComplianceExportJob",
     "ComplianceExportStatus",
+    "KillSwitchReview",
     "Notification",
     "NotificationType",
     "ApiKey",
     "TradeRecord",
     "PasswordResetToken",
+    "Permission",
+    "Role",
+    "RolePermission",
     "Subscription",
     "SubscriptionStatus",
     "DemoRequest",

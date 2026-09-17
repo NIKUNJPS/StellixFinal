@@ -3,8 +3,11 @@ import type {
   Condition,
   RiskConstraints,
   RuleGroup,
+  SaveStrategyVersionInput,
   StrategyDetailResponse,
   StrategyList,
+  StrategyRead,
+  StrategyVersionDiff,
 } from "@/lib/strategy-types";
 
 /** Convert the builder's RuleGroup into the backend DSL JSON (drops UI-only fields). */
@@ -71,4 +74,23 @@ export async function approveOrRejectStrategy(
     body: JSON.stringify({ action, justification }),
   });
   if (!res.ok) throw new Error(await errorMessage(res, `Failed to ${action} strategy`));
+}
+
+/** Batch 25: permanently delete an unsubmitted draft (creator or admin only). */
+export async function deleteStrategy(id: string): Promise<void> {
+  const res = await apiFetch(`/strategies/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(await errorMessage(res, "Failed to delete strategy"));
+}
+
+/** Batch 25: save rule/parameter changes as a new version (vX.Y -> vX.(Y+1)). */
+export async function saveStrategyVersion(id: string, input: SaveStrategyVersionInput): Promise<StrategyRead> {
+  const res = await apiFetch(`/strategies/${id}/versions`, { method: "POST", body: JSON.stringify(input) });
+  if (!res.ok) throw new Error(await errorMessage(res, "Failed to save new version"));
+  return (await res.json()) as StrategyRead;
+}
+
+export async function getStrategyVersionHistory(id: string): Promise<StrategyVersionDiff[]> {
+  const res = await apiFetch(`/strategies/${id}/versions`);
+  if (!res.ok) throw new Error(await errorMessage(res, "Failed to load version history"));
+  return (await res.json()) as StrategyVersionDiff[];
 }

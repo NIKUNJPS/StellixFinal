@@ -3,7 +3,10 @@
 - ``get_system_db``  — unscoped session for pre-auth flows (register/login/refresh).
 - ``get_tenant_db``  — session auto-bound to the caller's organization (from the JWT).
 - ``get_current_user`` — the authenticated ``User`` (loaded tenant-scoped).
-- ``require_role(*roles)`` — dependency factory gating a route by RBAC role.
+- ``require_permission(key)`` — Batch 26: THE authorization dependency. Resolves the
+  caller's permissions from their (system or org custom) role.
+- ``require_role(*roles)`` — legacy literal role-name gate, kept for backward
+  compatibility only; no route uses it for authorization any more.
 """
 
 from __future__ import annotations
@@ -196,8 +199,58 @@ async def get_current_user(
     return user
 
 
+async def get_current_permissions(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_tenant_db),
+) -> frozenset[str]:
+    """The caller's permission keys. Resolved once per request (FastAPI caches this
+    dependency), always from the database — never from a token claim — so a role
+    change takes effect on the very next request without re-login."""
+    from app.services.rbac import permission_keys_for_user
+
+    return await permission_keys_for_user(db, current_user)
+
+
+_FORBIDDEN = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="You do not have permission to perform this action",
+)
+
+
+def require_permission(key: str):
+    """Dependency factory (Batch 26): the caller's role must grant ``key``, else 403.
+    Returns the current user, exactly like ``require_role`` did."""
+
+    async def _checker(
+        current_user: User = Depends(get_current_user),
+        permissions: frozenset[str] = Depends(get_current_permissions),
+    ) -> User:
+        if key not in permissions:
+            raise _FORBIDDEN
+        return current_user
+
+    return _checker
+
+
+def require_any_permission(*keys: str):
+    """Allow the caller if their role grants at least one of ``keys``."""
+
+    async def _checker(
+        current_user: User = Depends(get_current_user),
+        permissions: frozenset[str] = Depends(get_current_permissions),
+    ) -> User:
+        if not permissions.intersection(keys):
+            raise _FORBIDDEN
+        return current_user
+
+    return _checker
+
+
 def require_role(*roles: UserRole | str):
-    """Dependency factory: allow only the given RBAC roles, else 403."""
+    """LEGACY (pre-Batch 26): allow only the given literal role names, else 403.
+
+    Checks the deprecated ``users.role`` column, so it ignores custom roles. Kept only
+    as a backward-compatible wrapper; authorization must use ``require_permission``."""
     allowed = {r.value if isinstance(r, UserRole) else r for r in roles}
 
     async def _checker(current_user: User = Depends(get_current_user)) -> User:

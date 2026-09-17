@@ -87,6 +87,18 @@ class FakeGraphRepository:
             "organization_id": organization_id,
         }
 
+    async def delete_node(self, organization_id: str, *, label: str, key_value: str) -> None:
+        # Mirrors DETACH DELETE: the node and every edge touching it disappear.
+        self._nodes.pop((organization_id, label, key_value), None)
+        self._edges = {
+            identity: props
+            for identity, props in self._edges.items()
+            if not (
+                identity[0] == organization_id
+                and ((identity[2] == label and identity[3] == key_value) or (identity[4] == label and identity[5] == key_value))
+            )
+        }
+
     def _edges_of_type(self, organization_id: str, edge_type: str):
         for identity, props in self._edges.items():
             org, etype, from_label, from_key, to_label, to_key, _ = identity

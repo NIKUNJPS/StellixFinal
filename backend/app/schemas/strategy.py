@@ -75,6 +75,24 @@ class StrategyUpdateRequest(BaseModel):
     _check_risk_constraints_size = field_validator("risk_constraints")(check_json_size)
 
 
+class StrategySaveVersionRequest(BaseModel):
+    """Batch 25: "save changes as a new version" — rules/params plus a mandatory,
+    human-written reason recorded on the new StrategyVersion."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=5000)
+    parameters: dict | None = None
+    entry_rules: dict | None = None
+    exit_rules: dict | None = None
+    risk_constraints: dict | None = None
+    change_reason: str = Field(min_length=3, max_length=512)
+
+    _check_parameters_size = field_validator("parameters")(check_json_size)
+    _check_entry_rules_size = field_validator("entry_rules")(check_json_size)
+    _check_exit_rules_size = field_validator("exit_rules")(check_json_size)
+    _check_risk_constraints_size = field_validator("risk_constraints")(check_json_size)
+
+
 class TransitionRequest(BaseModel):
     target_status: StrategyStatus
     reason: str | None = Field(default=None, max_length=_REASON_MAX_LENGTH)
@@ -124,6 +142,8 @@ class StrategyListItem(BaseModel):
     name: str
     status: StrategyStatus
     creator: StrategyCreator
+    # Batch 25: lets the explorer offer "delete draft" only to the draft's creator.
+    created_by_user_id: uuid.UUID | None = None
     version: str
     robustness_score: float | None
     regime_compatibility: dict | None

@@ -13,6 +13,8 @@ export interface Invitation {
   id: string;
   email: string;
   role: OrgRole;
+  /** Batch 26: the role granted on acceptance (system or custom). */
+  role_id: string | null;
   status: InvitationStatus;
   invited_by: string | null;
   expires_at: string;
@@ -38,10 +40,10 @@ export async function listInvitations(): Promise<Invitation[]> {
   return data.items;
 }
 
-export async function createInvitation(email: string, role: OrgRole): Promise<Invitation> {
+export async function createInvitation(email: string, roleId: string): Promise<Invitation> {
   const res = await apiFetch("/users/invitations", {
     method: "POST",
-    body: JSON.stringify({ email, role }),
+    body: JSON.stringify({ email, role_id: roleId }),
   });
   if (!res.ok) throw new Error(await errorMessage(res, "Failed to send the invitation"));
   return (await res.json()) as Invitation;

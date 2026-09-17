@@ -37,6 +37,11 @@ class GraphRepository(Protocol):
         one edge instance exist between the same two nodes (e.g. repeated FAILED_IN)."""
         ...
 
+    async def delete_node(self, organization_id: str, *, label: str, key_value: str) -> None:
+        """DETACH DELETE one node (and its edges). Batch 25: only used for a discarded
+        draft strategy — nothing with research history is ever removed from the graph."""
+        ...
+
     # --- the 5 named research queries ---------------------------------------- #
     async def failed_strategies_by_regime(
         self, organization_id: str, *, regime: str, since: datetime

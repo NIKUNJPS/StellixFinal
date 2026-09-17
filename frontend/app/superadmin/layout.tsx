@@ -7,6 +7,7 @@ import {
   Activity,
   Building2,
   Inbox,
+  KeySquare,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -31,6 +32,7 @@ const SUPERADMIN_NAV = [
   { href: "/superadmin/companies", label: "Companies", icon: Building2 },
   { href: "/superadmin/demo-requests", label: "Demo Requests", icon: Inbox },
   { href: "/superadmin/users", label: "Users", icon: Users },
+  { href: "/superadmin/roles", label: "Roles & Permissions", icon: KeySquare },
   { href: "/superadmin/analytics", label: "Analytics", icon: Activity },
   { href: "/superadmin/system", label: "System", icon: ServerCog },
 ];

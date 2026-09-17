@@ -171,6 +171,16 @@ def build_digest_content(org_name: str, stats: dict) -> dict:
     }
 
 
+async def digest_recipient_emails(session, organization_id) -> list[str]:
+    """Verified, active members whose role grants notifications.weekly_digest (Batch 26;
+    day one: exactly the org's admins, as before)."""
+    from app.rbac.catalog import P
+    from app.services.rbac import users_with_permission
+
+    users = await users_with_permission(session, organization_id=organization_id, key=P.NOTIFY_WEEKLY_DIGEST)
+    return [u.email for u in users if u.email_verified]
+
+
 async def send_all_active_digests() -> int:
     """Deliver the weekly digest to every ACTIVE org that has it enabled.
 
@@ -186,7 +196,6 @@ async def send_all_active_digests() -> int:
     from app.db.session import get_system_session, get_tenant_session
     from app.db.tenant import mark_session_unscoped
     from app.models.organization import Organization, OrganizationStatus
-    from app.models.user import User, UserRole
     from app.services.email import send_notification
     from app.services.webhook import post_webhook
 
@@ -205,16 +214,7 @@ async def send_all_active_digests() -> int:
     for org_id, org_name in targets:
         async with get_tenant_session(org_id) as tenant_session:
             stats = await gather_weekly_stats(tenant_session, org_id)
-            # Scoped session → this can only ever return this org's own admins.
-            recipients = (
-                await tenant_session.execute(
-                    select(User.email).where(
-                        User.role == UserRole.ADMIN,
-                        User.is_active.is_(True),
-                        User.email_verified.is_(True),
-                    )
-                )
-            ).scalars().all()
+            recipients = await digest_recipient_emails(tenant_session, org_id)
 
         content = build_digest_content(org_name, stats)
         await post_webhook(settings.DEMO_WEBHOOK_URL, content)

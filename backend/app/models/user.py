@@ -6,9 +6,20 @@ See docs/schemas.md → User. Email uniqueness is enforced PER ORGANIZATION.
 from __future__ import annotations
 
 import enum
+import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, Enum, Integer, String, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+    Uuid,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -51,6 +62,13 @@ class User(Base, UUIDPrimaryKeyMixin, TenantScopedModel, TimestampMixin):
         ),
         nullable=False,
         default=UserRole.RESEARCHER,
+    )
+    # Batch 26: the role that actually grants permissions. NULL means "the system role
+    # matching the legacy ``role`` column above" (every user created before migration
+    # 0020, and any code path that only sets ``role``). ``role`` itself is DEPRECATED for
+    # authorization and kept only for the rollback window — see docs/adr/0006.
+    role_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("roles.id", ondelete="RESTRICT"), nullable=True, index=True
     )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 

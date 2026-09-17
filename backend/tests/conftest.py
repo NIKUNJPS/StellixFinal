@@ -124,6 +124,14 @@ async def db_session_factory():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     maker = async_sessionmaker(bind=engine, expire_on_commit=False, autoflush=False)
+    # Batch 26: the permission catalog + five system roles, exactly as migration 0020
+    # seeds them on Postgres. Without these rows every user would resolve to no
+    # permissions (authorization fails closed).
+    from app.services.rbac import seed_rbac_catalog
+
+    async with maker() as session:
+        mark_session_unscoped(session.sync_session)
+        await seed_rbac_catalog(session)
     try:
         yield maker
     finally:

@@ -63,9 +63,21 @@ export interface OrganizationRead {
   weekly_digest_enabled: boolean;
 }
 
+/** Batch 26: the role that actually grants a user's permissions (may be an org custom role). */
+export interface EffectiveRole {
+  id: string;
+  name: string;
+  is_system_default: boolean;
+  /** "researcher" | "risk_manager" | ... for system roles; null for custom roles. */
+  system_key: UserRole | null;
+}
+
 export interface MeResponse {
   user: UserRead;
   organization: OrganizationRead;
+  /** Batch 26: resolved server-side from the live database on every /auth/me call. */
+  effective_role: EffectiveRole | null;
+  permissions: string[];
 }
 
 export interface TokenResponse {

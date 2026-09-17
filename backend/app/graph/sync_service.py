@@ -72,6 +72,14 @@ class GraphSyncService:
         except _DEGRADE_ON:
             logger.warning("Graph sync degraded (Neo4j unreachable) during %s", op_name, exc_info=True)
 
+    async def delete_strategy_node(self, organization_id: uuid.UUID, strategy_id: uuid.UUID) -> None:
+        """Batch 25: remove a discarded draft's node so the nightly consistency sweep
+        does not report it as an orphan. Degrades like every other sync call."""
+        async def _delete() -> None:
+            await self.repository.delete_node(str(organization_id), label="Strategy", key_value=str(strategy_id))
+
+        await self._degrade_gracefully("delete_strategy_node", _delete())
+
     # --- Regime / Researcher resolution (internal, Postgres-backed) --------- #
     async def _ensure_regime_node(
         self, session: AsyncSession, regime_label: str

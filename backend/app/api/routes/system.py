@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends
 
-from app.api.deps import require_role
-from app.models.user import User, UserRole
+from app.api.deps import require_permission
+from app.models.user import User
+from app.rbac.catalog import P
 from app.schemas.health import ServiceStatus
 from app.schemas.system_health import (
     ConsistencyAlert,
@@ -29,7 +30,7 @@ router = APIRouter(prefix="/system", tags=["system"])
     summary="Full System Monitoring snapshot (admin only)",
 )
 async def health_detailed(
-    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    current_user: User = Depends(require_permission(P.SYSTEM_MONITOR)),
 ) -> SystemHealthDetailedResponse:
     services = await svc.get_service_health()
     job_queue = await svc.get_job_queue_counts()
@@ -63,7 +64,7 @@ async def health_detailed(
     "/observability/sentry-test",
     summary="Deliberately raise an exception to verify Sentry capture (admin only)",
 )
-async def sentry_test(_admin: User = Depends(require_role(UserRole.ADMIN))) -> None:
+async def sentry_test(_admin: User = Depends(require_permission(P.SYSTEM_MONITOR))) -> None:
     """Batch 13 DoD: "a deliberately thrown test exception appears in Sentry
     from both backend and frontend". Raises unconditionally, regardless of
     whether SENTRY_DSN is configured — this route's job is just to produce a

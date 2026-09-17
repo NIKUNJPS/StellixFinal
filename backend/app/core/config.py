@@ -105,6 +105,22 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str | None = None
     GEMINI_MODEL: str = "gemini-2.5-flash"
 
+    # ---- Global market indices (Batch 25) ------------------------------------
+    # Periodically refreshed, DELAYED public index quotes for the dashboard — not a
+    # real-time feed. Free providers delay index prices (typically ~15-20 min,
+    # exchange-dependent) and throttle aggressive polling, so the default refresh is
+    # two minutes. Plugging in a paid real-time provider means implementing
+    # MarketDataProvider.fetch_latest_quotes and setting MARKET_QUOTES_REALTIME=true.
+    MARKET_QUOTES_ENABLED: bool = True
+    MARKET_QUOTES_PROVIDER: str = "yfinance"
+    MARKET_QUOTES_REFRESH_SECONDS: int = 120
+    # A symbol whose last successful refresh is older than this is shown as
+    # unavailable rather than as a frozen number.
+    MARKET_QUOTES_STALE_AFTER_SECONDS: int = 900
+    MARKET_QUOTES_REALTIME: bool = False
+    # Every tracked exchange is closed from Friday's US close to Sunday evening UTC.
+    MARKET_QUOTES_SKIP_WEEKENDS: bool = True
+
     # ---- Governance & compliance export (Batch 10) --------------------------
     # Rendered JSON/PDF exports land here, named "<job_id>.<format>". Local disk is
     # sufficient for the dev/self-hosted deployment target — swap for object storage

@@ -69,20 +69,25 @@ async def create_notification(
     return notification
 
 
-async def notify_users_with_roles(
+async def notify_users_with_permission(
     session: AsyncSession,
     *,
     organization_id: uuid.UUID,
-    roles: set,
+    permission: str,
     type: NotificationType,
     message: str,
     link: str | None = None,
     dedupe: bool = False,
 ) -> list[Notification]:
-    """Fan out one notification to every active org user with a role in `roles`."""
-    users = (
-        await session.execute(select(User).where(User.role.in_(roles)).where(User.is_active.is_(True)))
-    ).scalars().all()
+    """Fan out one notification to every active member of ``organization_id`` whose role
+    grants ``permission``.
+
+    Batch 26: the organization filter is explicit. The previous role-based version
+    relied on the session's tenant binding, so when called from the (unscoped) Stripe
+    webhook it notified matching users in EVERY organization."""
+    from app.services.rbac import users_with_permission
+
+    users = await users_with_permission(session, organization_id=organization_id, key=permission)
     created = []
     for u in users:
         n = await create_notification(
@@ -99,31 +104,32 @@ async def notify_users_with_roles(
     return created
 
 
-async def notify_creator_and_roles(
+async def notify_creator_and_permission(
     session: AsyncSession,
     *,
     organization_id: uuid.UUID,
     creator_user_id: uuid.UUID | None,
-    roles: set,
+    permission: str,
     type: NotificationType,
     message: str,
     link: str | None = None,
     dedupe: bool = False,
 ) -> list[Notification]:
-    """Fan out to ``creator_user_id`` (if set) UNION every active user with a
-    role in ``roles``, deduplicated so a creator who also holds a governance
-    role isn't notified twice for the same event."""
+    """Fan out to ``creator_user_id`` (if set) UNION every active member whose role
+    grants ``permission``, deduplicated so a creator who also holds it isn't notified
+    twice for the same event."""
+    from app.services.rbac import users_with_permission
+
     recipients: dict[uuid.UUID, User] = {}
     if creator_user_id is not None:
         creator = (
-            await session.execute(select(User).where(User.id == creator_user_id))
+            await session.execute(
+                select(User).where(User.id == creator_user_id).where(User.organization_id == organization_id)
+            )
         ).scalar_one_or_none()
         if creator is not None:
             recipients[creator.id] = creator
-    role_users = (
-        await session.execute(select(User).where(User.role.in_(roles)).where(User.is_active.is_(True)))
-    ).scalars().all()
-    for u in role_users:
+    for u in await users_with_permission(session, organization_id=organization_id, key=permission):
         recipients[u.id] = u
 
     created = []

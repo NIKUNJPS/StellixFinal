@@ -48,6 +48,11 @@ class Invitation(Base, UUIDPrimaryKeyMixin, TenantScopedModel):
         nullable=False,
         default=UserRole.RESEARCHER,
     )
+    # Batch 26: the role (system or this org's custom role) the invitee receives. NULL
+    # means the system role matching ``role`` above.
+    role_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("roles.id", ondelete="SET NULL"), nullable=True
+    )
     status: Mapped[InvitationStatus] = mapped_column(
         Enum(
             InvitationStatus,

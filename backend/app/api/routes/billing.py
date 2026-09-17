@@ -18,10 +18,11 @@ import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_system_db, get_tenant_db, require_role
+from app.api.deps import get_system_db, get_tenant_db, require_permission
 from app.core.config import settings
 from app.models.organization import Organization
-from app.models.user import User, UserRole
+from app.models.user import User
+from app.rbac.catalog import P
 from app.schemas.billing import (
     BillingStatusResponse,
     CheckoutRequest,
@@ -41,7 +42,7 @@ webhook_router = APIRouter(prefix="/billing", tags=["Usage & Billing"])
 
 @router.get("/status", response_model=BillingStatusResponse, summary="Current plan + usage (admin only)")
 async def get_status(
-    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    current_user: User = Depends(require_permission(P.BILLING_MANAGE)),
     db: AsyncSession = Depends(get_tenant_db),
 ) -> BillingStatusResponse:
     organization = await db.get(Organization, current_user.organization_id)
@@ -51,7 +52,7 @@ async def get_status(
 
 @router.get("/invoices", response_model=InvoiceListResponse, summary="Invoice history, live from Stripe (admin only)")
 async def get_invoices(
-    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    current_user: User = Depends(require_permission(P.BILLING_MANAGE)),
     db: AsyncSession = Depends(get_tenant_db),
 ) -> InvoiceListResponse:
     subscription = await billing_service.get_subscription(db, current_user.organization_id)
@@ -67,7 +68,7 @@ async def get_invoices(
 @router.post("/checkout", response_model=CheckoutResponse, summary="Start a Stripe Checkout session (admin only)")
 async def create_checkout(
     payload: CheckoutRequest,
-    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    current_user: User = Depends(require_permission(P.BILLING_MANAGE)),
     db: AsyncSession = Depends(get_tenant_db),
 ) -> CheckoutResponse:
     organization = await db.get(Organization, current_user.organization_id)
@@ -84,7 +85,7 @@ async def create_checkout(
 
 @router.post("/portal", response_model=PortalResponse, summary="Start a Stripe Customer Portal session (admin only)")
 async def create_portal(
-    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    current_user: User = Depends(require_permission(P.BILLING_MANAGE)),
     db: AsyncSession = Depends(get_tenant_db),
 ) -> PortalResponse:
     organization = await db.get(Organization, current_user.organization_id)
