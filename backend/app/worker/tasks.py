@@ -300,6 +300,39 @@ def refresh_strategy_signals(request_id: str | None = None) -> dict:
     return asyncio.run(_main())
 
 
+@celery_app.task(name="refresh_macro_data")
+@with_log_context
+def refresh_macro_data(request_id: str | None = None) -> dict:
+    """Batch 28: refresh FRED macro series (yield curve, VIX) and publish them on the
+    realtime bridge's global scope. No-op (not an error) when FRED_API_KEY is unset —
+    see app/services/macro_data.py for the honesty contract."""
+    from app.services.macro_data import refresh_macro
+
+    async def _main() -> dict:
+        try:
+            return await refresh_macro()
+        finally:
+            await dispose_engine()
+
+    return asyncio.run(_main())
+
+
+@celery_app.task(name="refresh_screener_data")
+@with_log_context
+def refresh_screener_data(request_id: str | None = None) -> dict:
+    """Batch 28: refresh the market screener (feeds the Screener table + Sector
+    Heatmap) and publish it on the realtime bridge's global scope."""
+    from app.services.market_screener import refresh_screener
+
+    async def _main() -> dict:
+        try:
+            return await refresh_screener()
+        finally:
+            await dispose_engine()
+
+    return asyncio.run(_main())
+
+
 @celery_app.task(name="refresh_global_index_quotes")
 @with_log_context
 def refresh_global_index_quotes(request_id: str | None = None) -> dict:

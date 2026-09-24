@@ -47,6 +47,38 @@ class LatestQuote:
         return self.error is None and self.last_price is not None
 
 
+@dataclass(frozen=True)
+class ScreenerQuote:
+    """One symbol's snapshot for the market screener (Batch 28) — distinct from
+    ``LatestQuote`` because the screener additionally needs volume, and the screener
+    isn't index-specific. Same honesty contract: a symbol the provider could not
+    price carries ``error`` and no numbers, never a guessed value."""
+
+    symbol: str
+    last_price: float | None = None
+    previous_close: float | None = None
+    volume: float | None = None
+    session_date: date | None = None
+    error: str | None = None
+
+    @property
+    def ok(self) -> bool:
+        return self.error is None and self.last_price is not None
+
+    @property
+    def change(self) -> float | None:
+        if self.last_price is None or self.previous_close is None:
+            return None
+        return self.last_price - self.previous_close
+
+    @property
+    def change_pct(self) -> float | None:
+        change = self.change
+        if change is None or not self.previous_close:
+            return None
+        return change / self.previous_close * 100.0
+
+
 class MarketDataProvider(ABC):
     """Abstract base for all market-data sources."""
 
@@ -78,6 +110,16 @@ class MarketDataProvider(ABC):
         keep this default, which raises ``ProviderError``.
         """
         raise ProviderError(f"Provider {self.name!r} does not support latest quotes")
+
+    def fetch_screener_snapshot(self, symbols: list[str]) -> list[ScreenerQuote]:
+        """Batch 28: latest price, previous close and volume for each symbol, in one
+        lightweight call — the screener's per-refresh data source.
+
+        Returns one ``ScreenerQuote`` per requested symbol, in order; a symbol that
+        could not be priced carries ``error``. Providers that cannot serve this keep
+        this default, which raises ``ProviderError``.
+        """
+        raise ProviderError(f"Provider {self.name!r} does not support screener snapshots")
 
     @staticmethod
     def _normalize(frame: pd.DataFrame) -> pd.DataFrame:

@@ -2510,6 +2510,66 @@ on the periodic sweep.
 
 ---
 
+## Market Research Widgets (Batch 28)
+
+Global, non-tenant data (same reasoning as Batch 25's index quotes) — no new tables,
+no new migration. Everything here is Redis-cached and served from that cache; a
+request never calls a data provider directly.
+
+### Macro Dashboard (`app/services/macro_data.py`, `app/providers/fred_client.py`)
+FRED (Federal Reserve Bank of St. Louis) — the real, documented `api.stlouisfed.org`
+REST API, not the keyless CSV-graph shortcut some other tools use. Requires a free,
+self-service `FRED_API_KEY` (deferred-credential pattern, same as
+`ALPHA_VANTAGE_API_KEY`); unset means every series reports `status: "not_configured"`,
+never fabricated data. Series: the Treasury Constant Maturity yield curve
+(`DGS1MO`…`DGS30`) and CBOE VIX (`VIXCLS`). Refreshed once a day at most
+(`FRED_REFRESH_SECONDS`, default 86400) — FRED itself updates these once a day.
+New WS event `macro_update`, **global** scope.
+
+### Market Screener (`app/services/market_screener.py`)
+A curated, BOUNDED universe of 56 well-known, liquid US equities across the 11 GICS
+sectors (`SCREENER_UNIVERSE`) — explicitly stated as such in the API response
+(`universe_note`), never implied as full-market coverage. One batched `yfinance` call
+per refresh (`MarketDataProvider.fetch_screener_snapshot`, new provider method) —
+never one HTTP request per symbol. Sector is a curated, stable classification, not
+re-derived per-refresh. Refreshed on the same cadence as the global index quotes
+(`MARKET_QUOTES_REFRESH_SECONDS`). New WS event `screener_update`, **global** scope.
+
+### Sector Heatmap
+Derived from the Screener's own cached rows — no second fetch. Tile size is today's
+**dollar volume** (price × volume), not market capitalization: bulk live market-cap
+data isn't reliably available from yfinance without one slow call per symbol, and a
+stale or fabricated cap number would violate this platform's honesty discipline.
+Color is the dollar-volume-weighted average % change. A sector with zero available
+symbols reports `None`, never a fabricated `0.0`.
+
+### Enhanced Charting (`app/services/market_chart.py`)
+On-demand (not cached/broadcast like the other widgets above — symbol × interval ×
+range is an unbounded combination, unlike a fixed universe). Reuses the real
+`app.features.engineering.compute_features` — the SAME function strategy
+backtesting/validation uses — for SMA/EMA/RSI/MACD/Bollinger; never a second,
+divergent computation. VWAP is additive (not part of that shared function) and is a
+rolling 20-bar volume-weighted average, explicitly labeled as such — not a true
+intraday session VWAP, which the offered intervals cannot support. Only Daily/Weekly/
+Monthly are offered; intraday intervals are deliberately excluded because yfinance
+cannot honestly serve a meaningful lookback window at that granularity.
+
+### Options Chain — deferred, not built
+Evaluated and rejected for this batch: yfinance's own options chain, tested live
+against AAPL's most liquid near-the-money strikes (17k–35k contracts traded that
+session), returned `bid=0`, `ask=0`, `openInterest=0` across the board and an
+implausible near-zero implied volatility. Shipping this as a real options chain would
+present fabricated-looking data as real.
+
+### Sourcing note
+OpenTerminal (the project that inspired these widgets) sources its Screener, Heatmap,
+Options Chain and Charting from `scanner.tradingview.com` and `api.nasdaq.com` —
+internal endpoints that power those sites' own frontends, not published APIs (their
+own code spoofs a browser `Referer`/`Origin` to avoid a 403). None of that was
+adopted; see `docs/THIRD_PARTY_NOTICES.md` for the full classification.
+
+---
+
 ## Reserved for Later Batches
 
 ### Regime
@@ -3020,3 +3080,14 @@ on the periodic sweep.
   position replay, architecturally isolated from the LLM layer. Realtime delivery on a
   new org-scoped `strategy_signal` WS event via a Celery beat sweep. New `/signals`
   frontend page, gated on `signals.view`.
+- **Batch 28** — Market Research widgets: Macro Dashboard (FRED, official documented
+  API, deferred `FRED_API_KEY`), Screener (bounded 56-symbol universe, one batched
+  yfinance call), Sector Heatmap (derived from the Screener, sized by dollar volume
+  not market cap), Enhanced Charting (real shared indicator computation +
+  `lightweight-charts`). No new tables — Redis-cached, global-scope WS events
+  (`macro_update`, `screener_update`), same pattern as Batch 25's index quotes.
+  Options Chain evaluated and deferred (yfinance's own chain returned zero bid/ask/
+  open-interest even for AAPL's most liquid strikes). Inspired by OpenTerminal
+  (MIT) but built native — its Screener/Heatmap/Options/Charting sources are
+  unofficial (internal endpoints of tradingview.com/nasdaq.com); none adopted. New
+  `/market-research` frontend page.

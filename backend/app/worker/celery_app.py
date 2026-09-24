@@ -97,4 +97,17 @@ celery_app.conf.beat_schedule = {
         "task": "refresh_strategy_signals",
         "schedule": float(settings.MARKET_QUOTES_REFRESH_SECONDS),
     },
+    # Batch 28: FRED macro series (yield curve, VIX) update once a day at most —
+    # polling faster would add load without adding freshness. The task itself is a
+    # no-op when FRED_API_KEY is unset.
+    "macro-data-refresh": {
+        "task": "refresh_macro_data",
+        "schedule": float(settings.FRED_REFRESH_SECONDS),
+    },
+    # Batch 28: market screener (feeds both the Screener table and the Sector
+    # Heatmap) — same cadence as the global index quotes, one batched provider call.
+    "screener-refresh": {
+        "task": "refresh_screener_data",
+        "schedule": float(settings.MARKET_QUOTES_REFRESH_SECONDS),
+    },
 }

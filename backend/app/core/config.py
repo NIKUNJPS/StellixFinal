@@ -105,6 +105,16 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str | None = None
     GEMINI_MODEL: str = "gemini-2.5-flash"
 
+    # ---- Macro dashboard (Batch 28) -------------------------------------------
+    # FRED (Federal Reserve Economic Data) — a real, official, documented API
+    # (api.stlouisfed.org/fred), requiring a free key from a self-service account
+    # at fredaccount.stlouisfed.org. Deferred-credential pattern as everywhere
+    # else: unset => the macro dashboard reports "not configured" honestly,
+    # never fabricated data. FRED updates daily series once a day at most, so the
+    # refresh interval matches that cadence rather than polling faster.
+    FRED_API_KEY: str | None = None
+    FRED_REFRESH_SECONDS: int = 86_400  # once a day — matches FRED's own update cadence
+
     # ---- Global market indices (Batch 25) ------------------------------------
     # Periodically refreshed, DELAYED public index quotes for the dashboard — not a
     # real-time feed. Free providers delay index prices (typically ~15-20 min,

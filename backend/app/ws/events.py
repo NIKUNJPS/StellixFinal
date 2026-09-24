@@ -93,6 +93,18 @@ async def publish_market_quotes(quotes: list[dict[str, Any]], metadata: dict[str
     await _publish_global({"type": "market_quotes", **metadata, "quotes": quotes, "timestamp": _now()})
 
 
+async def publish_screener_update(rows: list[dict[str, Any]], metadata: dict[str, Any]) -> None:
+    """Batch 28: refreshed market-screener rows (feeds both the Screener table and
+    the Sector Heatmap). Public data, so global scope."""
+    await _publish_global({"type": "screener_update", **metadata, "rows": rows, "timestamp": _now()})
+
+
+async def publish_macro_update(series: list[dict[str, Any]], metadata: dict[str, Any]) -> None:
+    """Batch 28: refreshed FRED macro series (yield curve, VIX). Public data, so
+    global scope — the same reasoning as ``publish_market_quotes``."""
+    await _publish_global({"type": "macro_update", **metadata, "series": series, "timestamp": _now()})
+
+
 async def publish_regime_change(
     org_id: str, symbol: str, old_regime: str, new_regime: str, confidence: float
 ) -> None:
