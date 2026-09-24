@@ -91,8 +91,27 @@ def assert_submittable(strategy: Strategy) -> None:
         raise RulesInvalid(f"risk_constraints missing: {', '.join(missing)}")
 
 
-def assert_activatable(strategy: Strategy, *, has_approval: bool) -> None:
-    """candidate -> active guard: BOTH robustness >= 0.70 AND an approve record."""
+def assert_activatable(
+    strategy: Strategy, *, has_approval: bool, validated_version: str | None
+) -> None:
+    """candidate -> active guard: a validation record for THIS version, robustness
+    >= 0.70, and an approve record.
+
+    ``validated_version`` is the strategy version recorded on the strategy's latest
+    ValidationResult, or None when it has never been validated. Requiring it closes
+    ADR 0008: ``robustness_score`` alone could be a single backtest's number, or a
+    validated score left over from a version whose rules have since changed — neither
+    is evidence that the 5-method suite passed the rules being activated.
+    """
+    if validated_version is None:
+        raise ActivationGateNotMet(
+            "no validation result: the 5-method validation suite must pass before activation"
+        )
+    if validated_version != strategy.version:
+        raise ActivationGateNotMet(
+            f"the validation result is for version {validated_version}, but this strategy "
+            f"is {strategy.version}; re-validate the current rules"
+        )
     if strategy.robustness_score is None or strategy.robustness_score < ROBUSTNESS_THRESHOLD:
         raise ActivationGateNotMet(
             f"robustness_score must be >= {ROBUSTNESS_THRESHOLD} "

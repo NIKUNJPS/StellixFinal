@@ -345,7 +345,9 @@ async def _persist_backtest_result(
         await session.flush()
         snapshots.append(snapshot)
 
-    strategy.robustness_score = result.robustness_score
+    # ADR 0008: the GA's own backtest is display-only; a registered candidate earns a
+    # gate score only from run_strategy_validation.
+    strategy.backtest_robustness = result.robustness_score
     strategy.regime_compatibility = result.regime_compatibility
     await session.commit()
     await session.refresh(strategy)
