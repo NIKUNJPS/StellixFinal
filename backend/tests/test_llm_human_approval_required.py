@@ -24,7 +24,7 @@ async def test_llm_generated_strategy_always_starts_draft_and_requires_review(cl
 
     resp = await client.post(
         "/strategies",
-        json={"name": "LLM Hypothesis Strategy", "creator": "llm_generated", "entry_rules": {}, "exit_rules": {}},
+        json={"symbol": "SPY", "name": "LLM Hypothesis Strategy", "creator": "llm_generated", "entry_rules": {}, "exit_rules": {}},
         headers=bearer(token),
     )
     assert resp.status_code == 201
@@ -44,6 +44,7 @@ async def test_requires_review_cannot_be_client_set_to_false_for_llm_generated(c
         "/strategies",
         json={
             "name": "Sneaky Strategy",
+            "symbol": "SPY",
             "creator": "llm_generated",
             "entry_rules": {},
             "exit_rules": {},
@@ -66,6 +67,7 @@ async def test_requires_review_cannot_be_client_set_to_true_for_human_strategy(c
         "/strategies",
         json={
             "name": "Human Strategy",
+            "symbol": "SPY",
             "creator": "human",
             "entry_rules": {},
             "exit_rules": {},
@@ -89,7 +91,7 @@ async def test_bypass_attempt_submit_immediately_after_creation_follows_normal_g
 
     create = await client.post(
         "/strategies",
-        json={"name": "Incomplete LLM Strategy", "creator": "llm_generated", "entry_rules": {}, "exit_rules": {}},
+        json={"symbol": "SPY", "name": "Incomplete LLM Strategy", "creator": "llm_generated", "entry_rules": {}, "exit_rules": {}},
         headers=bearer(token),
     )
     strategy_id = create.json()["id"]
@@ -102,7 +104,7 @@ async def test_bypass_attempt_submit_immediately_after_creation_follows_normal_g
     # the identical rejection — proving creator type has zero effect on the gate.
     create_human = await client.post(
         "/strategies",
-        json={"name": "Incomplete Human Strategy", "creator": "human", "entry_rules": {}, "exit_rules": {}},
+        json={"symbol": "SPY", "name": "Incomplete Human Strategy", "creator": "human", "entry_rules": {}, "exit_rules": {}},
         headers=bearer(token),
     )
     human_id = create_human.json()["id"]
@@ -123,6 +125,7 @@ async def test_llm_generated_strategy_with_valid_rules_submits_normally_like_any
         "/strategies",
         json={
             "name": "Complete LLM Strategy",
+            "symbol": "SPY",
             "creator": "llm_generated",
             "entry_rules": _VALID_ENTRY,
             "exit_rules": _VALID_EXIT,
@@ -152,6 +155,7 @@ async def test_llm_generated_candidate_cannot_skip_straight_to_active_without_ap
         "/strategies",
         json={
             "name": "LLM Strategy No Backtest Yet",
+            "symbol": "SPY",
             "creator": "llm_generated",
             "entry_rules": _VALID_ENTRY,
             "exit_rules": _VALID_EXIT,

@@ -333,7 +333,7 @@ async def test_strategy_creation_blocked_at_starter_cap(client, db_session_facto
     for i in range(25):
         await seed_strategy(db_session_factory, organization_id=org, name=f"Strat {i}")
 
-    resp = await client.post("/strategies", json={"name": "One Too Many"}, headers=bearer(token))
+    resp = await client.post("/strategies", json={"name": "One Too Many", "symbol": "SPY"}, headers=bearer(token))
     assert resp.status_code == 403
     assert "cap" in resp.json()["detail"].lower()
 
@@ -344,7 +344,7 @@ async def test_strategy_creation_allowed_after_upgrade_raises_limit(client, db_s
     for i in range(25):
         await seed_strategy(db_session_factory, organization_id=org, name=f"Strat {i}")
 
-    blocked = await client.post("/strategies", json={"name": "Blocked"}, headers=bearer(token))
+    blocked = await client.post("/strategies", json={"name": "Blocked", "symbol": "SPY"}, headers=bearer(token))
     assert blocked.status_code == 403
 
     payload = _event(
@@ -361,5 +361,5 @@ async def test_strategy_creation_allowed_after_upgrade_raises_limit(client, db_s
     )
     assert webhook_resp.status_code == 200
 
-    allowed = await client.post("/strategies", json={"name": "Now Allowed"}, headers=bearer(token))
+    allowed = await client.post("/strategies", json={"name": "Now Allowed", "symbol": "SPY"}, headers=bearer(token))
     assert allowed.status_code == 201

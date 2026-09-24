@@ -9,19 +9,18 @@ _VALID_EXIT = {"operator": "AND", "conditions": [{"indicator": "rsi_14", "compar
 _RISK = {"max_drawdown_pct": 20, "max_position_size_pct": 10, "stop_loss_pct": 5}
 
 
-async def _create(client, token, name="Mean Reversion"):
-    return await client.post(
-        "/strategies",
-        json={
-            "name": name,
-            "description": "buy oversold",
-            "parameters": {"rsi_period": 14},
-            "entry_rules": _VALID_ENTRY,
-            "exit_rules": _VALID_EXIT,
-            "risk_constraints": _RISK,
-        },
-        headers=bearer(token),
-    )
+async def _create(client, token, name="Mean Reversion", symbol="SPY"):
+    body = {
+        "name": name,
+        "description": "buy oversold",
+        "parameters": {"rsi_period": 14},
+        "entry_rules": _VALID_ENTRY,
+        "exit_rules": _VALID_EXIT,
+        "risk_constraints": _RISK,
+    }
+    if symbol is not None:
+        body["symbol"] = symbol
+    return await client.post("/strategies", json=body, headers=bearer(token))
 
 
 async def test_create_starts_in_draft_with_v1_0(client):
@@ -33,10 +32,55 @@ async def test_create_starts_in_draft_with_v1_0(client):
     assert body["version"] == "v1.0"
     assert body["creator"] == "human"
     assert body["created_by_user_id"] is not None
+    assert body["symbol"] == "SPY"
 
     detail = (await client.get(f"/strategies/{body['id']}", headers=bearer(token))).json()
     assert len(detail["versions"]) == 1
     assert detail["versions"][0]["version_number"] == "v1.0"
+
+
+async def test_create_requires_symbol_going_forward(client):
+    """Batch 26 Part B: symbol is mandatory at creation."""
+    token, _org = await register_org(client, org_name="Sym Co", email="s@symco.io")
+    missing = await _create(client, token, symbol=None)
+    assert missing.status_code == 422
+    # And it's normalized to uppercase.
+    ok = await _create(client, token, name="Lower Sym", symbol="qqq")
+    assert ok.status_code == 201
+    assert ok.json()["symbol"] == "QQQ"
+
+
+async def test_existing_null_symbol_strategies_are_unaffected(client, db_session_factory):
+    """A pre-existing strategy with NULL symbol (created before the column) is left
+    alone and still serves through the API without crashing."""
+    from sqlalchemy import select
+
+    from app.db.tenant import bind_organization
+    from app.models.organization import Organization
+    from app.models.strategy import Strategy, StrategyCreator, StrategyStatus
+
+    token, _org = await register_org(client, org_name="Null Sym Co", email="n@nullsym.io")
+    async with db_session_factory() as session:
+        from app.db.tenant import mark_session_unscoped
+
+        mark_session_unscoped(session.sync_session)
+        org_id = (await session.execute(select(Organization.id).where(Organization.slug == "null-sym-co"))).scalar_one()
+    async with db_session_factory() as session:
+        bind_organization(session.sync_session, org_id)
+        strat = Strategy(
+            name="Legacy no symbol", symbol=None, creator=StrategyCreator.HUMAN,
+            status=StrategyStatus.DRAFT, version="v1.0", parameters={}, entry_rules={}, exit_rules={},
+            risk_constraints={},
+        )
+        session.add(strat)
+        await session.commit()
+        sid = strat.id
+
+    detail = await client.get(f"/strategies/{sid}", headers=bearer(token))
+    assert detail.status_code == 200
+    assert detail.json()["strategy"]["symbol"] is None
+    listing = await client.get("/strategies", headers=bearer(token))
+    assert listing.status_code == 200
 
 
 async def test_update_bumps_version_and_snapshots(client):

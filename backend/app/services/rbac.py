@@ -33,6 +33,13 @@ from app.rbac.catalog import (
 from app.services.audit import write_audit_log
 
 
+# The legacy ``users.role`` enum values (the five original system roles). A newer
+# system role — e.g. Quant Engineer (Batch 26 Part B) — has a system_key that is NOT a
+# UserRole value, so it can never be mirrored onto the deprecated ``users.role`` column
+# (that column is authorization-irrelevant since Part A; role_id is authoritative).
+_LEGACY_ROLE_VALUES: frozenset[str] = frozenset(r.value for r in UserRole)
+
+
 class RbacError(Exception):
     http_status = 409
 
@@ -150,7 +157,9 @@ async def users_with_permission(
         )
     ).all()
     role_ids = [rid for rid, _ in granting]
-    legacy_values = [UserRole(sk) for _, sk in granting if sk in SYSTEM_ROLES_BY_KEY]
+    # Only the five original system roles have a legacy users.role value to match a
+    # NULL-role_id user by; a newer system role's holders always carry an explicit role_id.
+    legacy_values = [UserRole(sk) for _, sk in granting if sk in _LEGACY_ROLE_VALUES]
     if not role_ids:
         return []
     stmt = (
@@ -367,8 +376,10 @@ async def assign_role(session: AsyncSession, *, actor: User, target: User, role_
     role = await _get_visible_role(session, actor.organization_id, role_id)
     before = await get_effective_role(session, target)
     target.role_id = role.id
-    if role.system_key:
-        # Keep the deprecated column truthful for system roles (rollback window).
+    if role.system_key in _LEGACY_ROLE_VALUES:
+        # Keep the deprecated column truthful for the five original system roles
+        # (rollback window). A newer system role (e.g. Quant Engineer) has no legacy
+        # UserRole value, so users.role is left as-is — role_id is authoritative.
         target.role = UserRole(role.system_key)
     forget_cached_permissions(target)
     await session.flush()

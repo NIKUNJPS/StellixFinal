@@ -39,7 +39,9 @@ export type WSEvent = {
     | "strategy_status"
     | "approval_request"
     // Batch 25: public delayed index quotes, delivered on the bridge's global scope.
-    | "market_quotes";
+    | "market_quotes"
+    // Batch 26 Part B: a strategy's Buy/Sell/Hold research signal changed (org-scoped).
+    | "strategy_signal";
   [key: string]: unknown;
 };
 

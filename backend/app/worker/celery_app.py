@@ -90,4 +90,11 @@ celery_app.conf.beat_schedule = {
         "task": "refresh_market_universe",
         "schedule": crontab(day_of_week="1-5", hour=22, minute=30),
     },
+    # Batch 26 Part B: re-evaluate Buy/Sell/Hold signals for every genuinely-Active
+    # strategy. Tied to the same cadence as the market-quote refresh — signals derive
+    # from market data, so re-evaluating faster than the data updates adds no freshness.
+    "strategy-signals-refresh": {
+        "task": "refresh_strategy_signals",
+        "schedule": float(settings.MARKET_QUOTES_REFRESH_SECONDS),
+    },
 }

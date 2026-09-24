@@ -47,7 +47,7 @@ async def test_research_actions_are_audited_with_real_actor(client, db_session_f
 
     created = await client.post(
         "/strategies",
-        json={"name": "Audited Strategy", "entry_rules": _ENTRY, "exit_rules": _EXIT, "risk_constraints": _RISK},
+        json={"symbol": "SPY", "name": "Audited Strategy", "entry_rules": _ENTRY, "exit_rules": _EXIT, "risk_constraints": _RISK},
         headers=bearer(token),
     )
     sid = created.json()["id"]
@@ -61,7 +61,7 @@ async def test_research_actions_are_audited_with_real_actor(client, db_session_f
     assert submitted.status_code == 200
     throwaway = await client.post(
         "/strategies",
-        json={"name": "Throwaway", "entry_rules": _ENTRY, "exit_rules": _EXIT, "risk_constraints": _RISK},
+        json={"symbol": "SPY", "name": "Throwaway", "entry_rules": _ENTRY, "exit_rules": _EXIT, "risk_constraints": _RISK},
         headers=bearer(token),
     )
     await client.delete(f"/strategies/{throwaway.json()['id']}", headers=bearer(token))
@@ -97,7 +97,7 @@ async def test_governance_audit_log_shows_all_event_types_with_names(client, db_
     r_token = await token_for(client, researcher.email)
     await client.post(
         "/strategies",
-        json={"name": "Visible In Log", "entry_rules": _ENTRY, "exit_rules": _EXIT, "risk_constraints": _RISK},
+        json={"symbol": "SPY", "name": "Visible In Log", "entry_rules": _ENTRY, "exit_rules": _EXIT, "risk_constraints": _RISK},
         headers=bearer(r_token),
     )
     active = await seed_strategy(

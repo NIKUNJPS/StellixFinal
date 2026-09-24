@@ -25,6 +25,7 @@ class StrategyCreateRequest(BaseModel):
             "example": {
                 "name": "SPY SMA 20/50 Crossover",
                 "description": "Golden-cross momentum on SPY.",
+                "symbol": "SPY",
                 "parameters": {"fast": 20, "slow": 50},
                 "entry_rules": {
                     "operator": "AND",
@@ -45,6 +46,9 @@ class StrategyCreateRequest(BaseModel):
 
     name: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=5000)
+    # Batch 26 Part B: the instrument this strategy trades — required at creation so
+    # signal generation knows which symbol's bars to evaluate. Normalized to uppercase.
+    symbol: str = Field(min_length=1, max_length=32)
     creator: StrategyCreator = StrategyCreator.HUMAN
     parameters: dict = Field(default_factory=dict)
     entry_rules: dict = Field(default_factory=dict)
@@ -53,6 +57,14 @@ class StrategyCreateRequest(BaseModel):
     parent_strategy_id: uuid.UUID | None = None
     # Batch 7: backs the knowledge-graph INSPIRED_BY edge.
     inspired_by_note_id: uuid.UUID | None = None
+
+    @field_validator("symbol")
+    @classmethod
+    def _normalize_symbol(cls, v: str) -> str:
+        cleaned = (v or "").strip().upper()
+        if not cleaned:
+            raise ValueError("symbol is required")
+        return cleaned
 
     _check_parameters_size = field_validator("parameters")(check_json_size)
     _check_entry_rules_size = field_validator("entry_rules")(check_json_size)
@@ -118,6 +130,7 @@ class StrategyRead(BaseModel):
     organization_id: uuid.UUID
     name: str
     description: str | None
+    symbol: str | None
     version: str
     creator: StrategyCreator
     created_by_user_id: uuid.UUID | None
@@ -140,6 +153,7 @@ class StrategyListItem(BaseModel):
 
     id: uuid.UUID
     name: str
+    symbol: str | None = None
     status: StrategyStatus
     creator: StrategyCreator
     # Batch 25: lets the explorer offer "delete draft" only to the draft's creator.

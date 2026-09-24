@@ -24,6 +24,7 @@ from app.api.routes import (
     regimes,
     research_notes,
     roles,
+    signals,
     strategies,
     superadmin,
     system,
@@ -65,6 +66,7 @@ api_router.include_router(organizations.router, dependencies=_GLOBAL_LIMIT)
 api_router.include_router(data.router, dependencies=_GLOBAL_LIMIT)
 api_router.include_router(regimes.router, dependencies=_GLOBAL_LIMIT)
 api_router.include_router(strategies.router, dependencies=_GLOBAL_LIMIT)
+api_router.include_router(signals.router, dependencies=_GLOBAL_LIMIT)
 api_router.include_router(portfolio.router, dependencies=_GLOBAL_LIMIT)
 # Batch 25: public, delayed global index quotes (cache read only, never a provider call).
 api_router.include_router(market.router, dependencies=_GLOBAL_LIMIT)

@@ -196,6 +196,36 @@ async def publish_strategy_status_change(
     )
 
 
+async def publish_strategy_signal(
+    org_id: str,
+    strategy_id: str,
+    strategy_name: str,
+    symbol: str,
+    signal_type: str,
+    regime: str | None,
+    robustness_score: float | None,
+) -> None:
+    """Batch 26 Part B: a strategy's Buy/Sell/Hold research signal changed.
+
+    ORG-SCOPED (``_publish``, never ``_publish_global``): signals are a tenant's private
+    research output, unlike the public ``market_quotes`` feed. Delivered only to the
+    originating organization's sockets.
+    """
+    await _publish(
+        org_id,
+        {
+            "type": "strategy_signal",
+            "strategy_id": str(strategy_id),
+            "strategy_name": strategy_name,
+            "symbol": symbol,
+            "signal_type": signal_type,
+            "regime": regime,
+            "robustness_score": robustness_score,
+            "timestamp": _now(),
+        },
+    )
+
+
 async def publish_approval_request(
     org_id: str,
     strategy_id: str,

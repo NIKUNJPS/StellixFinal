@@ -34,7 +34,7 @@ async def _researcher(maker, tag: str):
 async def _create(client, token, name="RSI Reversion"):
     resp = await client.post(
         "/strategies",
-        json={"name": name, "entry_rules": _ENTRY, "exit_rules": _EXIT, "risk_constraints": _RISK},
+        json={"symbol": "SPY", "name": name, "entry_rules": _ENTRY, "exit_rules": _EXIT, "risk_constraints": _RISK},
         headers=bearer(token),
     )
     assert resp.status_code == 201, resp.text

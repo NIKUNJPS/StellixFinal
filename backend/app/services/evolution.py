@@ -281,6 +281,8 @@ async def _register_candidates(
         data = {
             "name": f"{template.name} (evolved {key[:2]})",
             "description": f"GA-evolved from {template.name} (v{template.version})",
+            # Batch 26 Part B: GA children trade the same instrument as the run.
+            "symbol": symbol,
             "creator": StrategyCreator.GA_ENGINE.value,
             "parameters": decoded["parameters"],
             "entry_rules": decoded["entry_rules"],
