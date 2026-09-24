@@ -43,6 +43,11 @@ class Strategy(Base, UUIDPrimaryKeyMixin, TenantScopedModel, TimestampMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     version: Mapped[str] = mapped_column(String(16), nullable=False, default="v1.0")
+    # Batch 26 Part B: the instrument this strategy trades. Required at creation going
+    # forward (enforced in the API/frontend, not the DB), so signal generation knows
+    # which symbol's bars to evaluate. Nullable in the DB because strategies created
+    # before this column existed have no recoverable symbol — those rows stay NULL.
+    symbol: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     creator: Mapped[StrategyCreator] = mapped_column(
         Enum(StrategyCreator, name="strategy_creator", native_enum=True, values_callable=_values),

@@ -2444,6 +2444,72 @@ evidence rather than carrying it forward.
 
 ---
 
+## Quant Engineer, Symbol & Research Signals (Batch 26 Part B)
+
+Migrations `0022_strategy_symbol`, `0023_quant_engineer_signals_view`,
+`0024_strategy_signals` (revises `0021_validated_gate_score` in sequence).
+
+### Column additions
+| Table | Field | Type | Notes |
+|-------|-------|------|-------|
+| `strategies` | `symbol` | str(32), nullable | The instrument the strategy trades. Required at creation going forward (API schema, not a DB constraint) — nullable so strategies predating this column stay untouched. Backfilled to `'SPY'` only for the one currently-active SPY-named strategy (the sole unambiguous case); every other NULL row was left alone. |
+
+### New permission + system role (0023, additive delta on top of 0020)
+| Role | Permissions |
+|------|-------------|
+| Quant Engineer (new system role, `system_key=quant_engineer`) | `strategy.version`, `signals.view` — a research/build role, no governance permissions |
+
+`signals.view` (new, category Research) was also granted to the five original system
+roles: Researcher, Risk Manager, CIO (research/oversight use), Compliance Officer
+(audit-read), and Admin (holds every permission but three governance ones). Migration
+0020 stays frozen; 0023 holds this delta as its own frozen copy, and
+`tests/test_dynamic_rbac.py::test_migration_seed_matches_catalog_exactly` checks the
+union of 0020 + 0023 against the live `app/rbac/catalog.py`.
+
+### strategy_signals (new, tenant-scoped)
+| Field | Type | Constraints | Notes |
+|-------|------|-------------|-------|
+| `id` | uuid | PK | |
+| `organization_id` | uuid | FK organizations ON DELETE CASCADE, not null | |
+| `strategy_id` | uuid | FK strategies ON DELETE CASCADE, not null, indexed | |
+| `symbol` | str(32) | not null | |
+| `signal_type` | enum(`BUY`,`SELL`,`HOLD`) | not null | |
+| `evaluated_at` | timestamptz | not null | When this signal became current (the change point). |
+| `last_evaluated_at` | timestamptz | not null | Bumped on every re-evaluation that leaves the signal unchanged; a new row is written only when `signal_type` changes. |
+| `regime_at_signal` | str(64), nullable | | Real current regime for the symbol, joined at signal time. |
+| `rule_snapshot` | jsonb | not null, default `{}` | The entry/exit rule that fired, or `{"event": "none", ...}` for HOLD. |
+| `robustness_score_at_signal` | float, nullable | | The ADR-0008-corrected validated composite — **never** `backtest_robustness`. |
+
+`audit_event_type` addition: `signal_generated` (written once per persisted row, not on
+every unchanged re-evaluation).
+
+### Signal generation (`app/services/signals.py`)
+100% deterministic: reuses the real `strategy.version`-adjacent gate helpers
+(`_has_approve_record`, `_validated_version`, `lifecycle.assert_activatable`) so a
+signal is only ever produced for a strategy that is genuinely Active per ADR 0008 —
+never a parallel "good enough" check — and the real DSL evaluator
+(`app.strategy.dsl.generate_signals`). HOLD is derived by replaying position state
+across the symbol's bars (entering only from flat, exiting only from a position,
+mirroring `vectorbt.Portfolio.from_signals`), then reading the latest bar's event on
+top of that replayed state — not simply "no event fired today". The module has zero
+import path to `app.llm`, enforced by the same import-graph mechanism as Safeguard 2
+(`app.llm.architecture_check.find_banned_imports`).
+
+### Realtime delivery
+New WS event `strategy_signal`, published via the **organization** scope (never
+`global` — signals are private per-tenant research output, unlike public market
+quotes). A Celery beat entry (`refresh_strategy_signals`, tied to
+`MARKET_QUOTES_REFRESH_SECONDS`) re-evaluates every genuinely-Active strategy across
+every active org each cycle, in its own tenant-scoped session, publishing only on a
+signal change.
+
+### GET /signals
+Gated on `signals.view`. Returns the caller's org's genuinely-Active strategies with
+their current signal, evaluating (and persisting on change) at read time as well as
+on the periodic sweep.
+
+---
+
 ## Reserved for Later Batches
 
 ### Regime
@@ -2946,3 +3012,11 @@ evidence rather than carrying it forward.
   scored without any validation, and demoted the one ACTIVE strategy that had never been
   validated. Found while diagnosing why no strategy clears 0.70 (see also ADR 0007 on the
   GA fitness function).
+- **Batch 26 (Part B)** — Quant Engineer system role (migration `0023`, additive delta
+  on 0020) + `signals.view` permission; `strategies.symbol` (migration `0022`, required
+  going forward, backfilled only for the one unambiguous case); `strategy_signals`
+  (migration `0024`) — deterministic Buy/Sell/Hold research signals for genuinely-Active
+  strategies only, reusing the real ADR-0008 gate and DSL evaluator, HOLD derived from
+  position replay, architecturally isolated from the LLM layer. Realtime delivery on a
+  new org-scoped `strategy_signal` WS event via a Celery beat sweep. New `/signals`
+  frontend page, gated on `signals.view`.

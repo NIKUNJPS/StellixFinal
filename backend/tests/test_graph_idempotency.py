@@ -18,7 +18,7 @@ async def test_resyncing_the_same_strategy_does_not_duplicate_the_node(client, f
 
     create = await client.post(
         "/strategies",
-        json={"name": "Idempotent Strategy", "entry_rules": {}, "exit_rules": {}},
+        json={"symbol": "SPY", "name": "Idempotent Strategy", "entry_rules": {}, "exit_rules": {}},
         headers=bearer(token),
     )
     strategy_id = create.json()["id"]

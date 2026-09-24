@@ -280,6 +280,26 @@ def refresh_market_universe(request_id: str | None = None) -> dict:
     }
 
 
+@celery_app.task(name="refresh_strategy_signals")
+@with_log_context
+def refresh_strategy_signals(request_id: str | None = None) -> dict:
+    """Batch 26 Part B: re-evaluate Buy/Sell/Hold signals for every genuinely-Active
+    strategy across all active orgs, persisting + broadcasting org-scoped
+    ``strategy_signal`` events on change. Deterministic rule evaluation only — the
+    signal service has no import path to the LLM layer. Runs in its own asyncio loop,
+    so the Redis client is recreated per loop (Batch 25 fix) and events are not
+    silently dropped after the worker's first task."""
+    from app.services.signals import refresh_all_active_org_signals
+
+    async def _main() -> dict:
+        try:
+            return await refresh_all_active_org_signals()
+        finally:
+            await dispose_engine()
+
+    return asyncio.run(_main())
+
+
 @celery_app.task(name="refresh_global_index_quotes")
 @with_log_context
 def refresh_global_index_quotes(request_id: str | None = None) -> dict:

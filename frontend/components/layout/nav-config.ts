@@ -14,6 +14,7 @@ import {
   Settings,
   Share2,
   ShieldCheck,
+  Signal,
   Sparkles,
   Users,
   Waves,
@@ -30,6 +31,7 @@ export interface NavLink {
 export const ADMIN_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/portfolio", label: "Portfolio", icon: PieChart },
+  { href: "/signals", label: "Signals", icon: Signal },
   { href: "/admin/failures", label: "Failure Intelligence", icon: AlertTriangle },
   { href: "/admin/governance", label: "Governance & Compliance", icon: ShieldCheck },
   { href: "/admin/llm-audit", label: "LLM Audit Log", icon: ScrollText },
@@ -42,6 +44,7 @@ export const NAV_LINKS = ADMIN_NAV_LINKS;
 
 export const COMPLIANCE_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/signals", label: "Signals", icon: Signal },
   { href: "/compliance/governance", label: "Governance & Compliance", icon: ShieldCheck },
   { href: "/compliance/llm-audit", label: "LLM Audit Log", icon: ScrollText },
   { href: "/compliance/members", label: "Organization Members", icon: Users },
@@ -51,10 +54,23 @@ export const COMPLIANCE_NAV_LINKS: NavLink[] = [
 export const RESEARCHER_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/researcher/strategies", label: "Strategy Explorer", icon: FlaskConical },
+  { href: "/signals", label: "Signals", icon: Signal },
   { href: "/researcher/failures", label: "Failure Intelligence", icon: AlertTriangle },
   { href: "/researcher/assistant", label: "Research Assistant", icon: Sparkles },
   { href: "/researcher/research", label: "Research Notebook", icon: NotebookText },
   { href: "/researcher/graph", label: "Knowledge Graph", icon: Share2 },
+];
+
+/* Batch 26 Part B: Quant Engineer is a research/build role (strategy.version +
+ * signals.view, no governance) with no dedicated route tree of its own — it uses the
+ * same generic /admin/* research pages a custom role does (see navLinksForAccess),
+ * plus Signals. */
+export const QUANT_ENGINEER_NAV_LINKS: NavLink[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/strategies", label: "Strategy Explorer", icon: FlaskConical },
+  { href: "/signals", label: "Signals", icon: Signal },
+  { href: "/admin/research", label: "Research Notebook", icon: NotebookText },
+  { href: "/admin/graph", label: "Knowledge Graph", icon: Share2 },
 ];
 
 /* Batch 25: the risk roles previously saw only Failure Intelligence + Graph, and
@@ -64,6 +80,7 @@ export const RESEARCHER_NAV_LINKS: NavLink[] = [
 export const RISK_MANAGER_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/risk-manager/portfolio", label: "Portfolio Risk", icon: PieChart },
+  { href: "/signals", label: "Signals", icon: Signal },
   { href: "/risk-manager/governance", label: "Approvals & Kill Switch", icon: ShieldCheck },
   { href: "/risk-manager/failures", label: "Failure Intelligence", icon: AlertTriangle },
   { href: "/risk-manager/graph", label: "Knowledge Graph", icon: Share2 },
@@ -72,6 +89,7 @@ export const RISK_MANAGER_NAV_LINKS: NavLink[] = [
 export const CIO_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/cio/portfolio", label: "Performance & Portfolio", icon: PieChart },
+  { href: "/signals", label: "Signals", icon: Signal },
   { href: "/cio/governance", label: "Approvals & Kill Switch", icon: ShieldCheck },
   { href: "/cio/kill-switch-reviews", label: "Kill Switch Reviews", icon: ClipboardCheck },
   { href: "/cio/failures", label: "Failure Intelligence", icon: AlertTriangle },
@@ -102,6 +120,7 @@ export function navLinksForAccess({ roleKey, isCustomRole, permissions }: NavAcc
     { href: "/admin/research", label: "Research Notebook", icon: NotebookText },
     { href: "/admin/assistant", label: "Research Assistant", icon: Sparkles },
   ];
+  if (can("signals.view")) links.push({ href: "/signals", label: "Signals", icon: Signal });
   if (["governance.view", "audit.view.all", "audit.view.org_risk", "audit.view.own_risk", "compliance.export"].some(can)) {
     links.push({ href: "/admin/governance", label: "Governance & Compliance", icon: ShieldCheck });
   }
@@ -128,6 +147,9 @@ export function getNavLinks(role?: string): NavLink[] {
   }
   if (role === "admin") {
     return ADMIN_NAV_LINKS;
+  }
+  if (role === "quant_engineer") {
+    return QUANT_ENGINEER_NAV_LINKS;
   }
   return ADMIN_NAV_LINKS;
 }

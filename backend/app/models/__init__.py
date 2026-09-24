@@ -33,6 +33,7 @@ from app.models.refresh_token import RefreshToken
 from app.models.regime_label import RegimeLabelRecord
 from app.models.research_note import ResearchNote, ResearchNoteStatus
 from app.models.strategy import Strategy, StrategyCreator, StrategyStatus
+from app.models.strategy_signal import SignalType, StrategySignal
 from app.models.strategy_version import StrategyVersion
 from app.models.subscription import Subscription, SubscriptionStatus
 from app.models.superadmin_audit_log import SuperAdminAuditLog
@@ -57,6 +58,8 @@ __all__ = [
     "StrategyCreator",
     "StrategyStatus",
     "StrategyVersion",
+    "StrategySignal",
+    "SignalType",
     "ApprovalRecord",
     "ApprovalAction",
     "PerformanceSnapshot",

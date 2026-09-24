@@ -37,7 +37,7 @@ async def test_creating_a_strategy_succeeds_even_when_neo4j_is_unreachable(clien
 
     resp = await client.post(
         "/strategies",
-        json={"name": "Resilient Strategy", "entry_rules": {}, "exit_rules": {}},
+        json={"symbol": "SPY", "name": "Resilient Strategy", "entry_rules": {}, "exit_rules": {}},
         headers=bearer(token),
     )
     # The Postgres-side create must succeed regardless of Neo4j being unreachable.

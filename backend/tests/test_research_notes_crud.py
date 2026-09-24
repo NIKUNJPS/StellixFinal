@@ -155,7 +155,7 @@ async def test_note_syncs_authored_by_and_inspired_by_edges(client, fake_graph_r
     strategy = (
         await client.post(
             "/strategies",
-            json={"name": "Related Strategy", "entry_rules": {}, "exit_rules": {}},
+            json={"symbol": "SPY", "name": "Related Strategy", "entry_rules": {}, "exit_rules": {}},
             headers=bearer(token),
         )
     ).json()
@@ -194,7 +194,7 @@ async def test_updating_related_strategy_ids_resyncs_inspired_by_edge(client, fa
 
     strategy = (
         await client.post(
-            "/strategies", json={"name": "S", "entry_rules": {}, "exit_rules": {}}, headers=bearer(token)
+            "/strategies", json={"symbol": "SPY", "name": "S", "entry_rules": {}, "exit_rules": {}}, headers=bearer(token)
         )
     ).json()
     note = (

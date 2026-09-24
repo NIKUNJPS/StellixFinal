@@ -51,6 +51,7 @@ async def test_strategy_creation_increments_counter(client):
         "/strategies",
         json={
             "name": "Metrics Test Strategy",
+            "symbol": "SPY",
             "parameters": {"rsi_period": 14},
             "entry_rules": _VALID_ENTRY,
             "exit_rules": _VALID_EXIT,

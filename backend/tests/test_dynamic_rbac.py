@@ -35,28 +35,80 @@ async def _org(maker, tag: str, role: UserRole = UserRole.ADMIN):
 
 
 # ----------------------------------------------------------------------------- seed
-def test_migration_seed_matches_catalog_exactly():
-    """Migration 0020 holds a frozen copy of the catalog; production and the test
-    suite must seed identical permissions, roles and grants."""
-    path = next(Path(__file__).parents[1].joinpath("alembic", "versions").glob("*_0020_dynamic_rbac.py"))
-    spec = importlib.util.spec_from_file_location("migration_0020", path)
+def _load_migration(name: str, glob: str):
+    path = next(Path(__file__).parents[1].joinpath("alembic", "versions").glob(glob))
+    spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    return module
 
-    assert [(k, c, d) for k, c, d in module.PERMISSIONS] == [(p.key, p.category, p.description) for p in PERMISSION_CATALOG]
-    assert {k: (n, d, sorted(perms)) for k, n, d, perms in module.SYSTEM_ROLES} == {
+
+def test_migration_seed_matches_catalog_exactly():
+    """The migrations' seed data must reproduce the live catalog EXACTLY. Migration
+    0020 stays frozen with the original five roles; migration 0023 (Batch 26 Part B)
+    adds the signals.view permission, the Quant Engineer role, and signals.view grants
+    to the existing roles. Their union must equal app/rbac/catalog.py — otherwise a
+    fresh DB (seeded from the catalog) and production (seeded from the migrations)
+    would diverge."""
+    m20 = _load_migration("migration_0020", "*_0020_dynamic_rbac.py")
+    m23 = _load_migration("migration_0023", "*_0023_quant_engineer_signals_view.py")
+
+    # Permissions: 0020 base + 0023 delta == catalog (seed order is irrelevant, so
+    # compare as sets — the catalog groups signals.view with the other Research keys
+    # while the migration adds it as a later delta).
+    perms = [(k, c, d) for k, c, d in m20.PERMISSIONS] + [(k, c, d) for k, c, d in m23.NEW_PERMISSIONS]
+    assert set(perms) == {(p.key, p.category, p.description) for p in PERMISSION_CATALOG}
+    assert len(perms) == len(PERMISSION_CATALOG)  # no duplicate keys across the two migrations
+
+    # Roles: 0020 base grants, plus signals.view granted to the listed existing roles,
+    # plus the new roles from 0023.
+    roles = {k: (n, d, set(pset)) for k, n, d, pset in m20.SYSTEM_ROLES}
+    for role_key in m23.SIGNALS_VIEW_GRANTED_TO:
+        n, d, pset = roles[role_key]
+        roles[role_key] = (n, d, pset | {"signals.view"})
+    for k, n, d, pset in m23.NEW_ROLES:
+        roles[k] = (n, d, set(pset))
+    assert {k: (n, d, sorted(pset)) for k, (n, d, pset) in roles.items()} == {
         r.key: (r.name, r.description, sorted(r.permissions)) for r in SYSTEM_ROLES
     }
+
+    # Deterministic ids agree across both migrations and the catalog.
     for r in SYSTEM_ROLES:
-        assert module._system_role_id(r.key) == system_role_id(r.key)
+        mod = m23 if r.key == "quant_engineer" else m20
+        assert mod._system_role_id(r.key) == system_role_id(r.key)
 
 
-async def test_five_system_roles_seeded_as_defaults(client, db_session_factory):
+async def test_system_roles_seeded_as_defaults(client, db_session_factory):
     async with db_session_factory() as session:
         mark_session_unscoped(session.sync_session)
         roles = (await session.execute(select(Role))).scalars().all()
-    assert {r.system_key for r in roles} == {"researcher", "risk_manager", "cio", "compliance_officer", "admin"}
+    assert {r.system_key for r in roles} == {
+        "researcher", "risk_manager", "cio", "compliance_officer", "admin", "quant_engineer"
+    }
     assert all(r.is_system_default and r.organization_id is None for r in roles)
+
+
+async def test_quant_engineer_role_seeded_correctly(client, db_session_factory):
+    """Batch 26 Part B — Quant Engineer exists as a system default with exactly
+    {strategy.version, signals.view}, no governance permissions, and the same
+    deletion protection as the original five system roles."""
+    async with db_session_factory() as session:
+        mark_session_unscoped(session.sync_session)
+        role = (await session.execute(select(Role).where(Role.system_key == "quant_engineer"))).scalar_one()
+        assert role.name == "Quant Engineer"
+        assert role.is_system_default is True and role.organization_id is None
+        from app.services.rbac import permission_keys_by_role
+
+        perms = (await permission_keys_by_role(session, [role.id]))[role.id]
+    assert set(perms) == {P.STRATEGY_VERSION, P.SIGNALS_VIEW}
+    # No governance permissions — a research/build role, not a risk-governance one.
+    assert not ({P.STRATEGY_APPROVE, P.KILLSWITCH_TRIGGER, P.AUDIT_VIEW_ALL, P.GOVERNANCE_VIEW} & set(perms))
+
+    # Deletion protection: a SuperAdmin cannot delete a system-default role (same 403
+    # as researcher/admin/etc.).
+    token, _ = await create_superadmin(client, db_session_factory)
+    resp = await client.delete(f"/superadmin/roles/{system_role_id('quant_engineer')}", headers=bearer(token))
+    assert resp.status_code == 403
 
 
 async def test_me_returns_effective_role_and_permissions(client, db_session_factory):
@@ -197,11 +249,11 @@ async def test_superadmin_manages_system_roles(client, db_session_factory):
     headers = bearer(token)
     listing = (await client.get("/superadmin/roles", headers=headers)).json()
     assert {r["system_key"] for r in listing["items"] if r["is_system_default"]} == {
-        "researcher", "risk_manager", "cio", "compliance_officer", "admin"
+        "researcher", "risk_manager", "cio", "compliance_officer", "admin", "quant_engineer"
     }
 
     created = await client.post(
-        "/superadmin/roles", json={"name": "Quant Engineer", "description": "platform role", "permissions": [P.STRATEGY_VERSION]},
+        "/superadmin/roles", json={"name": "Data Engineer", "description": "platform role", "permissions": [P.STRATEGY_VERSION]},
         headers=headers,
     )
     assert created.status_code == 201, created.text
@@ -214,7 +266,7 @@ async def test_superadmin_manages_system_roles(client, db_session_factory):
 
     # A new system role is immediately assignable in every organization.
     org, admin = await _org(db_session_factory, "sysrole")
-    assert "Quant Engineer" in {r["name"] for r in (await client.get("/roles", headers=_token(admin))).json()["items"]}
+    assert "Data Engineer" in {r["name"] for r in (await client.get("/roles", headers=_token(admin))).json()["items"]}
 
     researcher_id = str(system_role_id("researcher"))
     assert (await client.delete(f"/superadmin/roles/{researcher_id}", headers=headers)).status_code == 403

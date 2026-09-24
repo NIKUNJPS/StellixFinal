@@ -52,6 +52,7 @@ class P:
     # Research
     STRATEGY_VERSION = "strategy.version"
     STRATEGY_DELETE_ANY_DRAFT = "strategy.delete_any_draft"
+    SIGNALS_VIEW = "signals.view"
     # Notification routing (who is told about what — behaviour, not endpoint access)
     NOTIFY_APPROVAL_REQUESTS = "notifications.approval_requests"
     NOTIFY_FAILURE_ALERTS = "notifications.failure_alerts"
@@ -89,6 +90,7 @@ PERMISSION_CATALOG: tuple[PermissionSpec, ...] = (
     PermissionSpec(P.LLM_AUDIT_VIEW, "Compliance", "View the LLM audit log"),
     PermissionSpec(P.STRATEGY_VERSION, "Research", "Save rule and parameter changes as a new strategy version"),
     PermissionSpec(P.STRATEGY_DELETE_ANY_DRAFT, "Research", "Delete unsubmitted drafts created by other members"),
+    PermissionSpec(P.SIGNALS_VIEW, "Research", "View this organization's Buy/Sell/Hold research signals for its active strategies"),
     PermissionSpec(P.NOTIFY_APPROVAL_REQUESTS, "Notifications", "Receive approval-request notifications"),
     PermissionSpec(P.NOTIFY_FAILURE_ALERTS, "Notifications", "Receive strategy failure alerts"),
     PermissionSpec(P.NOTIFY_BILLING_ALERTS, "Notifications", "Receive failed-payment alerts"),
@@ -122,20 +124,26 @@ SYSTEM_ROLES: tuple[SystemRoleSpec, ...] = (
         "researcher",
         "Researcher",
         "Builds, versions and tests strategies and research notes.",
-        frozenset({P.STRATEGY_VERSION}),
+        frozenset({P.STRATEGY_VERSION, P.SIGNALS_VIEW}),
+    ),
+    SystemRoleSpec(
+        "quant_engineer",
+        "Quant Engineer",
+        "Research/build role: versions strategies and reviews the organization's validated signals.",
+        frozenset({P.STRATEGY_VERSION, P.SIGNALS_VIEW}),
     ),
     SystemRoleSpec(
         "risk_manager",
         "Risk Manager",
         "Oversees live risk: approvals, retirement, manual failure flags and the kill switch.",
-        _GOVERNANCE_BASE | {P.AUDIT_VIEW_OWN_RISK},
+        _GOVERNANCE_BASE | {P.AUDIT_VIEW_OWN_RISK, P.SIGNALS_VIEW},
     ),
     SystemRoleSpec(
         "cio",
         "CIO",
         "Final governance authority: everything a risk manager can do, plus kill switch review.",
         _GOVERNANCE_BASE
-        | {P.KILLSWITCH_REVIEW, P.KILLSWITCH_HISTORY_ALL, P.AUDIT_VIEW_ORG_RISK, P.NOTIFY_BILLING_ALERTS},
+        | {P.KILLSWITCH_REVIEW, P.KILLSWITCH_HISTORY_ALL, P.AUDIT_VIEW_ORG_RISK, P.NOTIFY_BILLING_ALERTS, P.SIGNALS_VIEW},
     ),
     SystemRoleSpec(
         "compliance_officer",
@@ -151,6 +159,8 @@ SYSTEM_ROLES: tuple[SystemRoleSpec, ...] = (
                 P.LLM_AUDIT_VIEW,
                 P.MEMBERS_VIEW,
                 P.NOTIFY_APPROVAL_REQUESTS,
+                # Read access for audit purposes, mirroring compliance's other view-only grants.
+                P.SIGNALS_VIEW,
             }
         ),
     ),

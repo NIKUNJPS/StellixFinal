@@ -88,7 +88,10 @@ async def create_invitation(
         chosen = next((r for r in await roles_visible_to_org(session, organization_id) if r.id == role_id), None)
         if chosen is None:
             raise RoleNotFound("Role not found")
-        if chosen.system_key:
+        if chosen.system_key in {r.value for r in UserRole}:
+            # Only the five original system roles have a legacy users.role value; a newer
+            # system role (e.g. Quant Engineer) keeps the passed-in placeholder while
+            # role_id stays authoritative.
             role = UserRole(chosen.system_key)
 
     existing_user = (

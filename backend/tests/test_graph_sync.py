@@ -18,7 +18,7 @@ async def test_creating_a_strategy_syncs_a_matching_graph_node_same_request(clie
 
     resp = await client.post(
         "/strategies",
-        json={"name": "SMA Crossover", "entry_rules": {}, "exit_rules": {}},
+        json={"symbol": "SPY", "name": "SMA Crossover", "entry_rules": {}, "exit_rules": {}},
         headers=bearer(token),
     )
     assert resp.status_code == 201
@@ -43,6 +43,7 @@ async def test_strategy_status_change_resyncs_the_node(client, fake_graph_repo):
         "/strategies",
         json={
             "name": "Trend Follower",
+            "symbol": "SPY",
             "entry_rules": {"operator": "AND", "conditions": [{"indicator": "rsi_14", "comparator": "<", "value": 30}]},
             "exit_rules": {"operator": "AND", "conditions": [{"indicator": "rsi_14", "comparator": ">", "value": 70}]},
             "risk_constraints": {"max_drawdown_pct": 20, "max_position_size_pct": 10, "stop_loss_pct": 5},
@@ -95,7 +96,7 @@ async def test_human_created_strategy_syncs_authored_by_researcher_edge(client, 
 
     resp = await client.post(
         "/strategies",
-        json={"name": "Authored Momentum", "entry_rules": {}, "exit_rules": {}},
+        json={"symbol": "SPY", "name": "Authored Momentum", "entry_rules": {}, "exit_rules": {}},
         headers=bearer(token),
     )
     assert resp.status_code == 201

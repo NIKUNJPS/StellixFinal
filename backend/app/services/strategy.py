@@ -149,6 +149,7 @@ async def create_strategy(
     strategy = Strategy(
         name=data["name"],
         description=data.get("description"),
+        symbol=data.get("symbol"),
         version="v1.0",
         creator=creator,
         created_by_user_id=user.id if creator == StrategyCreator.HUMAN else None,

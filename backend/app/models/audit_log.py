@@ -56,6 +56,8 @@ class AuditEventType(str, enum.Enum):
     ROLE_UPDATED = "role_updated"
     ROLE_DELETED = "role_deleted"
     ROLE_PERMISSIONS_CHANGED = "role_permissions_changed"
+    # Batch 26 Part B: a strategy's Buy/Sell/Hold signal changed and was recorded.
+    SIGNAL_GENERATED = "signal_generated"
 
 
 class AuditLog(Base, UUIDPrimaryKeyMixin, TenantScopedModel):

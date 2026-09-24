@@ -65,7 +65,7 @@ async def test_api_key_without_required_scope_is_rejected(client):
     )
     raw_key = created.json()["raw_key"]
 
-    resp = await client.post("/strategies", json={"name": "Should Fail"}, headers=bearer(raw_key))
+    resp = await client.post("/strategies", json={"name": "Should Fail", "symbol": "SPY"}, headers=bearer(raw_key))
     assert resp.status_code == 403
     assert "strategies:write" in resp.json()["detail"]
 
@@ -74,7 +74,7 @@ async def test_jwt_bypasses_scope_checks(client):
     """A human (JWT) caller is governed by RBAC, not API-key scopes — creating
     a strategy via a normal login session must not require any 'scope'."""
     token, _org = await register_org(client, org_name="JwtBypassCo", email="j@jwtbypassco.com")
-    resp = await client.post("/strategies", json={"name": "Human Strategy"}, headers=bearer(token))
+    resp = await client.post("/strategies", json={"name": "Human Strategy", "symbol": "SPY"}, headers=bearer(token))
     assert resp.status_code == 201
 
 

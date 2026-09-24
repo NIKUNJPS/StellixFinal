@@ -32,7 +32,7 @@ async def _org_with_researchers(maker, tag: str):
 async def _create_via_api(client, token: str, name: str = "Draft RSI") -> str:
     resp = await client.post(
         "/strategies",
-        json={"name": name, "entry_rules": _ENTRY, "exit_rules": _EXIT, "risk_constraints": _RISK},
+        json={"symbol": "SPY", "name": name, "entry_rules": _ENTRY, "exit_rules": _EXIT, "risk_constraints": _RISK},
         headers=bearer(token),
     )
     assert resp.status_code == 201, resp.text
