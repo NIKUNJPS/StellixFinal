@@ -29,7 +29,9 @@ turnover.
 | **Failure-as-asset** | Strategy failures are permanent, append-only records (trigger, regime, SHAP feature attribution) — never deleted, never quietly edited. |
 | **Knowledge graph** | Neo4j graph linking researchers, strategies, regimes, research notes, performance, and failures — answers lineage questions SQL can't express cleanly. |
 | **Structural multi-tenancy** | Every tenant-scoped table is isolated by a fail-closed ORM listener, not developer discipline — proven by a dedicated tenant-isolation attack test. |
-| **Governance & audit** | 5 RBAC roles, human-approval workflow with written justification, immutable audit log, compliance export. |
+| **Dynamic RBAC** | 6 database-backed system roles (Admin, CIO, Compliance Officer, Risk Manager, Researcher, Quant Engineer) with real per-role permission sets; role changes apply on a user's next request, no re-login required. |
+| **Governance & audit** | Human-approval workflow with written justification, immutable audit log, compliance export. A real governance bug (ADR-0008: an Active strategy could carry a stale or mismatched validation score) was found and fixed — see `docs/adr/0008-*`. |
+| **Market research** | Macro dashboard (FRED), a bounded 56-symbol screener, a dollar-volume sector heatmap, and candlestick charting — every widget labeled with its real source and refresh cadence, never presented as real-time. |
 
 ---
 
@@ -155,6 +157,7 @@ Backend → `http://localhost:8000` (docs at `/docs`) · Frontend → `http://lo
 | Risk manager | `s.okonkwo@meridian.com` | `MeridianDemo2026!` |
 | CIO | `j.whitfield@meridian.com` | `MeridianDemo2026!` |
 | Compliance officer | `a.reyes@meridian.com` | `MeridianDemo2026!` |
+| Quant Engineer | `m.chen@meridian.com` | `MeridianDemo2026!` |
 | Platform superadmin | `admin@stellixlabs.com` | `Finalyear123$` |
 
 > ⚠️ These are demo/local-only credentials created by `scripts/seed_demo_data.py` for
@@ -187,6 +190,11 @@ cd frontend && npm run typecheck && npm run lint && npm run build
 
 All six must pass before opening a PR. See [`CONTRIBUTING.md`](CONTRIBUTING.md) Part 4 for details.
 
+As of the `v1.0-review` checkpoint (2026-09-24): **625 collected, 0 failures** (616
+passed / 9 skipped by default; all 625 pass with `RUN_INTEGRATION=1`, which needs live
+Postgres + live network). See [`docs/PLATFORM_STATE.md`](docs/PLATFORM_STATE.md) for
+exactly how that was obtained and what else was verified alongside it.
+
 ---
 
 ## Project structure
@@ -218,13 +226,31 @@ StellixLabs/
 | Document | What it covers |
 |---|---|
 | [`PROJECT_CONSTITUTION.md`](PROJECT_CONSTITUTION.md) | The non-negotiable design principles — read this first |
+| [`docs/PLATFORM_STATE.md`](docs/PLATFORM_STATE.md) | **Start here for "what's actually true right now"** — verified working features, honest limitations, real numbers, all traced to this session's own checks |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Full setup guide, running instructions, troubleshooting, frontend contributor guide |
 | [`docs/schemas.md`](docs/schemas.md) | Database and knowledge-graph schema reference |
 | [`docs/TESTING_GUIDE.md`](docs/TESTING_GUIDE.md) | Manual end-to-end test procedures |
-| [`docs/demo_script.md`](docs/demo_script.md) | Guided click-through of the demo tenant |
+| [`docs/demo_script.md`](docs/demo_script.md) | Guided click-through of the demo tenant (5-minute and 15-minute versions) |
 | [`docs/disaster_recovery.md`](docs/disaster_recovery.md) | Backup/restore and incident procedures |
 | [`docs/SOC2_READINESS.md`](docs/SOC2_READINESS.md) | Security/compliance posture notes |
-| `docs/adr/` | Architecture decision records |
+| [`docs/superadmin_isolation.md`](docs/superadmin_isolation.md) | The append-only audit log's dev-mode superuser caveat, and how it's proven anyway |
+| [`docs/THIRD_PARTY_NOTICES.md`](docs/THIRD_PARTY_NOTICES.md) | Market-data sourcing, including what was evaluated and deliberately not adopted (Options Chain) |
+
+### Architecture Decision Records (`docs/adr/`)
+
+Read in order — each one is a real decision or a real finding, not a template exercise:
+
+| ADR | Decision / finding |
+|---|---|
+| [0001](docs/adr/0001-record-architecture-decisions.md) | Why this project records ADRs at all |
+| [0002](docs/adr/0002-enforce-multitenancy-structurally.md) | Multi-tenancy enforced structurally in the ORM, not by developer discipline |
+| [0003](docs/adr/0003-auth-tenancy-reconciliation.md) | Auth/tenancy naming reconciliation — canonical and final |
+| [0004](docs/adr/0004-managed-data-services.md) | Managed cloud data services in production, no in-cluster StatefulSets |
+| [0005](docs/adr/0005-safeguard5-ground-truth-covers-every-source-shown.md) | Safeguard 5: LLM ground truth must cover every source the model was shown |
+| [0006](docs/adr/0006-dynamic-rbac.md) | Dynamic, database-backed RBAC (replacing hardcoded roles) |
+| [0007](docs/adr/0007-evolution-fitness-misaligned-with-approval-gate.md) | Finding: the evolution fitness function is misaligned with the approval gate (fix deferred) |
+| [0008](docs/adr/0008-robustness-score-single-source-of-truth.md) | Fix: `robustness_score` had three writers; only the validated composite may gate activation |
+| [ADR-FINAL](docs/adr/ADR-FINAL.md) | v1.0.0 release record — deviations from spec, gaps closed, real bugs caught by live verification, honest readiness assessment |
 
 ---
 

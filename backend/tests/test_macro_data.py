@@ -14,7 +14,6 @@ from datetime import date
 
 import pytest
 import requests
-
 from app.providers import fred_client
 from app.providers.fred_client import FredError, fetch_series
 from app.services import macro_data

@@ -10,10 +10,9 @@ intraday offered).
 from __future__ import annotations
 
 import pytest
-
 from app.services import market_chart
-from tests.data_helpers import make_synthetic_ohlcv
 
+from tests.data_helpers import make_synthetic_ohlcv
 from tests.helpers import bearer, create_org_user, token_for
 
 

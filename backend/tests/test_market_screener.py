@@ -14,7 +14,6 @@ from datetime import date
 
 import pandas as pd
 import pytest
-
 from app.providers import ProviderError, ScreenerQuote
 from app.providers.yfinance_provider import YFinanceProvider
 from app.services import market_screener

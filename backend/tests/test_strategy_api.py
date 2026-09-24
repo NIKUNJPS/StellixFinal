@@ -53,11 +53,10 @@ async def test_create_requires_symbol_going_forward(client):
 async def test_existing_null_symbol_strategies_are_unaffected(client, db_session_factory):
     """A pre-existing strategy with NULL symbol (created before the column) is left
     alone and still serves through the API without crashing."""
-    from sqlalchemy import select
-
     from app.db.tenant import bind_organization
     from app.models.organization import Organization
     from app.models.strategy import Strategy, StrategyCreator, StrategyStatus
+    from sqlalchemy import select
 
     token, _org = await register_org(client, org_name="Null Sym Co", email="n@nullsym.io")
     async with db_session_factory() as session:

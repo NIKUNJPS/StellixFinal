@@ -14,8 +14,7 @@ from datetime import UTC, datetime, timedelta
 
 import pandas as pd
 import pytest
-from sqlalchemy import select
-
+from app.core.security import create_access_token
 from app.db.tenant import bind_organization
 from app.models.approval_record import ApprovalAction, ApprovalRecord
 from app.models.feature_matrix import FeatureMatrix
@@ -23,12 +22,13 @@ from app.models.market_data import MarketData
 from app.models.regime_label import RegimeLabelRecord
 from app.models.strategy import Strategy, StrategyCreator, StrategyStatus
 from app.models.strategy_signal import SignalType, StrategySignal
-from app.models.validation_result import ValidationResult
-from app.core.security import create_access_token
 from app.models.user import UserRole
+from app.models.validation_result import ValidationResult
 from app.rbac.catalog import P
 from app.regime.taxonomy import RegimeLabel
 from app.validation.composite import ValidationClassification
+from sqlalchemy import select
+
 from tests.helpers import add_user_to_org, bearer, create_org_user
 
 _ENTRY = {"operator": "AND", "conditions": [{"indicator": "rsi_14", "comparator": "<", "value": 32}]}

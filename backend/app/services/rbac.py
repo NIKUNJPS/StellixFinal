@@ -25,13 +25,11 @@ from app.models.user import User, UserRole
 from app.rbac.catalog import (
     PERMISSION_CATALOG,
     SYSTEM_ROLES,
-    SYSTEM_ROLES_BY_KEY,
     P,
     permission_id,
     system_role_id,
 )
 from app.services.audit import write_audit_log
-
 
 # The legacy ``users.role`` enum values (the five original system roles). A newer
 # system role — e.g. Quant Engineer (Batch 26 Part B) — has a system_key that is NOT a
