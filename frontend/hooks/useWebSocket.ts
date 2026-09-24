@@ -41,7 +41,10 @@ export type WSEvent = {
     // Batch 25: public delayed index quotes, delivered on the bridge's global scope.
     | "market_quotes"
     // Batch 26 Part B: a strategy's Buy/Sell/Hold research signal changed (org-scoped).
-    | "strategy_signal";
+    | "strategy_signal"
+    // Batch 28: public macro series (FRED) and market-screener refreshes, global scope.
+    | "macro_update"
+    | "screener_update";
   [key: string]: unknown;
 };
 

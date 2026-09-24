@@ -10,6 +10,7 @@ from app.providers.base import (
     LatestQuote,
     MarketDataProvider,
     ProviderError,
+    ScreenerQuote,
 )
 from app.providers.registry import AVAILABLE_PROVIDERS, get_provider
 
@@ -17,6 +18,7 @@ __all__ = [
     "LatestQuote",
     "MarketDataProvider",
     "ProviderError",
+    "ScreenerQuote",
     "OHLCV_COLUMNS",
     "get_provider",
     "AVAILABLE_PROVIDERS",
