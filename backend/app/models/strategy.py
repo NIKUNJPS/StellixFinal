@@ -62,7 +62,12 @@ class Strategy(Base, UUIDPrimaryKeyMixin, TenantScopedModel, TimestampMixin):
     exit_rules: Mapped[dict] = mapped_column(_JSONB, nullable=False, default=dict)
     risk_constraints: Mapped[dict] = mapped_column(_JSONB, nullable=False, default=dict)
 
+    # The 5-method validation composite, and the ONLY score the activation gate reads.
+    # Written solely by run_strategy_validation; see ADR 0008.
     robustness_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # A single backtest's own 60/40 robustness (Batch 4). Display only — it is NOT
+    # evidence of validation and must never gate activation (ADR 0008).
+    backtest_robustness: Mapped[float | None] = mapped_column(Float, nullable=True)
     regime_compatibility: Mapped[dict | None] = mapped_column(_JSONB, nullable=True)
 
     parent_strategy_id: Mapped[uuid.UUID | None] = mapped_column(

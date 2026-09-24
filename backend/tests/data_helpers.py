@@ -14,7 +14,9 @@ from app.models.feature_matrix import FeatureMatrix
 from app.models.market_data import MarketData
 from app.models.regime_label import RegimeLabelRecord
 from app.models.strategy import Strategy, StrategyCreator, StrategyStatus
+from app.models.validation_result import ValidationResult
 from app.regime.taxonomy import RegimeLabel
+from app.validation.composite import ValidationClassification
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 _VALID_ENTRY = {"operator": "AND", "conditions": [{"indicator": "rsi_14", "comparator": "<", "value": 30}]}
@@ -189,6 +191,7 @@ async def seed_strategy(
     created_by_user_id: uuid.UUID | None = None,
     parent_strategy_id: uuid.UUID | None = None,
     regime_compatibility: dict | None = None,
+    with_validation: bool = True,
 ) -> uuid.UUID:
     """Insert a Strategy row directly in a chosen status (tenant-bound)."""
     async with maker() as session:
@@ -208,6 +211,29 @@ async def seed_strategy(
             regime_compatibility=regime_compatibility,
         )
         session.add(strat)
+        await session.flush()
+        # ADR 0008: a gate score exists because validation produced it. Seeding one
+        # without its ValidationResult would be a state the product can no longer
+        # reach, and the activation gate now (correctly) refuses it.
+        if robustness_score is not None and with_validation:
+            session.add(
+                ValidationResult(
+                    strategy_id=strat.id,
+                    strategy_version=strat.version,
+                    walk_forward_score=robustness_score,
+                    regime_cv_score=robustness_score,
+                    monte_carlo_score=robustness_score,
+                    persistence_score=robustness_score,
+                    stress_test_score=robustness_score,
+                    composite_score=robustness_score,
+                    classification=(
+                        ValidationClassification.ELIGIBLE_ACTIVE
+                        if robustness_score >= 0.70
+                        else ValidationClassification.CANDIDATE
+                    ),
+                    method_details={"seeded": True},
+                )
+            )
         await session.commit()
         await session.refresh(strat)
         return strat.id

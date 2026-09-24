@@ -2421,6 +2421,29 @@ deprecation plan: ADR 0006.
 
 ---
 
+## Validated Gate Score (ADR 0008)
+
+Migration `0021_validated_gate_score` (revises `0020_dynamic_rbac`).
+
+### Column additions
+| Table | Field | Type | Notes |
+|-------|-------|------|-------|
+| `strategies` | `backtest_robustness` | float, nullable | A single backtest's own 60/40 robustness (Batch 4). Display only — written by `run_strategy_backtest` and by GA candidate registration. **Never gates activation.** |
+| `validation_results` | `strategy_version` | str(20), nullable | The strategy version this result validated. NULL on historical rows other than each strategy's most recent. |
+
+`strategies.robustness_score` is now written **only** by `run_strategy_validation`, and
+holds the 5-method composite. `assert_activatable` requires a validation result whose
+`strategy_version` equals the strategy's current version, so editing rules invalidates the
+evidence rather than carrying it forward.
+
+### Data repair performed by the migration
+- Existing `robustness_score` values were copied to `backtest_robustness`.
+- Each strategy's `robustness_score` was reset to its latest validated composite, or NULL
+  where it had never been validated.
+- `ACTIVE` strategies with no validation record were demoted to `candidate`.
+
+---
+
 ## Reserved for Later Batches
 
 ### Regime
@@ -2916,3 +2939,10 @@ deprecation plan: ADR 0006.
   custom roles. Access unchanged, proven by an access-matrix test written before the
   refactor. Fixed: billing webhook failure notifications went to admins of every
   organization instead of only the affected one.
+- **ADR 0008 fix** — Gate integrity (migration `0021`): `strategies.backtest_robustness`
+  and `validation_results.strategy_version`. `robustness_score` is now exclusively the
+  5-method composite, and activation requires a validation result for the current
+  version. Repaired 64 strategies whose gate score disagreed with their validation, 10
+  scored without any validation, and demoted the one ACTIVE strategy that had never been
+  validated. Found while diagnosing why no strategy clears 0.70 (see also ADR 0007 on the
+  GA fitness function).

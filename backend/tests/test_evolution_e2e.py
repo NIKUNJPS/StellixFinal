@@ -86,7 +86,11 @@ async def test_real_evolution_run_produces_registered_candidate_with_lineage(
             assert c.creator == StrategyCreator.GA_ENGINE
             assert c.parent_strategy_id == seed_id
             assert c.status == StrategyStatus.CANDIDATE  # auto-submitted (draft -> candidate)
-            assert c.robustness_score is not None  # backtest result persisted, not just fitness
+            # The registration backtest is persisted, not just the fitness number...
+            assert c.backtest_robustness is not None
+            # ...but it is NOT a gate score: a GA candidate earns robustness_score only
+            # from the 5-method validation suite (ADR 0008).
+            assert c.robustness_score is None
 
     # MUTATED_FROM edges must exist in the graph for every registered candidate
     # (GA_ENGINE creator -> MUTATED_FROM, per app/graph/sync_service.py).

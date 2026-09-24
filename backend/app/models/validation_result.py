@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import JSON, Enum, Float, ForeignKey, Uuid
+from sqlalchemy import JSON, Enum, Float, ForeignKey, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,6 +21,10 @@ class ValidationResult(Base, UUIDPrimaryKeyMixin, TenantScopedModel, TimestampMi
     strategy_id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("strategies.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    # The strategy version this result validated. The activation gate requires a
+    # result for the CURRENT version, so editing rules invalidates the evidence
+    # rather than silently carrying it forward (ADR 0008).
+    strategy_version: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     walk_forward_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     regime_cv_score: Mapped[float | None] = mapped_column(Float, nullable=True)

@@ -317,6 +317,19 @@ async def save_new_version(
     return strategy
 
 
+async def _validated_version(session: AsyncSession, strategy_id: uuid.UUID) -> str | None:
+    """The strategy version recorded on the latest ValidationResult, or None if the
+    strategy has never been validated (ADR 0008 — the activation gate's evidence)."""
+    from app.models.validation_result import ValidationResult
+
+    return await session.scalar(
+        select(ValidationResult.strategy_version)
+        .where(ValidationResult.strategy_id == strategy_id)
+        .order_by(ValidationResult.created_at.desc())
+        .limit(1)
+    )
+
+
 async def _preserved_history(session: AsyncSession, strategy_id: uuid.UUID) -> list[str]:
     """What a strategy has accumulated that Pillars 2/3 require the platform to keep."""
     from app.models.validation_result import ValidationResult
@@ -466,7 +479,9 @@ async def approve(
     if action == ApprovalAction.APPROVE:
         lifecycle.assert_transition_legal(strategy.status, StrategyStatus.ACTIVE)
         lifecycle.assert_activatable(
-            strategy, has_approval=await _has_approve_record(session, strategy.id)
+            strategy,
+            has_approval=await _has_approve_record(session, strategy.id),
+            validated_version=await _validated_version(session, strategy.id),
         )
         strategy.status = StrategyStatus.ACTIVE
     # A GA-engine-produced candidate is an evolution decision regardless of which
@@ -571,7 +586,9 @@ async def transition(
         if not await has_permission(session, user, P.STRATEGY_APPROVE):
             raise lifecycle.PermissionDenied("You do not have permission to activate a strategy")
         lifecycle.assert_activatable(
-            strategy, has_approval=await _has_approve_record(session, strategy.id)
+            strategy,
+            has_approval=await _has_approve_record(session, strategy.id),
+            validated_version=await _validated_version(session, strategy.id),
         )
     elif target == StrategyStatus.RETIRED:
         lifecycle.assert_retire_permitted(
@@ -747,7 +764,9 @@ async def run_backtest(organization_id: uuid.UUID, strategy_id: uuid.UUID, symbo
                 )
             )
 
-        strategy.robustness_score = result.robustness_score
+        # ADR 0008: a backtest is not a validation. This number is display-only and
+        # deliberately does not touch robustness_score, which gates activation.
+        strategy.backtest_robustness = result.robustness_score
         strategy.regime_compatibility = result.regime_compatibility
         await maybe_notify_approval_requested(session, strategy)
         await session.commit()
@@ -907,6 +926,7 @@ async def run_strategy_validation(
         )
         session.add(
             ValidationResult(
+                strategy_version=strategy.version,
                 strategy_id=strategy_id,
                 walk_forward_score=report.sub_scores["walk_forward"],
                 regime_cv_score=report.sub_scores["regime_cv"],
