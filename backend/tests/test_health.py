@@ -31,14 +31,14 @@ async def _get_health() -> tuple[int, dict]:
 
 async def test_health_all_ok(monkeypatch):
     monkeypatch.setattr("app.services.health._check_postgres", _ok)
-    monkeypatch.setattr("app.clients.neo4j_client.verify_connectivity", _ok)
     monkeypatch.setattr("app.clients.redis_client.verify_connectivity", _ok)
 
     status_code, body = await _get_health()
 
     assert status_code == 200
     assert body["status"] == "ok"
-    for svc in ("postgres", "neo4j", "redis"):
+    assert "neo4j" not in body
+    for svc in ("postgres", "redis"):
         assert body[svc]["status"] == "ok"
         assert body[svc]["latency_ms"] is not None
         assert body[svc]["detail"] is None
@@ -46,8 +46,7 @@ async def test_health_all_ok(monkeypatch):
 
 async def test_health_degraded_when_one_service_down(monkeypatch):
     monkeypatch.setattr("app.services.health._check_postgres", _ok)
-    monkeypatch.setattr("app.clients.neo4j_client.verify_connectivity", _boom)
-    monkeypatch.setattr("app.clients.redis_client.verify_connectivity", _ok)
+    monkeypatch.setattr("app.clients.redis_client.verify_connectivity", _boom)
 
     status_code, body = await _get_health()
 
@@ -55,6 +54,5 @@ async def test_health_degraded_when_one_service_down(monkeypatch):
     assert status_code == 200
     assert body["status"] == "error"
     assert body["postgres"]["status"] == "ok"
-    assert body["redis"]["status"] == "ok"
-    assert body["neo4j"]["status"] == "error"
-    assert "simulated outage" in body["neo4j"]["detail"]
+    assert body["redis"]["status"] == "error"
+    assert "simulated outage" in body["redis"]["detail"]

@@ -3,7 +3,7 @@
  *
  * The single source of reused, structured copy for the public site — nav links,
  * feature cards, pillars, pricing tiers, use-case segments, workflow steps, and
- * the real Neo4j graph schema. Prose-heavy sections live inline in their page
+ * the Research Memory model. Prose-heavy sections live inline in their page
  * components. All text here is lifted verbatim from the approved
  * docs/landing-page-copy.md.
  */
@@ -34,7 +34,7 @@ export const PILLARS = [
     id: "memory",
     name: "Compounding Memory",
     mechanism:
-      "Every strategy, failure, regime, and research note becomes a node in a Neo4j knowledge graph connected by eight relationship types (VALID_IN, FAILED_IN, MUTATED_FROM, ADAPTED_FROM, CAUSED_BY, INSPIRED_BY, EVALUATED_BY, AUTHORED_BY), so a question like “what recurring failure mode do our momentum strategies share in Crisis regimes?” is answered from years of your firm's accumulated research, not a fresh guess.",
+      "Every strategy, failure, regime, and research note is linked into Research Memory — derived from PostgreSQL — by eight relationship types (VALID_IN, FAILED_IN, MUTATED_FROM, ADAPTED_FROM, CAUSED_BY, INSPIRED_BY, EVALUATED_BY, AUTHORED_BY), so a question like “what recurring failure mode do our momentum strategies share in Crisis regimes?” is answered from years of your firm's accumulated research, not a fresh guess.",
   },
 ] as const;
 
@@ -71,12 +71,12 @@ export const SOLUTION_STEPS = [
     body: "Every failure gets a SHAP autopsy and an immutable, append-only record: the regime, the trigger, the responsible features.",
   },
   {
-    name: "The Knowledge Graph",
-    body: "Strategies, failures, regimes, and research notes become a connected Neo4j graph you can actually query.",
+    name: "Research Memory",
+    body: "Strategies, failures, regimes, and research notes become one connected memory, built from PostgreSQL, that you can actually query.",
   },
   {
     name: "The Evolution Engine",
-    body: "A genetic algorithm breeds new strategies from your survivors, with full parent-to-child lineage recorded in the graph.",
+    body: "A genetic algorithm breeds new strategies from your survivors, with full parent-to-child lineage recorded in Research Memory.",
   },
 ] as const;
 
@@ -102,9 +102,9 @@ export const FEATURE_CARDS = [
     body: "Four detection triggers — drawdown breach, Sharpe decline, regime mismatch, manual — each producing an immutable failure record with SHAP feature attribution and full market context.",
   },
   {
-    id: "graph",
-    name: "The Knowledge Graph",
-    body: "Six node types, eight edge types, five named institutional-memory queries. “Which hypotheses actually became live strategies?” is one graph traversal away.",
+    id: "memory",
+    name: "Research Memory",
+    body: "Six record types, eight relationships, five built-in research-memory questions. “Which hypotheses actually became live strategies?” is one graph traversal away.",
   },
   {
     id: "evolution",
@@ -118,7 +118,7 @@ export const WORKFLOW_STEPS = [
   { name: "Regime", body: "Label every bar into six regimes via the four-model ensemble." },
   { name: "Strategy", body: "Author rules in a structured JSON DSL, or let the LLM assistant draft a hypothesis." },
   { name: "Validation", body: "Score robustness across five methods, per regime." },
-  { name: "Memory", body: "Write every result — pass or fail — into the append-only record and the knowledge graph." },
+  { name: "Memory", body: "Write every result — pass or fail — into the append-only record and Research Memory." },
   { name: "Evolution", body: "Breed the next generation from survivors; lineage is recorded automatically." },
 ] as const;
 
@@ -161,13 +161,13 @@ export const GRAPH_EDGES = [
 export const TECH_STACK = [
   { layer: "API", tech: "FastAPI (async)", why: "Type-safe, OpenAPI-native, fast" },
   { layer: "Relational + time-series", tech: "PostgreSQL 15 + TimescaleDB", why: "One database for relational truth and hypertable time-series" },
-  { layer: "Knowledge graph", tech: "Neo4j 5", why: "Native graph traversal for lineage and failure patterns" },
+  { layer: "Research Memory", tech: "Index derived from PostgreSQL", why: "Lineage and failure patterns without a second database" },
   { layer: "Cache / queue", tech: "Redis 7", why: "Rate limiting, caching, Celery broker" },
   { layer: "Background jobs", tech: "Celery", why: "Regime runs, GA evolution, validation suites" },
   { layer: "ORM / migrations", tech: "SQLAlchemy 2 (async) + Alembic", why: "Async ORM with structural tenant enforcement" },
-  { layer: "Frontend", tech: "Next.js 14 + TypeScript", why: "Server components, strict typing" },
+  { layer: "Frontend", tech: "Next.js 15 + TypeScript", why: "Server components, strict typing" },
   { layer: "UI", tech: "Tailwind + shadcn/ui", why: "Accessible, production-grade components" },
-  { layer: "Charts", tech: "Recharts · D3 · Cytoscape.js", why: "Standard charts, regime timeline, graph viewer" },
+  { layer: "Charts", tech: "Recharts · D3 · Cytoscape.js", why: "Standard charts, regime timeline, lineage viewer" },
   { layer: "Observability", tech: "Prometheus · Grafana · Sentry · structlog", why: "Metrics, dashboards, error tracking, structured logs" },
 ] as const;
 
@@ -193,7 +193,7 @@ export const PRICING_TIERS: PricingTier[] = [
       "Up to 25 active strategies",
       "Full six-regime detection & regime-aware backtesting",
       "Five-method validation with the robustness gate",
-      "Failure intelligence & the knowledge graph",
+      "Failure intelligence & Research Memory",
       "1 organization, up to 3 users",
       "Community support",
     ],
@@ -241,7 +241,7 @@ export const COMPARISON_ROWS = [
   { capability: "Regime-aware backtesting", starter: true, pro: true, enterprise: true },
   { capability: "Five-method validation", starter: true, pro: true, enterprise: true },
   { capability: "Failure intelligence", starter: true, pro: true, enterprise: true },
-  { capability: "Knowledge graph & named queries", starter: true, pro: true, enterprise: true },
+  { capability: "Research Memory & built-in queries", starter: true, pro: true, enterprise: true },
   { capability: "Evolution engine", starter: false, pro: true, enterprise: true },
   { capability: "LLM research assistant", starter: false, pro: true, enterprise: true },
   { capability: "Users", starter: "3", pro: "15", enterprise: "Unlimited" },
@@ -256,7 +256,7 @@ export const COMPARISON_ROWS = [
 export const PRICING_FAQ = [
   {
     q: "What counts as an “active” strategy?",
-    a: "Any strategy not in the retired state. Retiring a strategy frees a slot; its history stays in your graph forever.",
+    a: "Any strategy not in the retired state. Retiring a strategy frees a slot; its history stays in Research Memory forever.",
   },
   {
     q: "Do failed strategies count against my limit?",

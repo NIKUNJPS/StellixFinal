@@ -168,7 +168,7 @@ async def _health_detailed(client, maker, team, role):
     async def _services():
         return {name: {"status": "ok", "response_time_ms": 1.0, "detail": None, "uptime_pct": 100.0,
                        "last_check": datetime.now(UTC)}
-                for name in ("postgres", "timescaledb", "neo4j", "redis", "celery_worker")}
+                for name in ("postgres", "timescaledb", "redis", "celery_worker")}
 
     async def _empty():
         return []
@@ -183,7 +183,7 @@ async def _health_detailed(client, maker, team, role):
         patch("app.api.routes.system.svc.get_service_health", _services),
         patch("app.api.routes.system.svc.get_job_queue_counts", _empty),
         patch("app.api.routes.system.svc.get_failed_job_count", _zero),
-        patch("app.api.routes.system.svc.get_consistency_alert", _none),
+        patch("app.api.routes.system.svc.get_memory_index_status", _none),
     ):
         resp = await client.get("/system/health-detailed", headers=team.tokens[role])
     return resp.status_code

@@ -91,13 +91,13 @@ rate-limit buckets keyed by user/org id, WS channels namespaced by org. The supe
 plane's only Redis interaction is **invalidating** `org:status:{org_id}` on transitions.
 No superadmin data is cached cross-tenant.
 
-## 6. Neo4j knowledge graph
+## 6. Research Memory
 
-Every node and edge carries an `organization_id` property, and **every** Cypher
-`MATCH`/`MERGE` scopes on `$organization_id` (`app/graph/neo4j_repository.py`,
-`app/graph/tenant_query.py`). The superadmin plane does **not** read the graph
+Every record and relationship in the Research Memory index is keyed by its
+`organization_id` (`app/graph/memory_repository.py`), so a lookup can only reach the
+caller's own organization. The superadmin plane does **not** read Research Memory
 cross-tenant today — platform analytics are computed from Postgres only. If a future
-superadmin graph view is added, it must apply the same per-org filter and log the access.
+superadmin memory view is added, it must apply the same per-org filter and log the access.
 
 ## 7. Revenue is not fabricated
 

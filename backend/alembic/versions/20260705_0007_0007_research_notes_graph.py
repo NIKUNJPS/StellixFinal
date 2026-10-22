@@ -1,7 +1,7 @@
 """Batch 7: research_notes table + Strategy.inspired_by_note_id (knowledge graph).
 
 research_notes is the minimal Postgres source-of-truth for researcher hypotheses,
-synced 1:1 into the Neo4j ResearchNote node. Strategy.inspired_by_note_id is a
+synced 1:1 into the ResearchNote record of Research Memory (a Neo4j node until ADR 0012). Strategy.inspired_by_note_id is a
 nullable FK backing the INSPIRED_BY graph edge (Strategy -> ResearchNote).
 
 Revision ID: 0007_research_notes_graph

@@ -3,17 +3,17 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import { Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  AuthAlert,
+  AuthField,
+  AuthShell,
+  authButtonClass,
+  authInputClass,
+  authLinkClass,
+} from "@/components/auth/auth-shell";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { resetPassword } from "@/lib/auth";
 
 function ResetPasswordForm() {
@@ -48,68 +48,70 @@ function ResetPasswordForm() {
 
   if (!token) {
     return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Invalid reset link</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            This link is missing its reset token.{" "}
-            <Link href="/forgot-password" className="text-stellix-highlight hover:underline">
-              Request a new one
-            </Link>
-            .
-          </p>
-        </CardContent>
-      </Card>
+      <AuthShell eyebrow="Password reset" title={<>Invalid reset <em>link.</em></>}>
+        <AuthAlert tone="error">This link is missing its reset token.</AuthAlert>
+        <Link href="/forgot-password" className={`${authButtonClass} mt-5`}>
+          Request a new link
+        </Link>
+      </AuthShell>
     );
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Reset password</CardTitle>
-        <CardDescription>Choose a new password for your account.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {done ? (
-          <p className="text-sm text-emerald-500">Password reset — redirecting to sign in…</p>
-        ) : (
-          <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-            <div className="flex flex-col gap-1.5">
-              <Label>New password</Label>
-              <Input
-                type="password"
-                placeholder="At least 10 chars, 1 number"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label>Confirm new password</Label>
-              <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-            </div>
-            {error && (
-              <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {error}
-              </p>
-            )}
-            <Button type="submit" disabled={busy || !newPassword}>
-              {busy ? "Resetting…" : "Reset password"}
-            </Button>
-          </form>
-        )}
-      </CardContent>
-    </Card>
+    <AuthShell
+      eyebrow="Password reset"
+      title={
+        <>
+          Choose a new <em>password.</em>
+        </>
+      }
+      description="At least 10 characters, including one number."
+      footer={
+        <Link href="/login" className={authLinkClass}>
+          Back to sign in
+        </Link>
+      }
+    >
+      {done ? (
+        <AuthAlert tone="success">Password reset — redirecting to sign in…</AuthAlert>
+      ) : (
+        <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
+          <AuthField label="New password" htmlFor="rp-new">
+            <Input
+              id="rp-new"
+              type="password"
+              autoComplete="new-password"
+              placeholder="At least 10 chars, 1 number"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className={authInputClass}
+            />
+          </AuthField>
+          <AuthField label="Confirm new password" htmlFor="rp-confirm">
+            <Input
+              id="rp-confirm"
+              type="password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className={authInputClass}
+            />
+          </AuthField>
+          {error && <AuthAlert tone="error">{error}</AuthAlert>}
+          <button type="submit" disabled={busy || !newPassword} className={authButtonClass}>
+            {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+            {busy ? "Resetting…" : "Reset password"}
+          </button>
+        </form>
+      )}
+    </AuthShell>
   );
 }
 
 export default function ResetPasswordPage() {
   return (
-    <main className="container mx-auto flex min-h-screen max-w-md items-center justify-center py-16">
-      <Suspense fallback={null}>
-        <ResetPasswordForm />
-      </Suspense>
-    </main>
+    <Suspense fallback={null}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

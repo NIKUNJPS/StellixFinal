@@ -1,0 +1,12 @@
+run_id,symbol,status,population,max_generations,generations_run,best_fitness,seed_strategies,candidates_produced
+fb1677bb,SPY,completed,10,5,3,-0.32932730306858304,1,3
+5cad8086,SPY,completed,10,5,3,-0.32932730306858304,1,4
+5ad07e00,SPY,completed,20,50,10,0.9265955451342374,27,10
+0fad77c0,SPY,completed,20,50,10,0.9265955451342374,43,5
+5ffa3042,SPY,completed,20,50,10,0.9265955451342374,48,7
+3c401697,SPY,completed,20,50,10,0.9941084159060232,23,4
+25f6b6b0,SPY,completed,20,50,10,0.9265955451342374,37,6
+36d26590,SPY,failed,60,40,0,,2,0
+21570617,SPY,completed,24,40,17,5.85571888484016,2,14
+0ac18bbb,QQQ,completed,24,40,10,0.7792664911226658,1,9
+100a16c4,BTC-USD,completed,24,40,24,0.9732717477782469,2,14

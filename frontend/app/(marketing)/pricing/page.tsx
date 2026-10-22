@@ -1,200 +1,102 @@
 import type { Metadata } from "next";
-import { Check, Minus } from "lucide-react";
+import { Check, Minus, Plus } from "lucide-react";
 
 import { PricingCards } from "@/components/marketing/pricing-cards";
-import { Reveal } from "@/components/marketing/reveal";
-import { Eyebrow } from "@/components/marketing/section";
+import { Container, CtaBand, Display, Eyebrow, Lede, Section, SectionHeader } from "@/components/marketing/site";
 import { COMPARISON_ROWS, PRICING_FAQ } from "@/lib/marketing/content";
 
 export const metadata: Metadata = {
-  title: "Pricing — Starter, Pro, and Enterprise Plans",
+  title: "Pricing — Starter, Pro and Enterprise",
   description:
-    "Transparent plans for solo researchers to institutional teams. Start on Starter, scale to Pro, or talk to us about Enterprise.",
+    "Plans for solo researchers through institutional teams. Every plan includes regime detection, validation, failure intelligence and Research Memory.",
 };
 
 function Cell({ value }: { value: string | boolean }) {
-  if (value === true) {
-    return <Check className="mx-auto h-4 w-4 text-[#FBCF4F]" />;
-  }
-
-  if (value === false) {
-    return <Minus className="mx-auto h-4 w-4 text-white/20" />;
-  }
-
-  return <span className="text-white/65">{value}</span>;
+  if (value === true) return <Check className="mx-auto h-4 w-4 text-brand" strokeWidth={2.5} aria-label="Included" />;
+  if (value === false) return <Minus className="mx-auto h-4 w-4 text-line-strong" aria-label="Not included" />;
+  return <span className="text-ink-2">{value}</span>;
 }
 
 export default function PricingPage() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#09090F] font-sans text-white">
-      {/* Background atmosphere */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-[0.025]"
-          style={{
-            backgroundImage: `
-              linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)
-            `,
-            backgroundSize: "80px 80px",
-          }}
-        />
-
-        <div className="absolute -left-[20%] top-[5%] h-[650px] w-[650px] rounded-full bg-[#522A6F]/20 blur-[200px]" />
-
-        <div className="absolute -right-[20%] top-[20%] h-[600px] w-[600px] rounded-full bg-[#FBCF4F]/[0.04] blur-[220px]" />
-
-        <div className="absolute bottom-0 left-[30%] h-[500px] w-[500px] rounded-full bg-[#8B7CFF]/10 blur-[200px]" />
-      </div>
-
-      {/* ================= HERO ================= */}
-
-      <section className="relative">
-        <div className="container py-24 text-center lg:py-32">
-          <Reveal className="mx-auto max-w-3xl">
-            <Eyebrow className="flex justify-center">
-              Pricing
-            </Eyebrow>
-
-            <h1 className="mt-5 text-[clamp(2.7rem,5vw,5.2rem)] font-semibold leading-[1.05] tracking-[-0.055em] text-white">
-              Built for research that needs to outlive the researcher.
-            </h1>
-
-            <p className="mx-auto mt-7 max-w-2xl text-[17px] leading-[1.8] text-white/65 sm:text-[18px]">
-              Start small, scale when your strategy library does. Every plan
-              helps preserve research intelligence — from regime detection and
-              validation to failure intelligence and institutional memory.
-            </p>
-          </Reveal>
-
-          <div className="mt-16">
+    <>
+      <section className="relative overflow-hidden border-b border-line">
+        <div aria-hidden className="paper-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_top,black_20%,transparent_70%)]" />
+        <div aria-hidden className="pointer-events-none absolute -top-40 left-1/2 h-[420px] w-[900px] -translate-x-1/2 rounded-full bg-brand-soft/50 blur-[120px]" />
+        <Container className="relative pb-20 pt-16 sm:pt-24">
+          <div className="mx-auto max-w-3xl text-center">
+            <Eyebrow className="justify-center">Pricing</Eyebrow>
+            <Display as="h1" size="xl" className="mt-6">
+              Priced for the research, <em>not the seat count.</em>
+            </Display>
+            <Lede className="mx-auto mt-6 max-w-2xl">
+              Start small and scale when your strategy library does. Every plan includes the full research loop — and failed
+              strategies never count against your limit.
+            </Lede>
+          </div>
+          <div className="mt-14">
             <PricingCards />
           </div>
-        </div>
+        </Container>
       </section>
 
-      {/* ================= COMPARISON ================= */}
-
-      <section className="relative border-t border-white/[0.08]">
-        <div className="container py-24 lg:py-28">
-          <Reveal className="max-w-2xl">
-            <div className="flex items-center gap-3">
-              <span className="h-2 w-2 rounded-full bg-[#FBCF4F]" />
-
-              <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#FBCF4F]">
-                Compare
-              </span>
-            </div>
-
-            <h2 className="mt-5 text-[clamp(2.2rem,4vw,3.8rem)] font-semibold tracking-[-0.045em] text-white">
-              Everything, side by side.
-            </h2>
-
-            <p className="mt-5 text-[17px] leading-relaxed text-white/60">
-              See exactly how each plan expands your research infrastructure.
-            </p>
-          </Reveal>
-
-          <div className="mt-14 overflow-x-auto border-t border-white/[0.12]">
-            <table className="w-full min-w-[760px] text-left">
-              <thead>
-                <tr className="border-b border-white/[0.12]">
-                  <th className="py-6 pr-6 text-[12px] font-semibold uppercase tracking-[0.16em] text-white/50">
-                    Capability
+      <Section tone="paper">
+        <SectionHeader eyebrow="Compare plans" title={<>Every capability, <em>side by side.</em></>} />
+        <div className="mt-12 overflow-x-auto rounded-2xl border border-line bg-paper-raised">
+          <table className="w-full min-w-[640px] text-[14.5px]">
+            <thead className="border-b border-line bg-paper-sunken/70">
+              <tr>
+                <th scope="col" className="px-5 py-4 text-left font-code text-[11px] font-medium uppercase tracking-[0.14em] text-ink-3">Capability</th>
+                {["Starter", "Pro", "Enterprise"].map((h) => (
+                  <th key={h} scope="col" className="px-5 py-4 text-center text-[14px] font-semibold text-ink">
+                    {h}
                   </th>
-
-                  <th className="px-5 py-6 text-center text-[12px] font-semibold uppercase tracking-[0.14em] text-white/50">
-                    Starter
-                  </th>
-
-                  <th className="px-5 py-6 text-center text-[12px] font-semibold uppercase tracking-[0.14em] text-white/50">
-                    Pro
-                  </th>
-
-                  <th className="px-5 py-6 text-center text-[12px] font-semibold uppercase tracking-[0.14em] text-[#FBCF4F]">
-                    Enterprise
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {COMPARISON_ROWS.map((row, index) => (
-                  <tr
-                    key={row.capability}
-                    className="border-b border-white/[0.07] transition-colors hover:bg-white/[0.025]"
-                  >
-                    <td className="py-5 pr-6 text-[15px] text-white/85">
-                      <div className="flex items-center gap-4">
-                        <span className="text-[11px] font-medium text-white/25">
-                          {String(index + 1).padStart(2, "0")}
-                        </span>
-
-                        {row.capability}
-                      </div>
-                    </td>
-
-                    <td className="px-5 py-5 text-center">
-                      <Cell value={row.starter} />
-                    </td>
-
-                    <td className="px-5 py-5 text-center">
-                      <Cell value={row.pro} />
-                    </td>
-
-                    <td className="bg-[#FBCF4F]/[0.025] px-5 py-5 text-center">
-                      <Cell value={row.enterprise} />
-                    </td>
-                  </tr>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {COMPARISON_ROWS.map((row) => (
+                <tr key={row.capability} className="hover:bg-paper">
+                  <th scope="row" className="px-5 py-3.5 text-left font-medium text-ink">
+                    {row.capability}
+                  </th>
+                  <td className="px-5 py-3.5 text-center"><Cell value={row.starter} /></td>
+                  <td className="bg-brand-tint/40 px-5 py-3.5 text-center"><Cell value={row.pro} /></td>
+                  <td className="px-5 py-3.5 text-center"><Cell value={row.enterprise} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </section>
+      </Section>
 
-      {/* ================= FAQ ================= */}
-
-      <section className="relative border-t border-white/[0.08]">
-        <div className="container py-24 lg:py-28">
-          <Reveal className="max-w-2xl">
-            <div className="flex items-center gap-3">
-              <span className="h-2 w-2 rounded-full bg-[#FBCF4F]" />
-
-              <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#FBCF4F]">
-                FAQ
-              </span>
-            </div>
-
-            <h2 className="mt-5 text-[clamp(2.2rem,4vw,3.8rem)] font-semibold tracking-[-0.045em] text-white">
-              Questions before you decide.
-            </h2>
-          </Reveal>
-
-          <div className="mt-14 grid gap-x-16 gap-y-0 md:grid-cols-2">
-            {PRICING_FAQ.map((item, index) => (
-              <Reveal key={item.q}>
-                <div className="border-t border-white/[0.1] py-8">
-                  <div className="flex gap-4">
-                    <span className="mt-1 text-[11px] font-semibold tracking-[0.16em] text-[#FBCF4F]">
-                      0{index + 1}
-                    </span>
-
-                    <div>
-                      <h3 className="text-[18px] font-medium tracking-[-0.02em] text-white">
-                        {item.q}
-                      </h3>
-
-                      <p className="mt-4 text-[15px] leading-[1.8] text-white/60">
-                        {item.a}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </Reveal>
+      <Section tone="sunken">
+        <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+          <SectionHeader eyebrow="FAQ" title={<>Questions, <em>answered plainly.</em></>} />
+          <div className="divide-y divide-line rounded-2xl border border-line bg-paper-raised">
+            {PRICING_FAQ.map((item) => (
+              <details key={item.q} className="group px-6 py-5 [&_summary::-webkit-details-marker]:hidden">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-6 text-[16px] font-semibold text-ink">
+                  {item.q}
+                  <Plus className="h-4 w-4 shrink-0 text-brand transition-transform duration-200 group-open:rotate-45" />
+                </summary>
+                <p className="mt-3 text-[15px] leading-[1.7] text-ink-2">{item.a}</p>
+              </details>
             ))}
           </div>
         </div>
-      </section>
-    </main>
+      </Section>
+
+      <div className="h-4 bg-paper-sunken" />
+      <div className="bg-paper pt-16 sm:pt-20">
+        <CtaBand
+          title={
+            <>
+              Not sure which plan fits? <em>Ask a quant, not a sales script.</em>
+            </>
+          }
+        />
+      </div>
+    </>
   );
 }

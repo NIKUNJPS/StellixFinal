@@ -46,18 +46,28 @@ celery_app.conf.update(
     task_track_started=True,
 )
 
+# Market-data refreshes run on their own queue, served by their own worker:
+#   celery -A app.worker.celery_app.celery_app worker -Q realtime -n realtime@%h --pool=solo
+# A solo-pool worker runs one task at a time, so on a shared queue a 10-minute nightly
+# sweep froze every price on the dashboard until it finished. Everything else stays on
+# the default "celery" queue.
+REALTIME_QUEUE = "realtime"
+REALTIME_TASKS = (
+    "refresh_global_index_quotes",
+    "refresh_screener_data",
+    "refresh_strategy_signals",
+    "refresh_macro_data",
+    # Batch 31: price alerts must not wait behind a long sweep on the default queue.
+    "check_price_alerts",
+)
+celery_app.conf.task_routes = {name: {"queue": REALTIME_QUEUE} for name in REALTIME_TASKS}
+
 # Daily failure-monitor sweep (Batch 6). Requires a `celery beat` process running:
 #   celery -A app.worker.celery_app.celery_app beat --loglevel=INFO
 celery_app.conf.beat_schedule = {
     "daily-failure-monitor": {
         "task": "run_failure_monitor_sweep",
         "schedule": crontab(hour=2, minute=0),
-    },
-    # Batch 7: nightly Postgres <-> Neo4j drift check (orphaned nodes, sync gaps,
-    # missing lineage edges). Logs data-quality signals only, never auto-fixes.
-    "nightly-graph-consistency": {
-        "task": "run_graph_consistency_sweep",
-        "schedule": crontab(hour=3, minute=0),
     },
     # Batch 12: System Monitoring's Celery-worker health card checks freshness
     # of this timestamp — a plain float schedule (not crontab) means "every
@@ -78,24 +88,38 @@ celery_app.conf.beat_schedule = {
     # day's closing bar is available. On weekends/holidays the sweep runs but finds no
     # new bars and skips the (expensive) regime recompute — see market_refresh.py.
     # Mon-Fri only (day_of_week="1-5"): no US session Sat/Sun.
-    # Batch 25: delayed global index quotes for the dashboard. Every
-    # MARKET_QUOTES_REFRESH_SECONDS (default 120s): free providers delay index prices
-    # and throttle aggressive polling, so a faster schedule would add load without
-    # adding freshness. The task itself skips weekend closures.
+    # Batch 25: delayed global index quotes for the dashboard, every
+    # MARKET_QUOTES_REFRESH_SECONDS. The task itself skips weekend closures.
     "global-index-quotes": {
         "task": "refresh_global_index_quotes",
         "schedule": float(settings.MARKET_QUOTES_REFRESH_SECONDS),
+    },
+    # Batch 30 (ADR 0009): settle multi-agent desk calls whose holding window has
+    # traded — after the daily market refresh so the latest close is available.
+    "nightly-agent-settlement": {
+        "task": "settle_agent_analyses",
+        "schedule": crontab(day_of_week="1-5", hour=23, minute=15),
+    },
+    # Batch 31 (ADR 0010): Market Terminal price alerts, every minute.
+    "terminal-price-alerts": {
+        "task": "check_price_alerts",
+        "schedule": 60.0,
+    },
+    # Batch 31: pre-load FINRA's daily short-volume files (published each morning ET)
+    # so short-volume requests read Redis instead of downloading megabytes on demand.
+    "terminal-finra-warm": {
+        "task": "warm_terminal_caches",
+        "schedule": crontab(day_of_week="1-5", hour=13, minute=0),
     },
     "daily-market-refresh": {
         "task": "refresh_market_universe",
         "schedule": crontab(day_of_week="1-5", hour=22, minute=30),
     },
     # Batch 26 Part B: re-evaluate Buy/Sell/Hold signals for every genuinely-Active
-    # strategy. Tied to the same cadence as the market-quote refresh — signals derive
-    # from market data, so re-evaluating faster than the data updates adds no freshness.
+    # strategy.
     "strategy-signals-refresh": {
         "task": "refresh_strategy_signals",
-        "schedule": float(settings.MARKET_QUOTES_REFRESH_SECONDS),
+        "schedule": float(settings.STRATEGY_SIGNALS_REFRESH_SECONDS),
     },
     # Batch 28: FRED macro series (yield curve, VIX) update once a day at most —
     # polling faster would add load without adding freshness. The task itself is a
@@ -105,9 +129,9 @@ celery_app.conf.beat_schedule = {
         "schedule": float(settings.FRED_REFRESH_SECONDS),
     },
     # Batch 28: market screener (feeds both the Screener table and the Sector
-    # Heatmap) — same cadence as the global index quotes, one batched provider call.
+    # Heatmap) — one batched provider call.
     "screener-refresh": {
         "task": "refresh_screener_data",
-        "schedule": float(settings.MARKET_QUOTES_REFRESH_SECONDS),
+        "schedule": float(settings.MARKET_SCREENER_REFRESH_SECONDS),
     },
 }

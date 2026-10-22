@@ -32,7 +32,7 @@ and reconsider the design — not to drop the pillar.
 
 3. **Compounding Memory.** The platform's value increases monotonically with time
    and usage. Every research note, regime label, validation result, and failure is
-   captured into a knowledge graph so that future research stands on the accumulated
+   captured into Research Memory so that future research stands on the accumulated
    institutional memory of all prior research. Memory is append-first; we extend and
    annotate, we do not overwrite history.
 
@@ -48,11 +48,12 @@ and reconsider the design — not to drop the pillar.
 - PostgreSQL 15+ (relational: tenants, users, strategies metadata, audit logs)
 - TimescaleDB extension on the same Postgres instance (time-series market data,
   regime labels, performance history)
-- Neo4j 5.x Community Edition (knowledge graph)
+- Research Memory: a tenant-scoped lineage / failure-memory index derived from
+  PostgreSQL inside the API process — no separate graph database (ADR 0012 replaced
+  the original Neo4j choice)
 - Redis 7.x (cache, session state, job queue backing for Celery/RQ)
 - SQLAlchemy 2.x (async) + Alembic for migrations
 - Pydantic v2 for all schema validation
-- neo4j-driver (official) — **NOT py2neo (deprecated, do not use)**
 - Celery + Redis for background jobs (regime detection runs, GA evolution runs,
   validation suites — anything >2 seconds must be async background work, never
   blocking an API request)
@@ -66,7 +67,7 @@ and reconsider the design — not to drop the pillar.
 - Zustand for local/global UI state
 - Recharts for standard charts, D3.js only for the regime timeline and failure
   heatmap (the two visualizations Recharts genuinely can't do well)
-- Cytoscape.js for the knowledge graph viewer
+- Cytoscape.js for the Research Memory lineage viewer
 - React Hook Form + Zod for all forms (schema shared conceptually with backend
   Pydantic models — keep field names identical across the stack)
 
@@ -76,7 +77,7 @@ and reconsider the design — not to drop the pillar.
 - RBAC roles: `Researcher`, `RiskManager`, `CIO`, `ComplianceOfficer`, `Admin`.
 
 ### Infra
-- Docker Compose for local dev (every service — postgres, timescale, neo4j, redis —
+- Docker Compose for local dev (every service — postgres, timescale, redis —
   runs in containers from day 1, no "install postgres locally" instructions).
 - Kubernetes manifests come later (Batch 17) — do not build them now.
 

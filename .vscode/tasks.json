@@ -4,6 +4,39 @@
   // (or Ctrl+Shift+P -> "Tasks: Run Task").
   "version": "2.0.0",
   "tasks": [
+    // --- One-command launcher (scripts/dev_up.ps1): preflight + migrations + every service
+    // in its own window, including the scheduler (beat) the "Run All" task below omits.
+    {
+      "label": "Stellix: START EVERYTHING (web on :3001)",
+      "detail": "Use this while another project holds port 3000.",
+      "type": "shell",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File ${workspaceFolder}/scripts/dev_up.ps1 -FrontendPort 3001",
+      "problemMatcher": []
+    },
+    {
+      "label": "Stellix: START EVERYTHING (web on :3000)",
+      "type": "shell",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File ${workspaceFolder}/scripts/dev_up.ps1",
+      "problemMatcher": []
+    },
+    {
+      "label": "Stellix: RESTART everything (web on :3001) - use after editing .env",
+      "type": "shell",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File ${workspaceFolder}/scripts/dev_up.ps1 -FrontendPort 3001 -Restart",
+      "problemMatcher": []
+    },
+    {
+      "label": "Stellix: STOP everything",
+      "type": "shell",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File ${workspaceFolder}/scripts/dev_up.ps1 -Stop",
+      "problemMatcher": []
+    },
+    {
+      "label": "Stellix: preflight check only (starts nothing)",
+      "type": "shell",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File ${workspaceFolder}/scripts/dev_up.ps1 -CheckOnly",
+      "problemMatcher": []
+    },
     {
       "label": "backend: uvicorn (:8000)",
       "type": "shell",
@@ -32,6 +65,24 @@
       "problemMatcher": []
     },
     {
+      "label": "celery: realtime worker (market data)",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/.venv/Scripts/python.exe -m celery -A app.worker.celery_app.celery_app worker -Q realtime -n realtime@%h --loglevel=INFO --pool=solo",
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "isBackground": true,
+      "presentation": { "group": "stellix", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "stream: real-time ETFs (Alpaca — needs ALPACA_* keys)",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/.venv/Scripts/python.exe -m app.streaming.etf_stream",
+      "options": { "cwd": "${workspaceFolder}/backend" },
+      "isBackground": true,
+      "presentation": { "group": "stellix", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
       "label": "celery: beat (scheduled tasks — optional)",
       "type": "shell",
       "command": "${workspaceFolder}/backend/.venv/Scripts/python.exe -m celery -A app.worker.celery_app.celery_app beat --loglevel=INFO",
@@ -46,7 +97,8 @@
       "dependsOn": [
         "backend: uvicorn (:8000)",
         "frontend: next dev (:3000)",
-        "celery: worker (solo pool for Windows)"
+        "celery: worker (solo pool for Windows)",
+        "celery: realtime worker (market data)"
       ],
       "dependsOrder": "parallel",
       "problemMatcher": []
@@ -70,13 +122,6 @@
       "label": "setup: seed Meridian demo data",
       "type": "shell",
       "command": "${workspaceFolder}/backend/.venv/Scripts/python.exe ../scripts/seed_demo_data.py",
-      "options": { "cwd": "${workspaceFolder}/backend" },
-      "problemMatcher": []
-    },
-    {
-      "label": "setup: backfill knowledge graph (Neo4j)",
-      "type": "shell",
-      "command": "${workspaceFolder}/backend/.venv/Scripts/python.exe -m scripts.backfill_graph --org-slug meridian-capital",
       "options": { "cwd": "${workspaceFolder}/backend" },
       "problemMatcher": []
     },

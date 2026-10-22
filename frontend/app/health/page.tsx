@@ -13,7 +13,6 @@ import { HEALTH_SERVICES, type ServiceHealth, type ServiceStatus } from "@/lib/t
 
 const SERVICE_LABELS: Record<(typeof HEALTH_SERVICES)[number], string> = {
   postgres: "PostgreSQL + TimescaleDB",
-  neo4j: "Neo4j",
   redis: "Redis",
 };
 

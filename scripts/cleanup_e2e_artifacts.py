@@ -13,8 +13,8 @@ never removed, even if they somehow matched a pattern.
 
 Deleting an Organization cascades to all of its tenant data + users via the
 ``ON DELETE CASCADE`` foreign keys on ``organization_id`` (same mechanism the seed
-script relies on when it rebuilds Meridian). Neo4j nodes for the org are purged
-best-effort (skipped if Neo4j is unreachable).
+script relies on when it rebuilds Meridian). Research Memory needs no cleanup: it is
+re-derived from Postgres, so the deleted orgs drop out on its next rebuild.
 
 Usage (from repo root, backend venv):
 
@@ -95,18 +95,6 @@ async def _find_targets(session) -> list[tuple[Organization, int, list[str]]]:
     return targets
 
 
-async def _purge_graph(org_id) -> None:
-    """Best-effort: remove the org's Neo4j nodes. Skipped if Neo4j is unreachable."""
-    try:
-        from app.clients import neo4j_client
-
-        driver = neo4j_client.get_driver()
-        async with driver.session() as gsession:
-            await gsession.run("MATCH (n {organization_id: $oid}) DETACH DELETE n", oid=str(org_id))
-    except Exception as exc:  # noqa: BLE001
-        print(f"    (Neo4j purge skipped for {org_id}: {type(exc).__name__})")
-
-
 async def main() -> int:
     parser = argparse.ArgumentParser(description="Remove E2E test orgs (dry-run by default).")
     parser.add_argument("--execute", action="store_true", help="Actually delete (default: dry run).")
@@ -134,7 +122,6 @@ async def main() -> int:
 
         print("\nDeleting…")
         for org, _n, _e in targets:
-            await _purge_graph(org.id)
             await session.execute(delete(Organization).where(Organization.id == org.id))
         await session.commit()
 

@@ -1,342 +1,181 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { AppWindow, BrainCircuit, Database, HardDrive } from "lucide-react";
+
+import { RegimeLegend, RegimeTape } from "@/components/marketing/artifacts";
+import { Reveal } from "@/components/marketing/reveal";
+import { ButtonLink, Card, CtaBand, PageHero, Section, SectionHeader, Tag } from "@/components/marketing/site";
 
 export const metadata: Metadata = {
-  title: "Product Overview — Stellix Labs",
+  title: "Platform overview — four layers, one compounding loop",
   description:
-    "Stellix Labs preserves failure intelligence, detects market regime shifts, and compounds institutional knowledge over time. Three intelligence systems. One research loop.",
+    "How Stellix Labs turns raw market data into permanent, regime-conditioned research memory: a data layer, an intelligence layer, a memory layer and a multi-tenant application layer.",
 };
 
-// ---------------------------------------------------------------------------
-// Static content
-// ---------------------------------------------------------------------------
-
-const PROBLEMS = [
+const LAYERS = [
   {
-    number: "01",
-    heading: "Research knowledge disappears.",
-    body: "When a strategy fails, the investigation stops. The team moves on. The lessons — why it failed, under which market regime, what the SHAP attribution showed — are lost. Six months later, a different analyst repeats the same experiment.",
+    n: "01",
+    icon: Database,
+    name: "Data & features",
+    why: "Garbage regimes in, garbage strategies out.",
+    body: "OHLCV ingestion behind a pluggable provider interface and 15+ engineered indicators — RSI, MACD, ATR, Bollinger, realized volatility, autocorrelation — with strict temporal isolation: a feature at time T only ever sees T and earlier.",
+    items: ["Pluggable providers", "15+ indicators", "Look-ahead test"],
   },
   {
-    number: "02",
-    heading: "Teams repeat failed experiments.",
-    body: "Without a systematic record, failed strategies get re-authored, re-backtested, and re-submitted. The organisation pays twice for the same dead end. The knowledge that could have prevented it was never captured.",
+    n: "02",
+    icon: BrainCircuit,
+    name: "Intelligence",
+    why: "Where the research actually happens.",
+    body: "Regime detection, regime-aware backtesting, five-method validation, failure intelligence, the evolution engine and the research assistant. None of them ever looks at performance without a regime attached.",
+    items: ["Regime ensemble", "Validation gate", "Evolution engine", "Research assistant"],
   },
   {
-    number: "03",
-    heading: "Institutional intelligence cannot compound.",
-    body: "Individual analysts are skilled. But their knowledge walks out the door. There is no connective tissue between a failure last quarter and the regime conditions today. Research remains episodic, not cumulative.",
-  },
-];
-
-const SYSTEMS = [
-  {
-    name: "Regime-Conditioning",
-    accent: "#A79CFF",
-    tagline: "Context is not optional.",
-    body: "Every strategy evaluation — backtest, validation, failure record — is labelled with its market regime. Bull, Bear, High-Volatility, Low-Volatility, Sideways, or Crisis. A Sharpe ratio without regime context is noise. Stellix makes regime context structural.",
-    detail: "Four detection algorithms (HMM, PELT, GMM, GARCH) form an ensemble. Each bar of data is voted on and labelled. The label is written to the record permanently.",
+    n: "03",
+    icon: HardDrive,
+    name: "Memory",
+    why: "The part every other tool skips.",
+    body: "PostgreSQL + TimescaleDB hold the relational and time-series truth. Research Memory links every strategy, failure, regime, note and researcher — rebuilt from that same database, so there is nothing else to run.",
+    items: ["PostgreSQL 15", "TimescaleDB", "Research Memory"],
   },
   {
-    name: "Failure-as-Asset",
-    accent: "#69D4AB",
-    tagline: "Failure is not deleted. It is indexed.",
-    body: "When a strategy triggers a failure condition — drawdown breach, Sharpe decline, regime mismatch, or time-based review — an immutable failure record is written. It includes the regime context, the SHAP attribution, the trigger condition, and a research note.",
-    detail: "The failures table carries REVOKE UPDATE, DELETE at the database level. No one can rewrite a failure record. Every failure becomes permanent institutional memory.",
-  },
-  {
-    name: "Compounding Memory",
-    accent: "#D8A65B",
-    tagline: "Knowledge connects across time.",
-    body: "A Neo4j knowledge graph connects strategies, regimes, failures, performance records, and research notes. Analysts can query: which strategies failed in the same regime? What trigger conditions recur? What hypotheses have been tested before?",
-    detail: "Six node types, eight edge types. Five named Cypher queries surface the most operationally useful patterns — recurring failure modes, under-explored regimes, strategy lineage.",
+    n: "04",
+    icon: AppWindow,
+    name: "Application",
+    why: "Multi-tenant from migration zero.",
+    body: "A FastAPI backend and a Next.js workspace with role-aware views for researchers, risk managers, compliance and the CIO. Every row is scoped to an organization; a query with no tenant bound fails closed.",
+    items: ["FastAPI", "Next.js", "Role-based views", "WebSocket events"],
   },
 ];
 
-const LOOP_STEPS = [
-  { step: "Ingest", body: "Market data is pulled, cleaned, and stamped with temporal integrity guarantees." },
-  { step: "Detect", body: "Four algorithms label every bar with a market regime. The ensemble votes." },
-  { step: "Author", body: "A strategy is written — via the JSON DSL or drafted by the LLM assistant." },
-  { step: "Backtest", body: "Simulation runs per regime. Performance metrics are split by market context." },
-  { step: "Validate", body: "Five validation methods produce a robustness score. Gate threshold: 0.70." },
-  { step: "Promote", body: "Strategies above threshold are promoted to active. Below threshold stay as candidates." },
-  { step: "Monitor", body: "Live strategies are watched for drawdown, Sharpe decline, and regime mismatch." },
-  { step: "Record", body: "Any failure trigger writes an immutable, SHAP-attributed failure record to the graph." },
-  { step: "Evolve", body: "A genetic algorithm seeds from survivors. Offspring are registered with full lineage." },
-  { step: "Query", body: "Analysts query accumulated failure patterns. Research compounds across time." },
+const LIFECYCLE = [
+  ["Ingest", "Pull OHLCV for a symbol and window through a pluggable provider."],
+  ["Engineer", "Compute 15+ trailing indicators with no-look-ahead guarantees."],
+  ["Detect regimes", "Label every bar into one of six regimes via the four-model ensemble."],
+  ["Author", "Write rules in the JSON DSL or draft a hypothesis with the assistant."],
+  ["Backtest", "Simulate and read Sharpe, Sortino and Beta split by regime."],
+  ["Validate", "Run the five-method gauntlet to produce one robustness score."],
+  ["Gate", "Promote to active only above 0.70; everything else stays a candidate."],
+  ["Monitor", "Watch live strategies for drawdown, Sharpe decline and regime mismatch."],
+  ["Record failure", "On any trigger, write an immutable SHAP-attributed autopsy."],
+  ["Evolve", "Breed survivors; register offspring with recorded lineage."],
 ];
 
-// ---------------------------------------------------------------------------
-// Components
-// ---------------------------------------------------------------------------
+const ROLES = [
+  { role: "Researcher", body: "Author strategies, run backtests and validation, read failure autopsies and query Research Memory." },
+  { role: "Risk manager", body: "Watch live strategies, regime mismatches and the portfolio — with the kill switch close at hand." },
+  { role: "Compliance", body: "Review governance decisions, the LLM audit log and member access, then export the record." },
+  { role: "CIO", body: "See the whole research book: what's promotable, what failed, and what the desk has learned." },
+];
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+export default function ProductPage() {
   return (
-    <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.25em] text-[#A79CFF]">
-      {children}
-    </p>
-  );
-}
+    <>
+      <PageHero
+        eyebrow="Platform overview"
+        title={
+          <>
+            Four layers. <em>One compounding</em> research loop.
+          </>
+        }
+        intro="Stellix Labs isn't a backtester with features bolted on. It was designed from the first migration so that every result — especially every failure — becomes durable, queryable institutional memory."
+      >
+        <ButtonLink href="/contact" size="lg" arrow>
+          Request a demo
+        </ButtonLink>
+        <ButtonLink href="/features" variant="secondary" size="lg">
+          Explore features
+        </ButtonLink>
+      </PageHero>
 
-function Divider() {
-  return <div className="my-20 h-px bg-white/[0.06]" />;
-}
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
-
-export default function ProductOverviewPage() {
-  return (
-    <div
-      className="min-h-screen"
-      style={{ backgroundColor: "#08080B", color: "#F4F3F7" }}
-    >
-      {/* ── Hero ── */}
-      <section className="border-b border-white/[0.06] px-6 py-24 sm:px-12 lg:px-20">
-        <div className="mx-auto max-w-4xl">
-          <SectionLabel>Product Overview</SectionLabel>
-          <h1
-            className="text-[clamp(2.4rem,5vw,4.2rem)] font-medium leading-[1.05] tracking-[-0.04em]"
-            style={{ color: "#F4F3F7" }}
-          >
-            Institutional research infrastructure
-            <br />
-            for quantitative teams.
-          </h1>
-          <p
-            className="mt-8 max-w-2xl text-[17px] leading-[1.8]"
-            style={{ color: "rgba(244,243,247,0.5)" }}
-          >
-            Stellix Labs preserves failure intelligence, detects market regime
-            shifts, and compounds institutional knowledge over time. Research
-            becomes connected, searchable, and reusable — across strategies,
-            analysts, and market cycles.
-          </p>
-          <div className="mt-10 flex flex-wrap gap-4">
-            <Link
-              href="/contact"
-              className="inline-flex h-11 items-center rounded-full px-6 text-[13px] font-semibold transition-opacity hover:opacity-90"
-              style={{ backgroundColor: "#A79CFF", color: "#08080B" }}
-            >
-              Request Demo
-            </Link>
-            <Link
-              href="/architecture"
-              className="inline-flex h-11 items-center rounded-full border px-6 text-[13px] font-medium transition-opacity hover:opacity-80"
-              style={{ borderColor: "rgba(255,255,255,0.12)", color: "rgba(244,243,247,0.7)" }}
-            >
-              View Architecture →
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <div className="mx-auto max-w-5xl px-6 py-20 sm:px-12 lg:px-20">
-
-        {/* ── The Problem ── */}
-        <section>
-          <SectionLabel>The Problem</SectionLabel>
-          <h2
-            className="mb-14 max-w-2xl text-[clamp(1.6rem,3vw,2.4rem)] font-medium leading-tight tracking-[-0.03em]"
-            style={{ color: "#F4F3F7" }}
-          >
-            Institutional amnesia is the invisible cost in quantitative research.
-          </h2>
-
-          <div className="space-y-10">
-            {PROBLEMS.map((p) => (
-              <div key={p.number} className="flex gap-8">
-                <span
-                  className="shrink-0 pt-1 font-mono text-[11px] font-semibold tracking-[0.1em]"
-                  style={{ color: "rgba(167,156,255,0.4)" }}
-                >
-                  {p.number}
-                </span>
-                <div>
-                  <h3
-                    className="mb-2 text-[17px] font-semibold leading-tight"
-                    style={{ color: "#F4F3F7" }}
-                  >
-                    {p.heading}
-                  </h3>
-                  <p
-                    className="text-[15px] leading-[1.75]"
-                    style={{ color: "rgba(244,243,247,0.48)" }}
-                  >
-                    {p.body}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <Divider />
-
-        {/* ── Three Intelligence Systems ── */}
-        <section>
-          <SectionLabel>The Stellix Solution</SectionLabel>
-          <h2
-            className="mb-4 max-w-2xl text-[clamp(1.6rem,3vw,2.4rem)] font-medium leading-tight tracking-[-0.03em]"
-            style={{ color: "#F4F3F7" }}
-          >
-            Three intelligence systems. One compounding research loop.
-          </h2>
-          <p
-            className="mb-16 max-w-xl text-[15px] leading-[1.75]"
-            style={{ color: "rgba(244,243,247,0.48)" }}
-          >
-            Regime-Conditioning, Failure-as-Asset, and Compounding Memory are not features.
-            They are the architectural pillars that make research cumulative instead of episodic.
-          </p>
-
-          <div className="space-y-16">
-            {SYSTEMS.map((sys, i) => (
-              <div key={sys.name} className="grid gap-8 lg:grid-cols-[1fr_1.2fr] lg:gap-16">
-                <div>
-                  <div className="mb-3 flex items-center gap-3">
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: sys.accent, boxShadow: `0 0 12px ${sys.accent}` }}
-                    />
-                    <span
-                      className="text-[10px] font-semibold uppercase tracking-[0.22em]"
-                      style={{ color: sys.accent }}
-                    >
-                      {String(i + 1).padStart(2, "0")}
+      <Section>
+        <SectionHeader
+          eyebrow="The architecture, simply"
+          title={
+            <>
+              Every layer has <em>one job.</em>
+            </>
+          }
+          intro="Data flows up through the stack; memory flows back down into the next round of research."
+        />
+        <div className="mt-14 grid gap-4 md:grid-cols-2">
+          {LAYERS.map((l, i) => {
+            const Icon = l.icon;
+            return (
+              <Reveal key={l.n} delay={i * 70}>
+                <Card interactive className="h-full">
+                  <div className="flex items-start justify-between">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-tint text-brand">
+                      <Icon className="h-5 w-5" />
                     </span>
+                    <span className="font-code text-[12px] text-ink-3">Layer {l.n}</span>
                   </div>
-                  <h3
-                    className="mb-2 text-[22px] font-semibold tracking-[-0.02em]"
-                    style={{ color: "#F4F3F7" }}
-                  >
-                    {sys.name}
-                  </h3>
-                  <p
-                    className="mb-4 text-[13px] font-medium italic"
-                    style={{ color: sys.accent }}
-                  >
-                    {sys.tagline}
-                  </p>
-                  <p
-                    className="text-[15px] leading-[1.75]"
-                    style={{ color: "rgba(244,243,247,0.5)" }}
-                  >
-                    {sys.body}
-                  </p>
-                </div>
-                <div
-                  className="rounded-2xl border p-6"
-                  style={{
-                    backgroundColor: "#0D0D13",
-                    borderColor: "rgba(255,255,255,0.07)",
-                  }}
-                >
-                  <p
-                    className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em]"
-                    style={{ color: "rgba(244,243,247,0.28)" }}
-                  >
-                    How it works
-                  </p>
-                  <p
-                    className="text-[14px] leading-[1.75]"
-                    style={{ color: "rgba(244,243,247,0.6)" }}
-                  >
-                    {sys.detail}
-                  </p>
-                </div>
-              </div>
-            ))}
+                  <h3 className="mt-7 text-[22px] font-semibold tracking-[-0.01em] text-ink">{l.name}</h3>
+                  <p className="mt-1 font-editorial text-[19px] text-brand">{l.why}</p>
+                  <p className="mt-4 text-[15px] leading-[1.7] text-ink-2">{l.body}</p>
+                  <div className="mt-6 flex flex-wrap gap-2">
+                    {l.items.map((it) => (
+                      <Tag key={it}>{it}</Tag>
+                    ))}
+                  </div>
+                </Card>
+              </Reveal>
+            );
+          })}
+        </div>
+      </Section>
+
+      <Section tone="sunken">
+        <SectionHeader
+          eyebrow="The research lifecycle"
+          title={
+            <>
+              From raw ticks to an evolved, <em>regime-validated</em> strategy.
+            </>
+          }
+        />
+        <ol className="mt-14 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-5">
+          {LIFECYCLE.map(([name, body], i) => (
+            <li key={name} className="relative bg-paper-raised p-6">
+              <span className={i === 6 ? "font-code text-[12px] font-semibold text-signal-text" : i === 8 ? "font-code text-[12px] font-semibold text-loss" : "font-code text-[12px] font-semibold text-brand"}>
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <h3 className="mt-3 text-[16px] font-semibold text-ink">{name}</h3>
+              <p className="mt-2 text-[14px] leading-[1.65] text-ink-2">{body}</p>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-10 rounded-2xl border border-line bg-paper-raised p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[14px] font-semibold text-ink">Every step above runs with a regime attached</p>
+            <RegimeLegend />
           </div>
-        </section>
+          <RegimeTape className="mt-5" />
+        </div>
+      </Section>
 
-        <Divider />
+      <Section>
+        <SectionHeader
+          eyebrow="One workspace, four seats"
+          title={
+            <>
+              Each role sees <em>what it&apos;s accountable for.</em>
+            </>
+          }
+          intro="Role-based routing gives every person a focused workspace — the same memory underneath, a different lens on top."
+        />
+        <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {ROLES.map((r, i) => (
+            <Reveal key={r.role} delay={i * 70}>
+              <Card className="h-full">
+                <Tag tone="brand">{r.role}</Tag>
+                <p className="mt-5 text-[15px] leading-[1.7] text-ink-2">{r.body}</p>
+              </Card>
+            </Reveal>
+          ))}
+        </div>
+      </Section>
 
-        {/* ── The Research Loop ── */}
-        <section>
-          <SectionLabel>How They Work Together</SectionLabel>
-          <h2
-            className="mb-4 max-w-2xl text-[clamp(1.6rem,3vw,2.4rem)] font-medium leading-tight tracking-[-0.03em]"
-            style={{ color: "#F4F3F7" }}
-          >
-            The research lifecycle — one loop that gets smarter each turn.
-          </h2>
-          <p
-            className="mb-14 max-w-xl text-[15px] leading-[1.75]"
-            style={{ color: "rgba(244,243,247,0.48)" }}
-          >
-            Each cycle adds to the institutional knowledge base. Failures are
-            preserved, not discarded. Successes are traceable, not incidental. The
-            loop compounds.
-          </p>
-
-          <ol className="relative space-y-0 border-l border-white/[0.07]">
-            {LOOP_STEPS.map((s, i) => (
-              <li key={s.step} className="relative pb-8 pl-10 last:pb-0">
-                {/* Timeline node */}
-                <span
-                  className="absolute -left-[9px] top-1 flex h-[18px] w-[18px] items-center justify-center rounded-full border text-[8px] font-bold"
-                  style={{
-                    backgroundColor: "#0D0D13",
-                    borderColor: "rgba(167,156,255,0.35)",
-                    color: "#A79CFF",
-                  }}
-                >
-                  {i + 1}
-                </span>
-                <h4
-                  className="mb-1 text-[14px] font-semibold"
-                  style={{ color: "#F4F3F7" }}
-                >
-                  {s.step}
-                </h4>
-                <p
-                  className="text-[13px] leading-[1.7]"
-                  style={{ color: "rgba(244,243,247,0.46)" }}
-                >
-                  {s.body}
-                </p>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <Divider />
-
-        {/* ── CTA ── */}
-        <section className="text-center">
-          <h2
-            className="mb-4 text-[clamp(1.4rem,2.5vw,2rem)] font-medium tracking-[-0.025em]"
-            style={{ color: "#F4F3F7" }}
-          >
-            Ready to see it in action?
-          </h2>
-          <p
-            className="mb-8 text-[15px]"
-            style={{ color: "rgba(244,243,247,0.46)" }}
-          >
-            30-minute technical demo. No slides. Real product.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link
-              href="/contact"
-              className="inline-flex h-11 items-center rounded-full px-7 text-[13px] font-semibold transition-opacity hover:opacity-90"
-              style={{ backgroundColor: "#A79CFF", color: "#08080B" }}
-            >
-              Request Demo
-            </Link>
-            <Link
-              href="/features"
-              className="inline-flex h-11 items-center rounded-full border px-7 text-[13px] font-medium transition-opacity hover:opacity-80"
-              style={{ borderColor: "rgba(255,255,255,0.12)", color: "rgba(244,243,247,0.65)" }}
-            >
-              Explore Features →
-            </Link>
-          </div>
-        </section>
-
-      </div>
-    </div>
+      <div className="h-8 bg-paper" />
+      <CtaBand />
+    </>
   );
 }

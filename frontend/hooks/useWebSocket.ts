@@ -44,7 +44,13 @@ export type WSEvent = {
     | "strategy_signal"
     // Batch 28: public macro series (FRED) and market-screener refreshes, global scope.
     | "macro_update"
-    | "screener_update";
+    | "screener_update"
+    // Real-time ETF trade prices from the Alpaca streamer, global scope (≤1/s).
+    | "etf_ticks"
+    // Batch 30 (ADR 0009): a multi-agent desk run finished a stage / completed / failed (org-scoped).
+    | "agent_progress"
+    // Batch 31: a Market Terminal price alert fired (org-scoped, addressed to its owner).
+    | "price_alert";
   [key: string]: unknown;
 };
 

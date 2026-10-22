@@ -1,6 +1,6 @@
 """Research notes endpoints (Batch 7 minimal CRUD, extended Batch 10 into the full
 Research Notebook backend): CRUD, autosave, and Postgres full-text search. Every
-create/update syncs into the Neo4j ResearchNote node via GraphSyncService."""
+create/update syncs into the Research Memory ResearchNote record via GraphSyncService."""
 
 from __future__ import annotations
 

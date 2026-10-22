@@ -1,0 +1,111 @@
+file,area,passed,failed,skipped
+test_activation_gate_evidence,Platform / other,6,0,0
+test_agent_desk,Multi-agent desk,21,0,0
+test_api_keys,Platform / other,8,0,0
+test_audit_log_append_only,Platform / other,0,0,1
+test_audit_trail_actor_identity,Platform / other,5,0,0
+test_auth,Security, RBAC and tenancy,10,0,0
+test_backtest,Backtest and strategy DSL,12,0,0
+test_backtest_results_api,Backtest and strategy DSL,6,0,0
+test_batch17_critical_paths,Platform / other,4,0,0
+test_billing,Platform / other,15,0,0
+test_celery_routing,Platform / other,2,0,0
+test_compliance_export,Platform / other,3,0,0
+test_compliance_export_status,Platform / other,3,0,0
+test_config,Platform / other,5,0,0
+test_contact,Platform / other,6,0,0
+test_cross_asset_regime,Regime detection,3,0,0
+test_csv_upload,Platform / other,5,0,0
+test_data_isolation,Security, RBAC and tenancy,2,0,0
+test_data_validation,Validation (5 methods),2,0,0
+test_dsl,Backtest and strategy DSL,9,0,0
+test_dynamic_rbac,Security, RBAC and tenancy,17,0,0
+test_email_verification,Platform / other,20,0,0
+test_evolution_adaptive_sigma,Evolution (GA),3,0,0
+test_evolution_clamping,Evolution (GA),4,0,0
+test_evolution_e2e,Evolution (GA),1,0,0
+test_evolution_elitism,Evolution (GA),3,0,0
+test_evolution_encoding,Evolution (GA),5,0,0
+test_evolution_fitness,Evolution (GA),5,0,0
+test_failure_api,Failure intelligence,4,0,0
+test_failure_append_only,Failure intelligence,0,0,1
+test_failure_clustering,Failure intelligence,2,0,0
+test_failure_explanation_status,Failure intelligence,6,0,0
+test_failure_heatmap,Failure intelligence,3,0,0
+test_failure_isolation,Failure intelligence,1,0,0
+test_failure_monitor_scope,Failure intelligence,2,0,0
+test_failure_pipeline,Failure intelligence,1,0,0
+test_failure_shap,Failure intelligence,2,0,0
+test_failure_symbol_fallback,Failure intelligence,3,0,0
+test_failure_triggers,Failure intelligence,4,0,0
+test_features,Backtest and strategy DSL,6,0,0
+test_governance_kill_switch,Platform / other,8,0,0
+test_governance_views_rbac,Security, RBAC and tenancy,20,0,0
+test_graph_consistency,Knowledge graph,3,0,0
+test_graph_degradation,Knowledge graph,2,0,0
+test_graph_idempotency,Knowledge graph,3,0,0
+test_graph_isolation,Knowledge graph,1,0,0
+test_graph_memory_mode,Knowledge graph,5,0,0
+test_graph_node_search_isolation,Knowledge graph,3,0,0
+test_graph_queries,Knowledge graph,9,0,0
+test_graph_sync,Knowledge graph,4,0,0
+test_health,Platform / other,2,0,0
+test_ingestion_chunking,Data ingestion,4,0,0
+test_ingestion_integration,Data ingestion,0,0,1
+test_input_validation,Validation (5 methods),9,0,0
+test_invitations,Platform / other,20,0,0
+test_kill_switch_review,Platform / other,8,0,0
+test_lifecycle,Backtest and strategy DSL,4,0,0
+test_liveness_readiness,Platform / other,6,0,0
+test_llm_audit_logging,LLM layer and safeguards,5,0,0
+test_llm_graceful_degradation,LLM layer and safeguards,4,0,0
+test_llm_human_approval_required,LLM layer and safeguards,6,0,0
+test_llm_no_execution_authority,LLM layer and safeguards,6,0,0
+test_llm_numeric_validation,Validation (5 methods),9,0,0
+test_llm_price_guard,LLM layer and safeguards,3,0,0
+test_llm_router,LLM layer and safeguards,12,0,0
+test_lookahead,Backtest and strategy DSL,2,0,0
+test_macro_data,Platform / other,9,0,0
+test_market_chart,Platform / other,7,0,0
+test_market_quotes,Platform / other,11,0,0
+test_market_refresh,Platform / other,6,0,0
+test_market_screener,Platform / other,7,0,0
+test_metrics,Platform / other,3,0,0
+test_mfa,Security, RBAC and tenancy,7,0,0
+test_models,Platform / other,2,0,0
+test_notification_templates,Platform / other,4,0,0
+test_notifications,Platform / other,6,0,0
+test_observability_log_levels,Platform / other,2,0,0
+test_onboarding,Platform / other,2,0,0
+test_password_reset,Platform / other,4,0,0
+test_portfolio,Platform / other,10,0,0
+test_providers,Data ingestion,4,0,0
+test_public_openapi,Platform / other,5,0,0
+test_rate_limit,Security, RBAC and tenancy,11,0,0
+test_rbac_access_matrix,Security, RBAC and tenancy,44,0,0
+test_rbac_isolation,Security, RBAC and tenancy,3,0,0
+test_realtime_etf,Platform / other,10,0,0
+test_regime_api,Regime detection,2,0,0
+test_regime_engine,Regime detection,2,0,0
+test_regime_ensemble,Regime detection,4,0,0
+test_regime_integration,Regime detection,0,0,1
+test_regime_statistics,Regime detection,4,0,0
+test_request_id_propagation,Platform / other,4,0,0
+test_research_note_search,Platform / other,2,0,0
+test_research_note_search_integration,Platform / other,0,0,5
+test_research_notes_crud,Platform / other,9,0,0
+test_security_headers,Security, RBAC and tenancy,5,0,0
+test_signals,Backtest and strategy DSL,11,0,0
+test_strategy_api,Backtest and strategy DSL,5,0,0
+test_strategy_approval,Backtest and strategy DSL,4,0,0
+test_strategy_delete,Backtest and strategy DSL,6,0,0
+test_strategy_versioning,Backtest and strategy DSL,6,0,0
+test_superadmin,Security, RBAC and tenancy,13,0,0
+test_tenant_enforcement,Security, RBAC and tenancy,5,0,0
+test_terminal,Market terminal,21,0,0
+test_usage,Platform / other,1,0,0
+test_user_settings,Platform / other,3,0,0
+test_validation,Validation (5 methods),12,0,0
+test_weekly_digest,Platform / other,3,0,0
+test_worker_logging_context,Platform / other,6,0,0
+test_ws_manager,Platform / other,19,0,0

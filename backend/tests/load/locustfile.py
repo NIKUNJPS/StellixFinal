@@ -1,7 +1,7 @@
 """Load test for the Stellix Labs API (Batch 23).
 
 Exercises the REAL authenticated read surface as a logged-in analyst would browse it,
-against the REAL stack (Postgres/TimescaleDB, Neo4j, Redis). Run headless:
+against the REAL stack (Postgres/TimescaleDB, Redis). Run headless:
 
     # 1. start the backend
     backend/.venv/Scripts/python.exe -m uvicorn app.main:app --port 8000

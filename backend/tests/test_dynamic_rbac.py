@@ -52,11 +52,17 @@ def test_migration_seed_matches_catalog_exactly():
     would diverge."""
     m20 = _load_migration("migration_0020", "*_0020_dynamic_rbac.py")
     m23 = _load_migration("migration_0023", "*_0023_quant_engineer_signals_view.py")
+    # Batch 30 (ADR 0009): agents.run permission + grants.
+    m25 = _load_migration("migration_0025", "*_0025_agent_desk.py")
 
     # Permissions: 0020 base + 0023 delta == catalog (seed order is irrelevant, so
     # compare as sets — the catalog groups signals.view with the other Research keys
     # while the migration adds it as a later delta).
-    perms = [(k, c, d) for k, c, d in m20.PERMISSIONS] + [(k, c, d) for k, c, d in m23.NEW_PERMISSIONS]
+    perms = (
+        [(k, c, d) for k, c, d in m20.PERMISSIONS]
+        + [(k, c, d) for k, c, d in m23.NEW_PERMISSIONS]
+        + [(k, c, d) for k, c, d in m25.NEW_PERMISSIONS]
+    )
     assert set(perms) == {(p.key, p.category, p.description) for p in PERMISSION_CATALOG}
     assert len(perms) == len(PERMISSION_CATALOG)  # no duplicate keys across the two migrations
 
@@ -68,6 +74,9 @@ def test_migration_seed_matches_catalog_exactly():
         roles[role_key] = (n, d, pset | {"signals.view"})
     for k, n, d, pset in m23.NEW_ROLES:
         roles[k] = (n, d, set(pset))
+    for role_key in m25.AGENTS_RUN_GRANTED_TO:
+        n, d, pset = roles[role_key]
+        roles[role_key] = (n, d, pset | {"agents.run"})
     assert {k: (n, d, sorted(pset)) for k, (n, d, pset) in roles.items()} == {
         r.key: (r.name, r.description, sorted(r.permissions)) for r in SYSTEM_ROLES
     }
@@ -90,7 +99,8 @@ async def test_system_roles_seeded_as_defaults(client, db_session_factory):
 
 async def test_quant_engineer_role_seeded_correctly(client, db_session_factory):
     """Batch 26 Part B — Quant Engineer exists as a system default with exactly
-    {strategy.version, signals.view}, no governance permissions, and the same
+    {strategy.version, signals.view} (+ agents.run from Batch 30), no governance
+    permissions, and the same
     deletion protection as the original five system roles."""
     async with db_session_factory() as session:
         mark_session_unscoped(session.sync_session)
@@ -100,7 +110,8 @@ async def test_quant_engineer_role_seeded_correctly(client, db_session_factory):
         from app.services.rbac import permission_keys_by_role
 
         perms = (await permission_keys_by_role(session, [role.id]))[role.id]
-    assert set(perms) == {P.STRATEGY_VERSION, P.SIGNALS_VIEW}
+    # Batch 30 (ADR 0009) adds agents.run — a research permission, still no governance.
+    assert set(perms) == {P.STRATEGY_VERSION, P.SIGNALS_VIEW, P.AGENTS_RUN}
     # No governance permissions — a research/build role, not a risk-governance one.
     assert not ({P.STRATEGY_APPROVE, P.KILLSWITCH_TRIGGER, P.AUDIT_VIEW_ALL, P.GOVERNANCE_VIEW} & set(perms))
 

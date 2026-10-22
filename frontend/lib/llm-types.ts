@@ -77,6 +77,8 @@ export type ChatStakes = "low" | "medium" | "high";
 export interface ChatStreamRequest {
   message: string;
   stakes?: ChatStakes;
+  /** Batch 31 (Market Terminal): the server prepends quote, Stellix regime and headlines for this symbol. */
+  context_symbol?: string;
 }
 
 /** One decoded SSE frame from POST /llm/chat/stream. */

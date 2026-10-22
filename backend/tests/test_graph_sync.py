@@ -1,5 +1,5 @@
 """Sync-on-write correctness: creating a Strategy in Postgres results in a matching
-Neo4j node within the same request (real-time dual-write, not a batch ETL job)."""
+Research Memory record within the same request (real-time dual-write, not a batch ETL job)."""
 
 from __future__ import annotations
 

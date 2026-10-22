@@ -7,13 +7,16 @@ called out explicitly wherever a credential isn't configured in a given environm
 
 ## Before you start
 
-1. **Bring the stack up**: Postgres, Redis (Neo4j optional — the whole platform degrades
-   gracefully without it, see below); the backend
-   (`backend/.venv/Scripts/python.exe -m uvicorn app.main:app --port 8000`); a Celery
-   **worker** and a Celery **beat**, as **two separate processes**
-   (`… -m celery -A app.worker.celery_app.celery_app worker --pool=solo` and
-   `… -m celery -A app.worker.celery_app.celery_app beat` — Windows does not support the
-   combined `--beat` flag); and the frontend (`cd frontend && npm run dev`).
+1. **Bring the stack up**: Postgres, Redis; the backend
+   (`backend/.venv/Scripts/python.exe -m uvicorn app.main:app --port 8000`); **three**
+   Celery processes — the default worker
+   (`… -m celery -A app.worker.celery_app.celery_app worker --pool=solo`), the
+   **realtime** worker that refreshes market prices
+   (`… worker -Q realtime -n realtime@%h --pool=solo` — without it, prices never
+   refresh), and beat (`… -m celery -A app.worker.celery_app.celery_app beat`; Windows
+   does not support the combined `--beat` flag); the real-time ETF streamer if Alpaca
+   keys are configured (`… -m app.streaming.etf_stream`); and the frontend
+   (`cd frontend && npm run dev`).
 2. **Seed the demo org**: `backend/.venv/Scripts/python.exe scripts/seed_demo_data.py`,
    then `… scripts/verify_demo_seed.py`.
 3. **Clean up test artifacts**: `backend/.venv/Scripts/python.exe
@@ -42,8 +45,11 @@ Platform SuperAdmin: `admin@stellixlabs.com` / `Finalyear123$`.
 Open **`/`**, then **`/login`**. Sign in as Meridian Admin
 (`research@meridian.com`). Land on the **Dashboard**: real seeded activity — current
 regime, active-strategy count, avg strategy performance, failure-alert count, and
-**global market indices** with an honest "Delayed · refreshed every 2 min" label
-(free-tier yfinance data, never presented as real-time).
+**global market indices** with an honest "Delayed · refreshed every 30s" label
+(free-tier yfinance data, never presented as real-time). Above them, the
+**Real-time US index ETFs** strip: with Alpaca keys and the streamer running, SPY /
+QQQ / DIA / IWM tick live with "last trade Ns ago" — **point out** it says "IEX only"
+and shows ETFs, not the indices. Without keys it honestly says "not configured".
 
 ### 2. Regime detection + cross-asset view (60s)
 
@@ -54,6 +60,10 @@ GMM · GARCH). **Point out:** this reads real stored detections; it only flags a
 divergence when the actual combination warrants one.
 
 ### 3. The real Active strategy + its real current signal (60s)
+
+*As of 2026-09-26 there is no Active strategy (see `docs/PLATFORM_STATE.md`), so
+this page shows its honest empty state until one is activated — skip this step or
+explain that state rather than implying a live signal.*
 
 Navigate to **Signals** (`/signals`). Show the live card for the genuinely Active
 strategy — its name, symbol, current signal (BUY/SELL/HOLD), the regime it was
@@ -77,14 +87,14 @@ a note that the failure data, trigger, and SHAP attribution above it are unaffec
 Some older failures may already show a real generated explanation from a session where
 the key was configured — point out both states exist honestly side by side.
 
-### 5. Knowledge graph (30s)
+### 5. Research Memory (30s)
 
-Navigate to **Knowledge Graph** (role-specific path, e.g. `/researcher/graph`). Run one
-of the 5 named queries.
+Navigate to **Research Memory** (role-specific path, e.g. `/researcher/memory`). Run one
+of the 5 named queries — *recurring failure modes* is the strongest: it shows the same
+regime + trigger combination failing again and again across strategies.
 
-**Honest fallback if Neo4j isn't reachable**: the query returns a real `503`, and the
-page explains the graph is a derived, rebuildable-from-Postgres projection — not a
-crash, not a fabricated empty result presented as real.
+Talking point: it is derived from PostgreSQL inside the API (ADR 0012), so there is no
+second database to run or keep in sync, and it can never drift from the source tables.
 
 ### 6. SuperAdmin command center (30s)
 
@@ -109,12 +119,12 @@ disagreed with their own validation record, 10 with no validation evidence at al
 1 Active strategy that had never been genuinely validated.
 
 **Point out it's still holding, not just documented**: re-running the same class of
-check live in this session found **0** mismatches and **0** Active strategies without
-matching current-version evidence. And — a genuine, unplanned demonstration from this
-very session — the platform's own failure-monitoring sweep, run for the first time
-against fully caught-up historical data, correctly detected a real `regime_mismatch` on
-the strategy that had been Active, and moved it to Failed. That's the governance system
-doing its job on real data, not a scripted moment.
+check live in Batch 29 found **0** mismatches and **0** Active strategies without
+matching current-version evidence.
+
+*Do not* present the Batch 29 failure-monitor "incident" as a demonstration — it was a
+misdiagnosis (the sweep evaluated an SPY strategy on other stocks' regimes; see
+`docs/PLATFORM_STATE.md`).
 
 ### 8. Dynamic RBAC, live
 
@@ -124,7 +134,7 @@ second tab already logged in as that user, **no re-login** — show their nav an
 change on their very next request. This is the same mechanism that makes **Quant
 Engineer** real: 2 permissions (`signals.view`, `strategy.version`), zero governance
 permissions, its own scoped nav (Dashboard, Strategy Explorer, Signals, Market
-Research, Research Notebook, Knowledge Graph — no Governance, no Kill Switch).
+Research, Research Notebook, Research Memory — no Governance, no Kill Switch).
 
 ### 9. Market Research widgets, with honest source attribution
 
@@ -159,7 +169,7 @@ skipped.
 
 ## What NOT to click during a cold demo
 
-- **Knowledge Graph / Research Assistant**, if Neo4j / an LLM key aren't configured in
+- **Research Assistant**, if an LLM key isn't configured in
   the environment you're demoing from — they degrade honestly (a real `503` / a plain
   "not configured" message), but it's not the impression you want live if you haven't
   set up the fallback narration above.

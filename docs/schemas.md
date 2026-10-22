@@ -6,7 +6,7 @@
 > - **Extend, never redefine.** New fields are appended; existing fields are not
 >   silently changed. A breaking change requires an ADR in `/docs/adr/`.
 > - **Field names are identical across the stack**: Postgres columns ⇄ Pydantic
->   models ⇄ API payloads ⇄ Zod schemas ⇄ Neo4j properties.
+>   models ⇄ API payloads ⇄ Zod schemas ⇄ Research Memory properties.
 > - Before implementing any new field anywhere, add it here FIRST.
 
 Legend:
@@ -441,28 +441,18 @@ Batch 10 extends it into the full Research Notebook backing store.
 
 ---
 
-## Knowledge Graph (Neo4j, Batch 7)
+## Research Memory (Batch 7; on PostgreSQL since ADR 0012)
 
-> Neo4j has no native row-level security, so **every single Cypher query filters by
-> `organization_id` manually.** The query-builder helper `app/graph/tenant_query.py`
-> (`run_scoped`) makes this structurally hard to forget: `organization_id` is a
-> mandatory keyword argument with no default, and the helper raises
-> `GraphTenantError` if a query string doesn't reference `$organization_id` at all —
-> same fail-closed philosophy as `TenantScopedModel` (§3 of the constitution).
->
-> **Local-env note:** Neo4j is not runtime-available on this dev machine yet (no
-> Docker; see `docs/adr` / memory). `GraphSyncService` and the query repository use
-> the real `neo4j` driver in production but every call is wrapped so a connection
-> failure logs a warning and degrades gracefully rather than crashing the API —
-> Postgres-side behavior never depends on Neo4j being up. Tests run against
-> `app/graph/fake_repository.py`, a hand-verified in-memory implementation of the
-> same repository interface (`app/graph/repository.py`), so query *logic* (tenant
-> filtering, traversal semantics, MERGE-idempotency at the repository level) is
-> hermetically tested — but the literal Cypher strings executed by
-> `app/graph/neo4j_repository.py` are **not yet runtime-verified against a real
-> Neo4j instance** (same "configured, not runtime-verified" caveat as other
-> Docker-dependent pieces). This activates automatically once `NEO4J_URI` points at
-> a reachable instance.
+> **PostgreSQL is the single source of truth.** Research Memory is a derived,
+> tenant-scoped index of the records and relationships below, built from Postgres
+> inside the API process (`app/graph/memory_index.py`) at startup and every
+> `RESEARCH_MEMORY_REFRESH_SECONDS` (default 300), and kept current on every write by
+> `GraphSyncService`. The only implementation is `InMemoryGraphRepository`
+> (`app/graph/memory_repository.py`) behind the interface in `app/graph/repository.py`.
+> Every record is keyed by `(organization_id, label, key)`, so every lookup is
+> tenant-scoped by construction — the same fail-closed philosophy as
+> `TenantScopedModel` (§3 of the constitution). Neo4j was retired in ADR 0012; the
+> labels, relationship types and five queries below are unchanged.
 
 ### Node labels
 Every node carries `organization_id`. Property names match the Postgres fields they
@@ -977,6 +967,9 @@ entirely in `evolution.py`'s previously-raw `ga_config` dict, not scattered
 across other files.
 
 ### SQL / Cypher injection audit (this batch)
+
+> *Historical (Batch 13). The Cypher layer audited below was removed in ADR 0012;
+> Research Memory no longer builds query strings at all.*
 
 Audited every database query the backend builds — the SQLAlchemy (Postgres)
 layer and every hand-written Cypher query (Batch 7's
@@ -1687,7 +1680,7 @@ the HTTP layer, so a Celery-task-driven creation still counts):
 | `failures_detected_total` | Counter | `trigger_condition` | `persist_failure()` |
 | `active_strategies_gauge` | Gauge | — | Recomputed every 60s by the existing `system_heartbeat` beat task (a fresh `COUNT(*) WHERE status='active'` across all orgs), not incremented/decremented at each of the many code paths that can move a strategy into or out of `active` (kill switch, `/approve`, the generic `/transition`, evolution auto-registration) — self-correcting every tick rather than accumulating drift from a missed decrement. |
 | `celery_queue_pending_gauge` | Gauge | `task_name` | Same 60s heartbeat tick, reusing Batch 12's existing `get_job_queue_counts()` |
-| `service_health_gauge` | Gauge | `service` | Set to 1/0 on every `_timed_check()` probe in `system_health.py` (Postgres/TimescaleDB/Neo4j/Redis/Celery) — this is what the "any service down > 1 minute" alert rule (below) actually queries; the rich `/system/health-detailed` JSON is for a human looking at a dashboard, this gauge is for Prometheus to alert on the same underlying checks. |
+| `service_health_gauge` | Gauge | `service` | Set to 1/0 on every `_timed_check()` probe in `system_health.py` (Postgres/TimescaleDB/Redis/Celery) — this is what the "any service down > 1 minute" alert rule (below) actually queries; the rich `/system/health-detailed` JSON is for a human looking at a dashboard, this gauge is for Prometheus to alert on the same underlying checks. |
 
 ### Sentry (error tracking)
 
@@ -1796,10 +1789,8 @@ for the K8s-probe use case Batch 17 will actually wire up:
   and restart the pod*, so it must never fail because Postgres is briefly
   slow.
 - **`GET /health/ready`** — checks Postgres and Redis connectivity (reusing
-  `check_health()`'s existing probes; Neo4j is deliberately excluded — the
-  whole graph layer already degrades gracefully everywhere it's read, so a
-  Neo4j outage isn't "can't serve real requests," and Celery is async by
-  design so an API request doesn't need a live worker to be servable).
+  `check_health()`'s existing probes; Celery is deliberately excluded — it is
+  async by design, so an API request doesn't need a live worker to be servable).
   Returns 503 (not 200-with-a-status-field, unlike `/health`) when either
   check fails — a K8s readiness probe failing here means *stop routing
   traffic to this pod, but don't restart it*, the correct response to "the
@@ -2570,11 +2561,250 @@ adopted; see `docs/THIRD_PARTY_NOTICES.md` for the full classification.
 
 ---
 
+## Multi-Agent Desk — TradingAgents Integration (Batch 30, ADR 0009)
+
+TauricResearch/TradingAgents v0.5.1 runs as a pinned dependency behind the adapter in
+`app/agents/`, only inside Celery. Nothing outside `app/agents/` imports `tradingagents`.
+
+### AgentAnalysis (`agent_analyses`)
+One multi-agent run for one ticker on one trade date. `TenantScopedModel`.
+**Write-once content:** after a row reaches `completed`, its reports, rating and levels
+are never rewritten. The only later write is settlement, which fills the `settled_*`
+fields exactly once (append-first, Pillar 3). Failed runs are kept with their `error`
+(Pillar 2).
+
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | uuid | PK | |
+| `organization_id` | uuid | NN, FK → organizations.id | Tenant. |
+| `requested_by_user_id` | uuid | nullable, FK → users.id (SET NULL) | NULL for system-started work. |
+| `backtest_run_id` | uuid | nullable, FK → agent_backtest_runs.id (CASCADE) | Set when the row is a backtest grid cell. |
+| `ticker` | str(32) | NN | Normalised upper-case, exchange suffix kept (`0700.HK`). |
+| `trade_date` | date | NN | Analysis date; never in the future. |
+| `asset_type` | str(16) | NN, default `stock` | `stock` or `crypto` (`-USD` suffix → crypto). |
+| `status` | enum `agent_analysis_status` | NN | `queued` / `running` / `completed` / `failed`. |
+| `selected_analysts` | jsonb list | NN | Subset of `market`, `social`, `news`, `fundamentals`. |
+| `llm_provider` | str(32) | NN | TradingAgents provider key (`google`, `anthropic`, ...). |
+| `deep_model` / `quick_model` | str(64) | NN | Model ids actually used. |
+| `config_snapshot` | jsonb | NN | What actually ran: debate rounds, risk rounds, holding period, `output_language`, `fundamental_data` vendor chain, `backend_url`, `jev_screening`. |
+| `portfolio` | jsonb | nullable | Batch 30b (migration `0026`). The caller's book in TradingAgents' `PortfolioContext` shape `{cash, currency, positions[{ticker, quantity, average_price}]}`. **NULL = no portfolio given, which is not a flat book**; `{"positions": []}` is a flat book. Rendered into TradingAgents' `portfolio_context` for the Trader, risk team and Portfolio Manager. |
+| `regime_at_analysis` | str(32) | nullable | Point-in-time regime for `ticker` on `trade_date` (latest `regime_labels` row ≤ trade_date). NULL when the org has no regime data for the ticker. |
+| `regime_confidence` | float | nullable | That row's `confidence_score`. |
+| `regime_context` | jsonb | NN | Exactly what Stellix injected into the agents: regime, recent regime path, strategy evidence per regime, failures, lessons (plus the rendered text). Stored verbatim for audit. |
+| `progress` | jsonb list | NN | Completed pipeline stages in order: `[{stage, at}]`. |
+| `reports` | jsonb | NN | Safeguard 1: numeric price levels are redacted before storage (ADR 0009 §2). `market_report`, `sentiment_report`, `news_report`, `fundamentals_report`, `investment_plan`, `trader_investment_plan`, `final_trade_decision`, `investment_debate{bull_history, bear_history, judge_decision}`, `risk_debate{aggressive_history, conservative_history, neutral_history, judge_decision}`. |
+| `rating` | str(16) | nullable | `Buy`/`Overweight`/`Hold`/`Underweight`/`Sell`, or `REVIEW` when no rating could be parsed (TradingAgents #1170 semantics — never silently Hold). |
+| `trader_action` | str(8) | nullable | Trader's `Buy`/`Hold`/`Sell`. |
+| `time_horizon` / `position_sizing` | str(128) | nullable | From the Portfolio Manager / Trader structured outputs. |
+| `research_note_id` | uuid | nullable, FK → research_notes.id (SET NULL) | Interactive runs only. |
+| `llm_call_count` | int | NN, default 0 | Rows this run wrote to `llm_audit_log` (`function_name = agent:<stage>`). |
+| `input_tokens` / `output_tokens` | int | nullable | Sum of provider-reported usage; NULL if the provider reported none. |
+| `error` | text | nullable | |
+| `started_at` / `completed_at` | timestamptz | nullable | |
+| `benchmark` | str(32) | nullable | Alpha baseline (TradingAgents regional map: SPY, ^N225, ...). |
+| `holding_days` | int | nullable | Trading days in the outcome window. |
+| `settled_raw_return` / `settled_alpha` | float | nullable | Realised return and alpha over `holding_days`. |
+| `settled_resolution_date` | date | nullable | Date of the last bar used, i.e. when the outcome became knowable — the point-in-time cutoff for reusing the lesson. |
+| `settled_reflection` | text | nullable | 2–4 sentence LLM reflection (also audited). |
+| `settled_at` | timestamptz | nullable | |
+| `created_at` / `updated_at` | timestamptz | NN | |
+
+Indexes: `(organization_id)`, `(organization_id, ticker, trade_date)`, `(backtest_run_id)`.
+
+### AgentBacktestRun (`agent_backtest_runs`)
+A ticker × date grid of AgentAnalysis cells, scored by realised alpha and grouped by
+**regime × rating**. `TenantScopedModel`.
+
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | uuid | PK | |
+| `organization_id` | uuid | NN, FK | |
+| `requested_by_user_id` | uuid | nullable, FK → users.id (SET NULL) | |
+| `tickers` | jsonb list | NN | |
+| `trade_dates` | jsonb list | NN | ISO dates from TradingAgents' `iter_grid(start, end, every_n_days)`. |
+| `selected_analysts` | jsonb list | NN | |
+| `status` | enum `agent_analysis_status` | NN | Same four values. |
+| `total_cells` / `completed_cells` / `failed_cells` | int | NN | |
+| `summary` | jsonb | NN | `{by_regime_rating, by_rating, by_regime, scored_cells, unscored_cells}`; each group is `{regime?, rating?, n, mean_alpha, hit_rate}`. `hit_rate` = share of directional calls that were right: bullish (Buy/Overweight) with alpha > 0, bearish (Underweight/Sell) with alpha < 0. Hold and REVIEW count toward `n` and `mean_alpha` but not `hit_rate` (NULL when a group has no directional calls). |
+| `error` | text | nullable | |
+| `started_at` / `completed_at` | timestamptz | nullable | |
+| `created_at` / `updated_at` | timestamptz | NN | |
+
+Maximum cells per run: `AGENTS_BACKTEST_MAX_CELLS` (default 40). Each cell is a full
+multi-agent run with its real LLM cost.
+
+### Research Memory additions
+| Label | Key property | Properties | Postgres source |
+|---|---|---|---|
+| `AgentAnalysis` | `analysis_id` | `organization_id, ticker, trade_date, rating, regime_at_analysis, settled_alpha` | `agent_analyses` (1:1, synced on completion and on settlement) |
+
+| Edge | From → To | Created when |
+|---|---|---|
+| `ANALYZED_IN` | `AgentAnalysis` → `Regime` | On sync, when `regime_at_analysis` is set. |
+| `AUTHORED_BY` | `AgentAnalysis` → `Researcher` | On sync, when `requested_by_user_id` is set (reuses the existing edge type). |
+
+### Audit, permissions, realtime
+- `audit_event_type` gains `agent_analysis_completed` and `agent_backtest_completed`.
+- Permission `agents.run` (Research): start analyses and backtests. Granted to
+  Researcher, Quant Engineer, Risk Manager, CIO, and Admin (Admin by catalog formula).
+  Reading analyses is not permission-gated, like research notes.
+- WS event `agent_progress` (org-scoped): `{analysis_id, backtest_run_id, ticker, stage, status, rating}`.
+
+### Settings (`app/core/config.py`)
+`AGENTS_LLM_PROVIDER` (default `google`), `AGENTS_DEEP_MODEL`, `AGENTS_QUICK_MODEL`, `AGENTS_MAX_DEBATE_ROUNDS`
+(1), `AGENTS_MAX_RISK_ROUNDS` (1), `AGENTS_HOLDING_DAYS` (5), `AGENTS_BACKTEST_MAX_CELLS`
+(40), `AGENTS_DATA_DIR`. The desk needs the chosen provider's key: `GEMINI_API_KEY` for
+`google`, `ANTHROPIC_API_KEY` for `anthropic`. Without it, the start endpoints return a
+clean 503 (deferred-credential pattern).
+
+### Batch 30b additions (the rest of TradingAgents' options)
+- **Every provider TradingAgents drives with a key/endpoint**: `google`, `anthropic`, and the
+  OpenAI-compatible family (`openai`, `xai`, `deepseek`, `qwen`, `qwen-cn`, `glm`, `glm-cn`,
+  `minimax`, `minimax-cn`, `openrouter`, `mistral`, `kimi`, `groq`, `nvidia`, `ollama`,
+  `openai_compatible`). Non-native providers read `AGENTS_LLM_API_KEY` (falling back to the
+  provider's own env var); `ollama` / `openai_compatible` may be keyless;
+  `AGENTS_LLM_BACKEND_URL` overrides the endpoint and is required for `openai_compatible`.
+  `azure` and `bedrock` are not exposed (they need their own credential files/chains).
+- `AGENTS_OUTPUT_LANGUAGE` (default `English`), overridable per run (`output_language`).
+- `AGENTS_FUNDAMENTALS_VENDORS` (default `sec_edgar,yfinance`): SEC EDGAR statements as filed
+  on the analysis date, falling through to yfinance for non-SEC filers. `SEC_EDGAR_USER_AGENT`
+  is exported for SEC's caller identification.
+- `TYPESAFE_API_KEY` / `TYPESAFE_DEFAULT_MODEL`: optional Jev screening of StockTwits/Reddit posts.
+- `AGENTS_CHECKPOINT_ENABLED` (default true): LangGraph checkpoints after every agent in a
+  per-analysis directory `AGENTS_DATA_DIR/runs/<analysis_id>/` (never shared — TradingAgents keys
+  threads by ticker+date only, so a shared store would let tenants resume each other's runs).
+  Deleted when the analysis completes.
+- `POST /agents/analyses/{id}/retry` (`agents.run`): re-queues a `failed` analysis, or one stuck
+  in `queued`/`running` for over 2 hours. It resumes from the last finished agent; earlier
+  progress is kept and `llm_call_count` / tokens accumulate across attempts. `completed` stays
+  write-once (409).
+- `scripts/agent_desk_cli.py`: the TradingAgents CLI's counterpart — `status`, `analyze`,
+  `retry`, `backtest`, `settle`, `list` — running the same service in-process as a named org
+  member whose role grants `agents.run`.
+
+---
+
+## Market Terminal — OpenTerminal parity (Batch 31, ADR 0010)
+
+Global market data under `/terminal/*` (any authenticated user; nothing tenant-scoped),
+plus per-user workspace, watchlists, holdings and alerts (tenant-scoped **and**
+owner-scoped: `TenantScopedModel` + `owner_user_id` filter on every read/write).
+
+### Cached global data contract
+Every global payload is `{data, source, delay_note, fetched_at, stale, age_seconds}`.
+`stale: true` means the latest refresh failed and the last good value is being served;
+it is never presented as fresh. Cache keys are `terminal:*`, never org-scoped.
+
+### `terminal_workspaces`
+One row per (organization, user). `TenantScopedModel`.
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | uuid | PK | |
+| `organization_id` | uuid | NN, FK | |
+| `owner_user_id` | uuid | NN, FK → users.id (CASCADE), unique with org | |
+| `widgets` | jsonb list | NN | `[{id, type, config}]`; `type` ∈ `chart, quote, watchlist, news, screener, heatmap, options, crypto, macro, holdings, calendar, insider, recap, tv, ai, alerts`. |
+| `layout` | jsonb list | NN | react-grid-layout items `[{i, x, y, w, h}]`. |
+| `active_symbol` | str(32) | NN, default `SPY` | Symbol linked widgets follow. |
+| `created_at` / `updated_at` | timestamptz | NN | |
+
+### `terminal_watchlists`
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | uuid | PK | |
+| `organization_id` | uuid | NN, FK | |
+| `owner_user_id` | uuid | NN, FK → users.id (CASCADE) | |
+| `name` | str(64) | NN | |
+| `symbols` | jsonb list | NN | Max 100 upper-case symbols, de-duplicated, order kept. |
+| `created_at` / `updated_at` | timestamptz | NN | |
+
+### `holding_portfolios`
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | uuid | PK | |
+| `organization_id` | uuid | NN, FK | |
+| `owner_user_id` | uuid | NN, FK → users.id (CASCADE) | |
+| `name` | str(64) | NN | |
+| `base_currency` | str(8) | NN, default `USD` | A label; no FX conversion is performed. |
+| `cash` | float | nullable | Optional free cash, used when the book is handed to the Agent Desk. |
+| `created_at` / `updated_at` | timestamptz | NN | |
+
+### `holding_transactions`
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | uuid | PK | |
+| `organization_id` | uuid | NN, FK | |
+| `portfolio_id` | uuid | NN, FK → holding_portfolios.id (CASCADE), indexed | |
+| `symbol` | str(32) | NN | |
+| `side` | enum `holding_side` | NN | `buy` / `sell`. |
+| `quantity` | float | NN, > 0 | |
+| `price` | float | NN, > 0 | Per unit. |
+| `fee` | float | NN, default 0, ≥ 0 | |
+| `executed_at` | timestamptz | NN | |
+| `note` | str(255) | nullable | |
+| `created_at` | timestamptz | NN | |
+
+Positions are **derived, never stored**. The average-cost method, replayed in `executed_at`
+order: a buy raises quantity and cost (fee included); a sell realises
+`(price − avg_cost) × qty − fee` and never changes the average cost; a sell larger than the
+position is rejected (422), so there are no accidental shorts. Unrealised P&L uses the
+latest cached quote and is `null` when no quote is available.
+
+### `price_alerts`
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | uuid | PK | |
+| `organization_id` | uuid | NN, FK | |
+| `owner_user_id` | uuid | NN, FK → users.id (CASCADE) | |
+| `symbol` | str(32) | NN | |
+| `condition` | enum `price_alert_condition` | NN | `above` / `below`. |
+| `target_price` | float | NN, > 0 | |
+| `status` | enum `price_alert_status` | NN | `active` / `triggered` / `cancelled`. |
+| `triggered_at` | timestamptz | nullable | |
+| `triggered_price` | float | nullable | The quote that fired it. |
+| `note` | str(255) | nullable | |
+| `created_at` / `updated_at` | timestamptz | NN | |
+
+`notification_type` gains `price_alert`. A firing alert writes a notification for its owner
+and publishes an org-scoped WS `price_alert` event with `target_user_ids = [owner]`.
+Max 50 active alerts per user.
+
+### Agent Desk link
+`POST /agents/analyses` accepts `holdings_portfolio_id` (mutually exclusive with
+`portfolio`). The desk then uses that portfolio's derived positions, average costs and
+`cash` as its PortfolioContext, snapshotted into `agent_analyses.portfolio`.
+
+### Endpoints
+Global: `GET /terminal/search`, `/quotes`, `/quote/{symbol}`, `/history/{symbol}`, `/news`,
+`/options/{symbol}`, `/crypto`, `/crypto/{symbol}/history`, `/crypto/{symbol}/orderbook`,
+`/macro/global`, `/calendar/economic`, `/calendar/earnings`, `/earnings-history/{symbol}`,
+`/insider/{symbol}`, `/short-volume/{symbol}`, `/screener`, `/heatmap`, `/recap`, `/status`.
+`PATCH /terminal/portfolios/{id}` updates `cash`.
+User: `GET|PUT /terminal/workspace`; `GET|POST /terminal/watchlists`,
+`PATCH|DELETE /terminal/watchlists/{id}`; `GET|POST /terminal/portfolios`,
+`DELETE /terminal/portfolios/{id}`, `GET|POST /terminal/portfolios/{id}/transactions`,
+`DELETE /terminal/portfolios/{id}/transactions/{tx_id}`,
+`GET /terminal/portfolios/{id}/positions`; `GET|POST /terminal/alerts`,
+`DELETE /terminal/alerts/{id}`.
+AI: `POST /llm/chat/stream` gains optional `context_symbol`. When it is set, the server prepends a
+context block (quote, Stellix regime, recent headlines) to the prompt; Safeguard 1 still
+checks the user's message first.
+
+### Settings
+`SEC_EDGAR_USER_AGENT` (insider data and market caps; deferred credential),
+`TERMINAL_RISK_FREE_RATE` (default 0.04; used for Greeks only when FRED `DGS3MO` is
+unavailable), `TERMINAL_TV_CHANNELS` (JSON `[{label, youtube_channel_id}]`),
+`TERMINAL_SOURCE_TIMEOUT_SECONDS` (15), `COINGECKO_API_KEY` (optional free Demo key; without it
+CoinGecko throttles and the crypto board falls back to Binance 24h tickers, labelled).
+Market cap: SEC shares outstanding; multi-class issuers (absent from SEC frames) use Yahoo
+market cap / price as implied shares, labelled per row in `shares_source`.
+
+---
+
 ## Reserved for Later Batches
 
 ### Regime
 > Implemented in Batch 3 (Postgres `regime_labels`) — see **regime_labels** under
-> Time-Series Tables. Graph node implemented Batch 7 — see Knowledge Graph above.
+> Time-Series Tables. Research Memory record implemented Batch 7 — see Research Memory above.
 
 ### Failure
 > Implemented in Batch 6 — see **Failure Intelligence** above.
@@ -3091,3 +3321,29 @@ adopted; see `docs/THIRD_PARTY_NOTICES.md` for the full classification.
   (MIT) but built native — its Screener/Heatmap/Options/Charting sources are
   unofficial (internal endpoints of tradingview.com/nasdaq.com); none adopted. New
   `/market-research` frontend page.
+- **Batch 30** — Multi-Agent Desk (ADR 0009): TauricResearch/TradingAgents v0.5.1 as a
+  pinned dependency behind `app/agents/`, run in Celery. Regime-conditioned,
+  point-in-time context and lessons; `agent_analyses` + `agent_backtest_runs` (migration
+  `0025`); every agent LLM call in `llm_audit_log`; ResearchNote + `AgentAnalysis` graph
+  node; per-regime agent backtest; `agents.run` permission; `agent_progress` WS event;
+  new `/agents` frontend. Safeguard 1 unchanged: the desk keeps the 5-tier rating and
+  redacts price target / entry / stop (relaxing it is pending the owner). `yfinance`
+  bumped to 1.x.
+- **Batch 31** — Market Terminal (ADR 0010): every OpenTerminal feature on official or
+  published sources — server-saved widget workspace, ⌘K search, intraday-to-MAX charting,
+  quote panel, RSS news, options chain with Black-Scholes Greeks, crypto board/candles/order
+  book, ECB + commodity macro, holdings tracker (feeds the Agent Desk), FRED economic and
+  yfinance earnings calendars, SEC Form 4 insiders, FINRA short volume, market recap,
+  context-aware AI, official YouTube TV, price alerts. SEC market caps size the heatmap.
+  Migration `0027`.
+- **ADR 0012 — Research Memory on PostgreSQL (Neo4j retired).** The knowledge graph is
+  renamed Research Memory and runs on PostgreSQL alone: the in-memory index (formerly the
+  opt-in `GRAPH_BACKEND=memory` of ADR 0011) is the only implementation, rebuilt every
+  `RESEARCH_MEMORY_REFRESH_SECONDS` (default 300). Removed the Neo4j driver, client,
+  Cypher repository and tenant guard, the drift sweep and its beat entry, the backfill
+  CLI, the Neo4j health probe and Neo4j from Compose/Kubernetes/env examples.
+  `/system/health-detailed` replaces `consistency_alert` with `memory_index`
+  (`rebuilt_at, refresh_seconds, strategies, failures, research_notes` for the caller's
+  org). `/health` no longer reports `neo4j`. Dashboard routes `/<role>/graph` →
+  `/<role>/memory` with permanent redirects. Settings `NEO4J_*` and `GRAPH_BACKEND`
+  removed (left-over values in an existing `.env` are ignored).

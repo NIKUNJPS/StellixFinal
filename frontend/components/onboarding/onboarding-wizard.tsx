@@ -537,7 +537,7 @@ function Row({ label, value }: { label: string; value: string }) {
 function StepDone({ onFinish, onClose }: { onFinish: () => void; onClose: () => void }) {
   const links = [
     { href: "/admin/regimes", label: "Regime Monitor", icon: Waves },
-    { href: "/admin/graph", label: "Knowledge Graph", icon: Network },
+    { href: "/admin/memory", label: "Research Memory", icon: Network },
     { href: "/admin/assistant", label: "Research Assistant", icon: Sparkles },
   ];
   return (

@@ -11,10 +11,10 @@ rationale.
 Quant research teams lose knowledge continuously: a Sharpe ratio means nothing without
 the market regime it was earned in, a strategy's failure reason dies with whoever found
 it, and two years of *"we tried that, it breaks in high-vol"* walks out the door when a
-researcher leaves. Stellix Labs stores research **twice** — once in PostgreSQL as the
-transactional source of truth, and once in a Neo4j knowledge graph that preserves *why*
-a decision was made, not just what the result was — so that reasoning survives staff
-turnover.
+researcher leaves. Stellix Labs keeps PostgreSQL as the single source of truth and links
+its rows into **Research Memory** — a tenant-scoped index of strategies, failures, regimes,
+notes and researchers that preserves *why* a decision was made, not just what the result
+was — so that reasoning survives staff turnover. No second database is needed.
 
 ---
 
@@ -27,11 +27,13 @@ turnover.
 | **Regime-partitioned backtesting** | Every backtest reports performance **per regime**, not one blended number that hides a strategy's Crisis-regime fragility. |
 | **Multi-method validation gate** | Promotion to `active` requires a composite robustness score (walk-forward, regime cross-validation, Monte Carlo, persistence, stress test) — enforced in code, not by convention. |
 | **Failure-as-asset** | Strategy failures are permanent, append-only records (trigger, regime, SHAP feature attribution) — never deleted, never quietly edited. |
-| **Knowledge graph** | Neo4j graph linking researchers, strategies, regimes, research notes, performance, and failures — answers lineage questions SQL can't express cleanly. |
+| **Research Memory** | Links researchers, strategies, regimes, research notes, performance, and failures (6 record types, 8 relationships) into an index derived from PostgreSQL — answers lineage and recurring-failure questions in one lookup. Rebuilt from the database on a schedule, so it never drifts. See ADR 0012. |
 | **Structural multi-tenancy** | Every tenant-scoped table is isolated by a fail-closed ORM listener, not developer discipline — proven by a dedicated tenant-isolation attack test. |
 | **Dynamic RBAC** | 6 database-backed system roles (Admin, CIO, Compliance Officer, Risk Manager, Researcher, Quant Engineer) with real per-role permission sets; role changes apply on a user's next request, no re-login required. |
 | **Governance & audit** | Human-approval workflow with written justification, immutable audit log, compliance export. A real governance bug (ADR-0008: an Active strategy could carry a stale or mismatched validation score) was found and fixed — see `docs/adr/0008-*`. |
 | **Market research** | Macro dashboard (FRED), a bounded 56-symbol screener, a dollar-volume sector heatmap, and candlestick charting — every widget labeled with its real source and refresh cadence, never presented as real-time. |
+| **Multi-agent desk** | [TradingAgents](https://github.com/TauricResearch/TradingAgents) v0.5.1 (analysts → bull/bear debate → trader → risk committee → portfolio manager) run in Celery and **conditioned on Stellix**: every run is told the point-in-time regime, the org's strategy evidence and failures in that regime, and the desk's own settled lessons. Calls are stored as tenant-scoped research records (every LLM call audited, ResearchNote + Research Memory record), settled on realised alpha, and backtested over ticker × date grids scored **per regime × rating**. Portfolio-aware runs, any report language, SEC EDGAR as-filed fundamentals, optional Jev post screening, 18 LLM providers (incl. local Ollama / vLLM), resume-from-last-agent retries, and a terminal CLI (`scripts/agent_desk_cli.py`). Numeric price levels are withheld under Safeguard 1 — see ADR 0009. |
+| **Market Terminal** | Every [OpenTerminal](https://github.com/ErTasselli/OpenTerminal) feature, on official or published sources: a drag-and-drop widget workspace saved per user, ⌘K symbol search, intraday-to-MAX charting (candles/bars/line/area, SMA/EMA/BB/VWAP/RSI/MACD, hover legend), quote panel, de-duplicated RSS news, options chain with Black-Scholes Greeks, crypto board/candles/order book, macro (rates, FX, commodities, ECB), holdings tracker with average-cost P&L that feeds the Agent Desk, FRED economic and earnings calendars, SEC Form 4 insiders, FINRA short volume, market recap, a regime-aware AI assistant, official live TV, and price alerts. Every widget names its source and delay — see ADR 0010. |
 
 ---
 
@@ -45,16 +47,16 @@ turnover.
 ┌────────────▼──────────────────────────▼────────────────┐
 │                     FastAPI backend                     │
 │  auth · data · regimes · strategies · validation ·      │
-│  failures · graph · evolution · llm · governance ·      │
+│  failures · memory · evolution · llm · governance ·     │
 │  portfolio · billing · usage · superadmin               │
 └──┬──────────┬───────────┬────────────┬─────────────┬────┘
    │          │           │            │             │
-┌──▼───┐  ┌───▼────┐  ┌───▼───┐   ┌────▼────┐   ┌────▼────┐
-│Postgres│ │ Neo4j  │  │ Redis │   │ Celery  │   │Providers│
-│(truth) │ │(memory)│  │cache/ │   │ worker  │   │yfinance │
-│        │ │ graph  │  │queue/ │   │ + beat  │   │ LLM x2  │
-│        │ │        │  │ WS bus│   │         │   │ Stripe  │
-└────────┘ └────────┘  └───────┘   └─────────┘   └─────────┘
+┌──▼─────────────────┐  ┌───▼───┐   ┌────▼────┐   ┌────▼────┐
+│ Postgres (truth)    │  │ Redis │   │ Celery  │   │Providers│
+│  └ Research Memory  │  │cache/ │   │ worker  │   │yfinance │
+│    index (derived,  │  │queue/ │   │ + beat  │   │ LLM x2  │
+│    in the API)      │  │ WS bus│   │         │   │ Stripe  │
+└─────────────────────┘  └───────┘   └─────────┘   └─────────┘
 ```
 
 ## Tech stack
@@ -62,7 +64,7 @@ turnover.
 | Layer | Technology |
 |---|---|
 | Backend | Python 3.11, FastAPI, SQLAlchemy 2 (async), Alembic, Pydantic 2 |
-| Databases | PostgreSQL 15+, Neo4j 5 Community, Redis 5+ |
+| Databases | PostgreSQL 15+ (+ TimescaleDB), Redis 5+ |
 | Workers | Celery (+ beat scheduler) |
 | Quant / ML | pandas, numpy, scikit-learn, hmmlearn, arch (GARCH), ruptures (PELT), vectorbt, SHAP |
 | LLM | Anthropic + Gemini (dual-provider cost router) |
@@ -72,15 +74,63 @@ turnover.
 
 ---
 
-## Getting started
+## Quick start — one command (Windows)
 
-**Prerequisites:** Python 3.11.9 specifically (not 3.12+ — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for why), Node.js 20+, PostgreSQL 15+, Redis. Neo4j is optional — the app degrades gracefully without it; only `/admin/graph` is affected.
+**You need installed first:**
+
+| Tool | Version | Notes |
+|---|---|---|
+| Python | **3.11.9** (not 3.12+) | [python.org](https://www.python.org/downloads/release/python-3119/) |
+| Node.js | 20+ | [nodejs.org](https://nodejs.org) |
+| PostgreSQL | 15+ | listening on port **5433**, with an empty database `stellix_labs_dev` |
+| Redis | 5+ | listening on port **6379** (Memurai works on Windows) |
+
+There is no other database: Research Memory is built from PostgreSQL inside the API.
+
+**1. Clone the repo:**
+
+```powershell
+git clone https://github.com/NIKUNJPS/StellixFinal.git
+cd StellixFinal
+```
+
+**2. Run everything with one command:**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run.ps1
+```
+
+On the first run, `run.ps1` creates the Python environment, installs all backend and
+frontend dependencies, and creates `backend\.env` with a freshly generated secret key. It
+then stops once and asks you to put your PostgreSQL password into `DATABASE_URL` and
+`DATABASE_URL_SYNC` in `backend\.env`. Run the same command again and it applies the
+database migrations and opens one window per service (API, workers, scheduler, frontend).
+
+| What | Command |
+|---|---|
+| Start (sets up anything missing) | `powershell -ExecutionPolicy Bypass -File .\run.ps1` |
+| Start **and load the demo data** | `powershell -ExecutionPolicy Bypass -File .\run.ps1 -Seed` |
+| Stop everything | `powershell -ExecutionPolicy Bypass -File .\run.ps1 -Stop` |
+| Use another web port | `powershell -ExecutionPolicy Bypass -File .\run.ps1 -FrontendPort 3001` |
+
+Then open **http://localhost:3000**. The API is at http://localhost:8000 (interactive docs
+at `/docs`). Demo logins are listed in [Log in](#7-log-in) below. Optional keys such as
+`ANTHROPIC_API_KEY` (research assistant) and `FRED_API_KEY` (macro data) go in
+`backend\.env`; the app runs without them and says so where they're needed.
+
+---
+
+## Manual setup (step by step)
+
+Use this if you're not on Windows or want to run each piece yourself.
+
+**Prerequisites:** Python 3.11.9 specifically (not 3.12+ — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for why), Node.js 20+, PostgreSQL 15+, Redis. That's the whole data tier — Research Memory is built from PostgreSQL inside the API.
 
 ### 1. Clone
 
 ```bash
-git clone <your-repo-url>
-cd StellixLabs
+git clone https://github.com/NIKUNJPS/StellixFinal.git
+cd StellixFinal
 ```
 
 ### 2. Start the data tier
@@ -88,10 +138,10 @@ cd StellixLabs
 **Option A — Docker (easiest):**
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d postgres redis neo4j
+docker compose -f infra/docker-compose.yml up -d postgres redis
 ```
 
-**Option B — native install** (Postgres, Redis, Neo4j installed directly on your
+**Option B — native install** (Postgres and Redis installed directly on your
 machine) — see [`CONTRIBUTING.md`](CONTRIBUTING.md) Part 1 for per-OS notes. Either
 way, create an empty database (default name `stellix_labs_dev`) before continuing.
 
@@ -128,12 +178,40 @@ touching anything else. Set `SEED_FAST=1` for a quicker, smaller plumbing-check 
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
 ```
 
-A Celery worker is only needed for backtests/evolution/ingestion jobs kicked off
-*after* the seed (not for browsing already-seeded data or logging in):
+Background work runs in three Celery processes, each in its own terminal. The
+default worker handles backtests/evolution/ingestion jobs and the nightly sweeps:
 
 ```bash
 .\.venv\Scripts\python.exe -m celery -A app.worker.celery_app.celery_app worker --loglevel=INFO --pool=solo
 ```
+
+The realtime worker handles market-data refreshes (index quotes, screener, signals)
+on their own queue, so a long sweep can never freeze dashboard prices:
+
+```bash
+.\.venv\Scripts\python.exe -m celery -A app.worker.celery_app.celery_app worker -Q realtime -n realtime@%h --loglevel=INFO --pool=solo
+```
+
+Beat schedules the periodic jobs (Windows needs it as a separate process — the
+combined `--beat` flag isn't supported there):
+
+```bash
+.\.venv\Scripts\python.exe -m celery -A app.worker.celery_app.celery_app beat --loglevel=INFO
+```
+
+**Real-time US ETF prices (optional).** The dashboard's index quotes are delayed
+(free yfinance data, refreshed every 30s). For genuinely real-time prices, the
+dashboard also shows SPY / QQQ / DIA / IWM streamed from Alpaca's free IEX feed —
+real trades from one exchange, labelled as such. Create a free account at
+alpaca.markets, generate an API key pair, add `ALPACA_API_KEY_ID` and
+`ALPACA_API_SECRET_KEY` to `backend/.env`, then run exactly one streamer (the free
+plan allows one connection):
+
+```bash
+.\.venv\Scripts\python.exe -m app.streaming.etf_stream
+```
+
+Without keys the streamer idles and the dashboard says "not configured".
 
 ### 6. Frontend (separate terminal)
 
@@ -157,7 +235,7 @@ Backend → `http://localhost:8000` (docs at `/docs`) · Frontend → `http://lo
 | Risk manager | `s.okonkwo@meridian.com` | `MeridianDemo2026!` |
 | CIO | `j.whitfield@meridian.com` | `MeridianDemo2026!` |
 | Compliance officer | `a.reyes@meridian.com` | `MeridianDemo2026!` |
-| Quant Engineer | `m.chen@meridian.com` | `MeridianDemo2026!` |
+| Quant Engineer | `quant@meridian.com` | `MeridianDemo2026!` |
 | Platform superadmin | `admin@stellixlabs.com` | `Finalyear123$` |
 
 > ⚠️ These are demo/local-only credentials created by `scripts/seed_demo_data.py` for
@@ -169,8 +247,7 @@ Backend → `http://localhost:8000` (docs at `/docs`) · Frontend → `http://lo
 curl http://localhost:8000/health
 ```
 
-Reports the live status of Postgres, Redis and Neo4j individually. `"neo4j": "error"`
-with everything else `ok` is fine if you skipped Neo4j.
+Reports the live status of Postgres and Redis individually.
 
 ---
 
@@ -208,7 +285,7 @@ StellixLabs/
 │   │   ├── models/         SQLAlchemy tables
 │   │   ├── regime/         4-model regime ensemble
 │   │   ├── validation/     5-method robustness scoring
-│   │   ├── graph/          Neo4j knowledge graph
+│   │   ├── graph/          Research Memory index (derived from Postgres)
 │   │   └── worker/         Celery tasks + beat schedule
 │   ├── alembic/versions/   database migrations
 │   ├── scripts/            operational scripts

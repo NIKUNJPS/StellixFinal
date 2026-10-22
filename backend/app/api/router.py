@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 
 from app.api.routes import (
+    agents,
     api_keys,
     auth,
     billing,
@@ -28,6 +29,7 @@ from app.api.routes import (
     strategies,
     superadmin,
     system,
+    terminal,
     usage,
     users,
     ws,
@@ -67,6 +69,11 @@ api_router.include_router(data.router, dependencies=_GLOBAL_LIMIT)
 api_router.include_router(regimes.router, dependencies=_GLOBAL_LIMIT)
 api_router.include_router(strategies.router, dependencies=_GLOBAL_LIMIT)
 api_router.include_router(signals.router, dependencies=_GLOBAL_LIMIT)
+# Batch 30 (ADR 0009): multi-agent desk. Start endpoints carry their own per-org
+# agent_run_rate_limiter; runs execute in Celery.
+api_router.include_router(agents.router, dependencies=_GLOBAL_LIMIT)
+# Batch 31 (ADR 0010): Market Terminal — global market data + per-user workspace/holdings.
+api_router.include_router(terminal.router, dependencies=_GLOBAL_LIMIT)
 api_router.include_router(portfolio.router, dependencies=_GLOBAL_LIMIT)
 # Batch 25: public, delayed global index quotes (cache read only, never a provider call).
 api_router.include_router(market.router, dependencies=_GLOBAL_LIMIT)

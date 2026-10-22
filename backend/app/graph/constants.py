@@ -1,8 +1,8 @@
-"""Node labels, edge types, and key-property names (docs/schemas.md -> Knowledge Graph).
+"""Node labels, relationship types, and key-property names for Research Memory
+(docs/schemas.md -> Research Memory).
 
-Centralized here because both graph repository implementations (real Cypher and the
-in-memory fake) and the Cypher-injection allow-list check in ``neo4j_repository.py``
-must agree on the exact same closed set of labels/edges.
+A closed set: the repository rejects any label outside it, and the API validates
+``node_type`` against it, so callers can never invent new kinds of records.
 """
 
 from __future__ import annotations
@@ -15,11 +15,14 @@ NODE_KEY_PROP: dict[str, str] = {
     "Failure": "failure_id",
     "ResearchNote": "note_id",
     "Researcher": "user_id",
+    # Batch 30 (ADR 0009): one node per multi-agent desk analysis.
+    "AgentAnalysis": "analysis_id",
 }
 
 NODE_LABELS = frozenset(NODE_KEY_PROP)
 
-# Exact 8 edge types from SRC report Section 5.4.
+# The 8 edge types from SRC report Section 5.4, plus Batch 30's ANALYZED_IN
+# (AgentAnalysis -> Regime).
 EDGE_TYPES = frozenset(
     {
         "VALID_IN",
@@ -30,6 +33,7 @@ EDGE_TYPES = frozenset(
         "EVALUATED_BY",
         "CAUSED_BY",
         "AUTHORED_BY",
+        "ANALYZED_IN",
     }
 )
 
@@ -41,4 +45,5 @@ SEARCHABLE_PROPS: dict[str, tuple[str, ...]] = {
     "Failure": ("trigger_condition", "llm_explanation"),
     "ResearchNote": ("content", "hypothesis"),
     "Researcher": ("name", "role"),
+    "AgentAnalysis": ("ticker", "rating", "regime_at_analysis"),
 }

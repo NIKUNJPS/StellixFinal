@@ -20,7 +20,6 @@ brackets are what the project is actually developed and verified against.
 | **npm** | 10+ | 10.8.2 | Ships with Node 20 |
 | **PostgreSQL** | 15+ | **18.3** | Primary database |
 | **Redis** | 5+ | **5.0.14.1** (Memurai on Windows) | Cache, rate limiting, Celery broker, WebSocket pub/sub |
-| **Neo4j** | 5+ | 2026.x (Desktop) | Knowledge graph. **Optional** — see below. |
 | **Git** | any recent | — | — |
 
 ### ⚠️ Python version — install 3.11.9 specifically
@@ -49,16 +48,16 @@ Verified against the running system:
   hypertable. The development database has no TimescaleDB extension installed and holds
   270k+ rows in a plain Postgres table with no issues. Install it only if you
   specifically want hypertable compression/partitioning at production scale.
-- **Neo4j is optional for UI work.** The app degrades gracefully when it is down: every
-  page works normally, only `/admin/graph` shows an error. If you are only changing
-  styling, skip it entirely.
+- **There is no graph database to install.** Research Memory (lineage, recurring failure
+  modes, the five research questions) is derived from PostgreSQL inside the API and rebuilt
+  on a schedule — see `docs/adr/0012-research-memory-on-postgres.md`.
 
 ### Getting the datastores
 
 **Option A — Docker (easiest, one command).** If you have Docker Desktop:
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d postgres redis neo4j
+docker compose -f infra/docker-compose.yml up -d postgres redis
 ```
 
 Note the ports Docker uses (5432 for Postgres) and set them in your `.env` accordingly.
@@ -70,7 +69,6 @@ developed on Windows:
   The project's default `.env` expects port **5433**, not the default 5432. Use whatever
   port your install actually uses and put it in `DATABASE_URL`.
 - **Redis** — on Windows use Memurai or Redis via WSL2.
-- **Neo4j** — Neo4j Desktop is the simplest. Create a database, set a password, hit Start.
 
 ---
 
@@ -121,7 +119,6 @@ Copy-Item .env.example .env
 Now open `backend/.env` and set at minimum:
 
 - `DATABASE_URL` and `DATABASE_URL_SYNC` — your Postgres user, password, port, db name
-- `NEO4J_PASSWORD` — whatever you set in Neo4j (skip if not using Neo4j)
 - `JWT_SECRET_KEY` — generate your own:
 
 ```bash
@@ -158,11 +155,7 @@ Optionally load the wider universe (S&P 500 + ETFs, ~15-25 min) and compute regi
 .\.venv\Scripts\python.exe -m scripts.compute_regimes --org-slug meridian-capital
 ```
 
-If you are using Neo4j, populate the knowledge graph:
-
-```bash
-.\.venv\Scripts\python.exe -m scripts.backfill_graph --org-slug meridian-capital
-```
+Research Memory builds itself from these rows when the API starts — nothing to run.
 
 ### 7. Frontend
 
@@ -253,8 +246,7 @@ in this repo):
 curl http://localhost:8000/health
 ```
 
-Reports the live status of Postgres, Redis and Neo4j individually. `"neo4j": "error"`
-with everything else `ok` is fine if you skipped Neo4j.
+Reports the live status of Postgres and Redis individually.
 
 ---
 
@@ -307,7 +299,7 @@ StellixLabs/
 │   │   ├── schemas/        Pydantic request/response
 │   │   ├── regime/         4-model regime ensemble
 │   │   ├── validation/     5-method robustness scoring
-│   │   ├── graph/          Neo4j knowledge graph
+│   │   ├── graph/          Research Memory index (derived from Postgres)
 │   │   └── worker/         Celery tasks + beat schedule
 │   ├── alembic/versions/   database migrations
 │   ├── scripts/            operational scripts
@@ -379,7 +371,6 @@ npm start
 ```
 
 - **You do not need the Celery worker** for UI work.
-- **You do not need Neo4j** unless you are working on `/admin/graph`.
 
 ---
 
@@ -421,8 +412,7 @@ git push -u origin feature/your-change
 | `connection refused` on port 5433 | Postgres isn't running, or it's on a different port. Check `DATABASE_URL` in `backend/.env`. |
 | `relation "users" does not exist` | Migrations not applied. Run `alembic upgrade head`. |
 | Login fails with correct password | Demo data not seeded. Run `scripts/seed_demo_data.py`. |
-| `/admin/graph` errors, everything else fine | Neo4j is down. Expected — start it, or ignore if you're not working on the graph. |
-| Knowledge Graph canvas is blank | Not a bug. The viewer is query-driven — click a research query or search for a strategy. |
+| Research Memory canvas is blank | Not a bug. The explorer is query-driven — click a research query or search for a strategy. |
 | `ModuleNotFoundError` | Dependencies not installed into the venv, or you used system Python instead of `.venv`. |
 | Celery worker crashes on Windows | Missing `--pool=solo`. Windows can't use the default prefork pool. |
 | Port 3000 or 8000 already in use | Another instance is running. Close it, or run on a different port. |

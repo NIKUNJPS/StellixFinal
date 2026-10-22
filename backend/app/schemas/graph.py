@@ -1,4 +1,4 @@
-"""Pydantic schemas for the knowledge-graph endpoints (Batch 7)."""
+"""Pydantic schemas for the Research Memory endpoints (Batch 7)."""
 
 from __future__ import annotations
 

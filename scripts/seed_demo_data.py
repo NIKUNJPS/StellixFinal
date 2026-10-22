@@ -81,6 +81,7 @@ from app.models.organization import (  # noqa: E402
 from app.models.research_note import ResearchNote, ResearchNoteStatus  # noqa: E402
 from app.models.strategy import Strategy, StrategyCreator, StrategyStatus  # noqa: E402
 from app.models.user import User, UserRole  # noqa: E402
+from app.rbac.catalog import system_role_id  # noqa: E402
 from app.services import evolution as evo_svc  # noqa: E402
 from app.services import failure as failure_svc  # noqa: E402
 from app.services import research_note as note_svc  # noqa: E402
@@ -137,6 +138,9 @@ if FAST:
     SYMBOLS = ["SPY", "QQQ"]
 
 # Team: admin (research@) + one of each other role, realistic names.
+QUANT_ENGINEER_EMAIL = "quant@meridian.com"
+QUANT_ENGINEER_NAME = "Arjun Mehta"
+
 USERS = [
     ("research@meridian.com", "Elena Marchetti", UserRole.ADMIN, ADMIN_PASSWORD),
     ("dpark@meridian.com", "Daniel Park", UserRole.RESEARCHER, "MeridianDemo2026!"),
@@ -252,23 +256,6 @@ if FAST:
 # --------------------------------------------------------------------------- #
 # Phase 1 — clear + create org/users
 # --------------------------------------------------------------------------- #
-async def _purge_graph(org_id: uuid.UUID) -> None:
-    """Best-effort: DETACH DELETE the old demo org's Neo4j nodes so a re-run
-    doesn't leave orphaned graph data. No-op if Neo4j is unreachable."""
-    from app.clients import neo4j_client
-
-    try:
-        driver = neo4j_client.get_driver()
-        async with driver.session() as s:
-            await s.run(
-                "MATCH (n {organization_id: $oid}) DETACH DELETE n",
-                oid=str(org_id),
-            )
-        print("    (purged prior demo org's Neo4j nodes)")
-    except Exception as exc:  # noqa: BLE001
-        print(f"    (Neo4j purge skipped: {type(exc).__name__})")
-
-
 async def reset_org() -> tuple[uuid.UUID, dict[UserRole, uuid.UUID]]:
     async with get_system_session() as session:
         mark_session_unscoped(session.sync_session)
@@ -277,7 +264,6 @@ async def reset_org() -> tuple[uuid.UUID, dict[UserRole, uuid.UUID]]:
         ).scalar_one_or_none()
         if existing is not None:
             print(f"  Clearing existing demo org {existing.id} (cascade)…")
-            await _purge_graph(existing.id)
             await session.execute(delete(Organization).where(Organization.id == existing.id))
             await session.commit()
 
@@ -303,8 +289,17 @@ async def reset_org() -> tuple[uuid.UUID, dict[UserRole, uuid.UUID]]:
             session.add(user)
             await session.flush()
             role_to_id[role] = user.id
+        # Batch 31 demo prep: a Quant Engineer (research/build role, no governance). It has
+        # no legacy UserRole value, so it is assigned via role_id — see rbac.assign_role.
+        session.add(
+            User(
+                organization_id=org.id, email=QUANT_ENGINEER_EMAIL, hashed_password=hash_password(ADMIN_PASSWORD),
+                full_name=QUANT_ENGINEER_NAME, role=UserRole.RESEARCHER, role_id=system_role_id("quant_engineer"),
+                is_active=True, email_verified=True,
+            )
+        )
         await session.commit()
-        print(f"  Created org {ORG_NAME} ({org.id}) + {len(USERS)} users")
+        print(f"  Created org {ORG_NAME} ({org.id}) + {len(USERS) + 1} users (incl. Quant Engineer)")
         return org.id, role_to_id
 
 

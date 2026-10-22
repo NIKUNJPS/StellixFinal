@@ -26,13 +26,13 @@ export interface ResourceGauges {
   disk_total_gb: number;
 }
 
-export interface ConsistencyAlert {
-  organization_id: string;
-  graph_unreachable: boolean;
-  orphaned_graph_nodes: string[];
-  unsynced_strategies: string[];
-  missing_lineage_edges: string[];
-  checked_at: string;
+/** Research Memory index for the caller's organization (rebuilt from PostgreSQL). */
+export interface MemoryIndexStatus {
+  rebuilt_at: string;
+  refresh_seconds: number;
+  strategies: number;
+  failures: number;
+  research_notes: number;
 }
 
 export interface SystemHealthDetailedResponse {
@@ -41,7 +41,7 @@ export interface SystemHealthDetailedResponse {
   job_queue: JobQueueEntry[];
   failed_job_count: number;
   resources: ResourceGauges;
-  consistency_alert: ConsistencyAlert | null;
+  memory_index: MemoryIndexStatus | null;
   liveness: boolean;
   readiness: boolean;
 }
@@ -49,7 +49,6 @@ export interface SystemHealthDetailedResponse {
 export const SERVICE_LABELS: Record<string, string> = {
   postgres: "PostgreSQL",
   timescaledb: "TimescaleDB",
-  neo4j: "Neo4j",
   redis: "Redis",
   celery_worker: "Celery Worker",
 };

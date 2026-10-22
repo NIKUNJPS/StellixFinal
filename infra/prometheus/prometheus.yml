@@ -2,7 +2,7 @@
 #
 # The backend runs natively (uvicorn on the host), not in a container, in every
 # dev environment this project has actually run in so far — same reason
-# postgres/neo4j/redis above are the containerized pieces, not the app itself
+# postgres/redis above are the containerized pieces, not the app itself
 # (see docs/schemas.md "Judgment calls"). `host.docker.internal` is Docker
 # Desktop's DNS name for reaching the host from inside a container; it resolves
 # to the container's own gateway on Linux hosts too via the `extra_hosts` entry

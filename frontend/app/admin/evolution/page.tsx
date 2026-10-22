@@ -12,9 +12,9 @@ import {
 } from "recharts";
 
 import {
-  KnowledgeGraphViewer,
+  LineageViewer,
   type GraphElements,
-} from "@/components/graph/knowledge-graph-viewer";
+} from "@/components/graph/lineage-viewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -627,7 +627,7 @@ export default function EvolutionEnginePage() {
 
             <CardContent className="pt-6">
               <div className="overflow-hidden rounded-xl border border-[#d3dbdd]/10 bg-[#0f1b22]">
-                <KnowledgeGraphViewer seed={lineageElements} />
+                <LineageViewer seed={lineageElements} />
               </div>
             </CardContent>
           </Card>

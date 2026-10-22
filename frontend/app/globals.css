@@ -57,164 +57,142 @@
 
 /*
  * =========================================================
- * STELLIX LABS — PUBLIC MARKETING WEBSITE
+ * STELLIX LABS — PUBLIC SITE + AUTH ("paper & ink" light theme)
  * =========================================================
  *
- * Dark institutional research aesthetic.
+ * Applies to anything inside `.light-site`: the marketing pages, the
+ * sign-in / sign-up / password screens, and dialogs opened from them.
+ * The authenticated dashboard keeps the dark theme in :root above.
  *
- * Background: #07070B
- * Surface:    #0D0D13
- * Purple:     #8B7CFF
- * Highlight:  #A79CFF
- *
- * This ONLY affects pages inside `.marketing`.
+ * Paper  #F8F7F4   Ink    #0E1220   Brand  #4B3FD1
+ * Raised #FFFFFF   Ink-2  #3D4356   Signal #F4B740
+ * Line   #E4E1D9   Ink-3  #5E6679
  */
 
-.marketing {
-  /* Background */
+.light-site {
+  --background: 45 22% 96%;
+  --foreground: 227 39% 9%;
 
-  --background: 240 11% 4%;
-  --foreground: 0 0% 96%;
+  --card: 0 0% 100%;
+  --card-foreground: 228 39% 9%;
 
-  /* Surfaces */
+  --popover: 0 0% 100%;
+  --popover-foreground: 228 39% 9%;
 
-  --card: 240 11% 6%;
-  --card-foreground: 0 0% 96%;
-
-  --popover: 240 11% 7%;
-  --popover-foreground: 0 0% 96%;
-
-  /* Primary brand purple */
-
-  --primary: 247 100% 74%;
+  --primary: 245 61% 53%;
   --primary-foreground: 0 0% 100%;
 
-  /* Secondary */
+  --secondary: 40 17% 93%;
+  --secondary-foreground: 228 39% 9%;
 
-  --secondary: 240 8% 10%;
-  --secondary-foreground: 0 0% 96%;
+  --muted: 40 17% 93%;
+  --muted-foreground: 224 13% 42%;
 
-  /* Muted */
-
-  --muted: 240 8% 10%;
-  --muted-foreground: 0 0% 63%;
-
-  /* Accent */
-
-  --accent: 247 100% 74%;
+  --accent: 245 61% 53%;
   --accent-foreground: 0 0% 100%;
 
-  /* Borders */
+  --destructive: 4 64% 46%;
+  --destructive-foreground: 0 0% 100%;
 
-  --border: 0 0% 100% / 0.09;
-  --input: 0 0% 100% / 0.09;
+  --border: 44 17% 87%;
+  --input: 44 14% 78%;
+  --ring: 245 61% 53%;
 
-  --ring: 247 100% 74%;
+  --radius: 0.75rem;
 
-  /* Marketing typography */
-
-  --font-fraunces: var(--font-instrument-serif);
-
-  min-height: 100vh;
-
-  background-color: #07070b;
-  color: #f5f5f7;
+  color-scheme: light;
+  background-color: #f8f7f4;
+  color: #0e1220;
+  font-family: var(--font-site-sans), system-ui, sans-serif;
 }
 
-
-/*
- * Make sure the marketing shell never falls back
- * to the white application theme.
- */
-
-.marketing,
-.marketing main {
-  background-color: #07070b;
+/* Inter 450 for body copy, Manrope 600–700 for headings. */
+.light-site {
+  font-weight: 450;
 }
 
-
-/*
- * =========================================================
- * MARKETING TYPOGRAPHY
- * =========================================================
- */
-
-.marketing h1,
-.marketing h2,
-.marketing h3,
-.marketing h4,
-.marketing h5,
-.marketing h6 {
-  color: #f5f5f7;
+/* Zero specificity: any explicit font-* utility still wins. */
+:where(.light-site .font-editorial) {
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
-.marketing p {
-  color: inherit;
+/* Heading accent: Manrope has no italic, so <em> becomes a gradient ink.
+ * Both ends stay ≥5.3:1 on paper; on ink panels it flips to a light ramp. */
+.light-site :is(h1, h2, h3, h4, p).font-editorial em,
+.light-site .font-editorial em {
+  font-style: normal;
+  background-image: linear-gradient(100deg, #4b3fd1 0%, #6a45dc 50%, #8a3fd1 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-
-/*
- * =========================================================
- * MARKETING TEXT UTILITIES
- * =========================================================
- *
- * These protect against old token-based components that
- * were originally designed for the light marketing theme.
- */
-
-.marketing .text-foreground {
-  color: #f5f5f7;
+.light-site .bg-ink-night .font-editorial em {
+  background-image: linear-gradient(100deg, #b9b0ff 0%, #d6b4ff 55%, #f4c770 100%);
 }
 
-.marketing .text-muted-foreground {
-  color: rgba(255, 255, 255, 0.58);
+/* Film grain used by the hero's colour grade. */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 
-.marketing .text-accent {
-  color: #a79cff;
+.light-site ::selection {
+  background: #dad5ff;
+  color: #0e1220;
 }
 
-.marketing .bg-background {
-  background-color: #07070b;
+/* Keep the canvas behind overscroll / short pages on-theme. */
+html:has(.light-site-root) {
+  background: #f8f7f4;
 }
 
-.marketing .bg-card {
-  background-color: #0d0d13;
+html:has(.light-site-root) * {
+  scrollbar-color: #b9b4a8 #f1efea;
 }
 
-.marketing .bg-muted {
-  background-color: #111118;
+html:has(.light-site-root) ::-webkit-scrollbar-track,
+html:has(.light-site-root) ::-webkit-scrollbar-corner {
+  background: #f1efea;
 }
 
-
-/*
- * =========================================================
- * MARKETING LINKS
- * =========================================================
- */
-
-.marketing a {
-  color: inherit;
+html:has(.light-site-root) ::-webkit-scrollbar-thumb {
+  background: #b9b4a8;
+  border: 1px solid #f1efea;
+  box-shadow: none;
 }
 
-.marketing a:hover {
-  color: inherit;
+html:has(.light-site-root) ::-webkit-scrollbar-thumb:hover {
+  background: #4b3fd1;
+  box-shadow: none;
 }
 
+/* Faint blueprint grid used behind heroes. */
+.paper-grid {
+  background-image:
+    linear-gradient(rgba(14, 18, 32, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14, 18, 32, 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
 
-/*
- * =========================================================
- * MARKETING CODE / TECHNICAL CONTENT
- * =========================================================
- */
+.ink-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
 
-.marketing .font-code {
-  font-family:
-    var(--font-jetbrains),
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    monospace;
+/* Visible, consistent keyboard focus on the light site. */
+.light-site :where(a, button, [role="tab"], [role="switch"], summary):focus-visible {
+  outline: 2px solid #4b3fd1;
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 
@@ -337,235 +315,17 @@
 }
 
 
-/*
- * =========================================================
- * STELLIX LABS — REDOC DARK DOCUMENTATION THEME
- * =========================================================
- *
- * Rules:
- *
- * Normal text  → WHITE
- * Headings     → #FBCF4F
- * Links        → #A79CFF
- * Background   → BLACK / near-black
- *
- * This section intentionally uses !important because
- * Redoc injects its own runtime styles.
- */
-
-.stellix-redoc {
-  min-height: 100vh;
-  background: #08080b !important;
-  color: #ffffff !important;
+/* ---- Market Terminal (Batch 31) --------------------------------------------- */
+.flash-up { background-color: rgba(52, 211, 153, 0.28); }
+.flash-down { background-color: rgba(248, 113, 113, 0.28); }
+@media (prefers-reduced-motion: reduce) {
+  .flash-up, .flash-down { transition: none; }
 }
-
-
-/*
- * Main Redoc layout
- */
-
-.stellix-redoc .redoc-wrap {
-  background: #08080b !important;
+.terminal-grid .react-grid-item.react-grid-placeholder {
+  background: rgba(142, 136, 199, 0.18);
+  border-radius: 0.75rem;
+  opacity: 1;
 }
-
-
-/*
- * Sidebar
- */
-
-.stellix-redoc .menu-content {
-  background: #0b0b10 !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: #ffffff !important;
-}
-
-
-/*
- * Main API content
- */
-
-.stellix-redoc .api-content {
-  background: #08080b !important;
-  color: #ffffff !important;
-}
-
-
-/*
- * Right code panel
- */
-
-.stellix-redoc .right-panel {
-  background: #0b0b10 !important;
-  color: #ffffff !important;
-}
-
-
-/*
- * =========================================================
- * REDOC — ALL NORMAL TEXT WHITE
- * =========================================================
- */
-
-.stellix-redoc p,
-.stellix-redoc span,
-.stellix-redoc div,
-.stellix-redoc li,
-.stellix-redoc td,
-.stellix-redoc th,
-.stellix-redoc label,
-.stellix-redoc button,
-.stellix-redoc strong,
-.stellix-redoc b,
-.stellix-redoc small {
-  color: #ffffff !important;
-}
-
-
-/*
- * =========================================================
- * REDOC — HEADINGS GOLD
- * =========================================================
- */
-
-.stellix-redoc h1,
-.stellix-redoc h2,
-.stellix-redoc h3,
-.stellix-redoc h4,
-.stellix-redoc h5,
-.stellix-redoc h6 {
-  color: #fbcf4f !important;
-}
-
-
-/*
- * Sidebar section titles
- */
-
-.stellix-redoc .menu-content label,
-.stellix-redoc .menu-content span {
-  color: #ffffff !important;
-}
-
-
-/*
- * =========================================================
- * REDOC — LINKS
- * =========================================================
- */
-
-.stellix-redoc a {
-  color: #a79cff !important;
-  transition: color 0.2s ease;
-}
-
-.stellix-redoc a:hover {
-  color: #c2baff !important;
-}
-
-
-/*
- * =========================================================
- * REDOC — CODE
- * =========================================================
- */
-
-.stellix-redoc code,
-.stellix-redoc pre {
-  background: #0a0a0f !important;
-  color: #ffffff !important;
-}
-
-.stellix-redoc pre *,
-.stellix-redoc code * {
-  color: inherit !important;
-}
-
-
-/*
- * =========================================================
- * REDOC — TABLES
- * =========================================================
- */
-
-.stellix-redoc table {
-  background: #0b0b10 !important;
-  color: #ffffff !important;
-}
-
-.stellix-redoc tr {
-  background: transparent !important;
-}
-
-.stellix-redoc td,
-.stellix-redoc th {
-  border-color: rgba(255, 255, 255, 0.1) !important;
-  color: #ffffff !important;
-}
-
-
-/*
- * =========================================================
- * REDOC — BUTTONS / INPUTS
- * =========================================================
- */
-
-.stellix-redoc button {
-  color: #ffffff !important;
-  background-color: transparent !important;
-}
-
-.stellix-redoc input,
-.stellix-redoc textarea,
-.stellix-redoc select {
-  background: #0d0d13 !important;
-  color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-
-/*
- * =========================================================
- * REDOC — OPERATION PANELS
- * =========================================================
- */
-
-.stellix-redoc [role="tabpanel"],
-.stellix-redoc [role="tablist"] {
-  background-color: #08080b !important;
-}
-
-
-/*
- * Operation rows / endpoint containers
- */
-
-.stellix-redoc .operation-type,
-.stellix-redoc .operation-path,
-.stellix-redoc .http-verb {
-  color: #ffffff !important;
-}
-
-
-/*
- * =========================================================
- * REDOC — SCROLLBAR
- * =========================================================
- */
-
-.stellix-redoc ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.stellix-redoc ::-webkit-scrollbar-track {
-  background: #08080b;
-}
-
-.stellix-redoc ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 999px;
-}
-
-.stellix-redoc ::-webkit-scrollbar-thumb:hover {
-  background: rgba(167, 156, 255, 0.5);
+.terminal-grid .react-grid-item > .react-resizable-handle::after {
+  border-color: rgba(255, 255, 255, 0.25);
 }

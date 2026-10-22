@@ -8,7 +8,7 @@ export type DocSection = {
   title: string;
   paragraphs: string[];
   bullets?: string[];
-  code?: { language: "json" | "cypher"; label: string; content: string };
+  code?: { language: "json" | "sql"; label: string; content: string };
 };
 
 export const DOC_CATEGORIES = [
@@ -16,6 +16,7 @@ export const DOC_CATEGORIES = [
   "Core Concepts",
   "API Reference",
   "Guides",
+  "Legal",
 ] as const;
 
 export const DOC_SECTIONS: DocSection[] = [
@@ -25,7 +26,7 @@ export const DOC_SECTIONS: DocSection[] = [
     title: "Introduction",
     paragraphs: [
       "Stellix Labs is organized around a single idea: no performance number means anything without a regime attached, and no result is worth keeping unless it's remembered — including the failures.",
-      "This documentation covers both the why (core concepts) and the how (a live API reference generated from the running service). If you're evaluating the platform, start with Regime Detection and The Knowledge Graph — they're what make Stellix Labs different from a backtester.",
+      "This documentation covers both the why (core concepts) and the how (a live API reference generated from the running service). If you're evaluating the platform, start with Regime Detection and Research Memory — they're what make Stellix Labs different from a backtester.",
     ],
   },
   {
@@ -141,21 +142,22 @@ export const DOC_SECTIONS: DocSection[] = [
     ],
   },
   {
-    id: "knowledge-graph",
+    id: "research-memory",
     category: "Core Concepts",
-    title: "The Knowledge Graph",
+    title: "Research Memory",
     paragraphs: [
-      "Your research is stored twice: as rows in PostgreSQL (the source of truth) and as a connected graph in Neo4j (the memory). Six node types and eight edge types let you ask questions no relational query expresses cleanly — “trace the full lineage of this evolved strategy back to the research note that inspired its ancestor,” or “which regimes cause recurring failures across all my momentum strategies.”",
-      "Five named queries ship ready to use, and every one is tenant-scoped at the query-builder level so it's structurally impossible to read another organization's graph.",
+      "PostgreSQL is the single source of truth. Research Memory links its rows — six record types (strategies, regimes, performance snapshots, failures, research notes and researchers) joined by eight relationships — into an index the API keeps up to date on every write and rebuilds from the database on a schedule. There is no second database to run, and the index can never drift from the tables it comes from.",
+      "It answers the questions that matter most to a research desk — “trace this evolved strategy back to the note that inspired its ancestor,” or “which regimes cause recurring failures across all my momentum strategies” — and every record in it is keyed by organization, so a lookup can only ever reach your own research.",
     ],
     code: {
-      language: "cypher",
-      label: "recurring_failure_modes.cypher",
-      content: `MATCH (s:Strategy)-[:FAILED_IN]->(r:Regime)
-WHERE s.organization_id = $organization_id
-MATCH (f:Failure {organization_id: $organization_id})-[:CAUSED_BY]->(p:Performance)
-RETURN r.regime_label, f.trigger_condition, count(*) AS occurrences
-ORDER BY occurrences DESC`,
+      language: "sql",
+      label: "recurring_failure_modes.sql",
+      content: `SELECT regime_at_failure, trigger_condition, count(*) AS occurrences
+FROM failures
+WHERE organization_id = :organization_id
+GROUP BY regime_at_failure, trigger_condition
+HAVING count(*) >= 3
+ORDER BY occurrences DESC;`,
     },
   },
   {
@@ -167,11 +169,29 @@ ORDER BY occurrences DESC`,
     ],
   },
   {
-    id: "guide-graph-queries",
+    id: "guide-memory-queries",
     category: "Guides",
-    title: "Querying your knowledge graph",
+    title: "Querying Research Memory",
     paragraphs: [
       "The five named queries — failed_strategies_by_regime, lineage, robust_across_regimes, recurring_failure_modes, and hypotheses_leading_to_active — cover the highest-value institutional-memory questions. Each takes your organization context implicitly and returns only your data.",
+    ],
+  },
+  {
+    id: "privacy",
+    category: "Legal",
+    title: "Privacy",
+    paragraphs: [
+      "Every record you create in Stellix Labs is scoped to your organization and is never readable by another tenant. Demo-request details are used only to respond to your request.",
+      "For the current privacy policy, data-processing terms, or a data-deletion request, contact hello@stellixlabs.com.",
+    ],
+  },
+  {
+    id: "terms",
+    category: "Legal",
+    title: "Terms of service",
+    paragraphs: [
+      "Use of the platform is governed by the subscription agreement for your plan. Enterprise deployments are covered by a negotiated master agreement.",
+      "To receive a copy of the current terms, contact hello@stellixlabs.com.",
     ],
   },
 ];

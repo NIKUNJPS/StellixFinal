@@ -1,5 +1,8 @@
 # Load Test Results (Batch 23)
 
+> **Historical results.** Measured before ADR 0012 retired Neo4j; where this report mentions the
+> Neo4j graph, Research Memory (derived from PostgreSQL inside the API) now serves those endpoints.
+
 A **real** load test — actually executed, not aspirational. It exercises the
 authenticated read surface a logged-in analyst uses, against the real stack
 (Postgres/TimescaleDB + Redis; Neo4j was **not** running locally — see below).

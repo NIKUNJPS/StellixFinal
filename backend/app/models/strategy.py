@@ -1,6 +1,6 @@
 """Strategy model — the core research artifact (Batch 4).
 
-Referenced by Validation, Failure Intelligence, Evolution, and the Knowledge Graph in
+Referenced by Validation, Failure Intelligence, Evolution, and Research Memory in
 later batches, so the schema is stable from here. See docs/schemas.md → Strategy.
 """
 
@@ -78,7 +78,7 @@ class Strategy(Base, UUIDPrimaryKeyMixin, TenantScopedModel, TimestampMixin):
     parent_strategy_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("strategies.id", ondelete="SET NULL"), nullable=True
     )
-    # Batch 7: backs the knowledge-graph INSPIRED_BY edge (Strategy -> ResearchNote).
+    # Batch 7: backs the Research Memory INSPIRED_BY relationship (Strategy -> ResearchNote).
     inspired_by_note_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("research_notes.id", ondelete="SET NULL"), nullable=True
     )

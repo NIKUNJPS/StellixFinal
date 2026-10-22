@@ -1,5 +1,5 @@
-"""Graph repository interface — implemented by both a real Neo4j backend
-(``neo4j_repository.py``) and an in-memory test double (``fake_repository.py``).
+"""Research Memory repository interface — implemented by ``InMemoryGraphRepository``
+(``memory_repository.py``), the tenant-scoped index built from Postgres.
 
 Kept deliberately "dumb": this layer only knows about nodes/edges/labels/properties.
 Postgres lookups (e.g. resolving which Regime segment a label maps to, or a

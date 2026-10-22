@@ -1,5 +1,9 @@
-"""Knowledge graph package (Batch 7): Neo4j sync + query layer.
+"""Research Memory package: the lineage / failure-memory index.
 
-See docs/schemas.md -> "Knowledge Graph (Neo4j, Batch 7)" for the node/edge schema and
-the local-env caveat (Neo4j is not runtime-available on this dev machine yet).
+PostgreSQL is the single source of truth. Every strategy, failure, regime, performance
+snapshot, research note and researcher is projected into an in-process, tenant-scoped
+index of typed nodes and relationships (see ``constants.py``) that answers the five
+research-memory queries. The index is maintained on every write (``sync_service``) and
+rebuilt from Postgres on a schedule (``memory_index``), so it can never drift from the
+database. See docs/adr/0012-research-memory-on-postgres.md.
 """

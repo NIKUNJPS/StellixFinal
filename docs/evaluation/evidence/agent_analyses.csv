@@ -1,0 +1,10 @@
+analysis_id,ticker,trade_date,status,rating,trader_action,regime,regime_confidence,analysts,llm_calls,provider,backtest_cell,holding_days,settled_raw_return,settled_alpha,benchmark
+087925a8,SPY,2026-10-09,completed,Hold,Hold,Low-Volatility,0.5,"market,news",15,anthropic,False,,,,
+34db3074,NVDA,2026-10-09,completed,Underweight,Sell,Low-Volatility,1.0,"market,social,news,fundamentals",17,anthropic,False,5.0,-0.06607638685076773,-0.046399277303650205,SPY
+8a3e2db3,SPY,2026-07-06,completed,Hold,Hold,Bull,0.5,"market,news",14,anthropic,True,5.0,-0.0028085719391045243,0.0,SPY
+5628ecaf,SPY,2026-07-20,completed,Hold,Hold,Low-Volatility,0.5,"market,news",13,anthropic,True,5.0,-0.004042615749661576,0.0,SPY
+e48cefd0,SPY,2026-08-03,completed,Underweight,Sell,Bull,0.5,"market,news",13,anthropic,True,5.0,0.020272688597742245,0.0,SPY
+cc7489cf,SPY,2026-08-17,running,,,Low-Volatility,0.5,"market,news",0,anthropic,True,,,,
+65d2044f,AAPL,2026-10-20,failed,,,Low-Volatility,0.75,"market,news,fundamentals",0,google,False,,,,
+e8aca7ec,SPY,2026-08-31,completed,Underweight,Sell,Low-Volatility,0.75,"market,news",13,anthropic,True,5.0,-0.0014210028432022196,0.0,SPY
+0a7a1840,SPY,2026-09-14,running,,,Low-Volatility,0.75,"market,news",0,anthropic,True,,,,

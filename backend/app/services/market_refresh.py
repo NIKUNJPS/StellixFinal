@@ -1,7 +1,7 @@
 """Daily market-data refresh (continuous data integration).
 
 Keeps every active organization's tracked symbols current with the market, so the
-dashboard, regimes, and knowledge graph reflect *today's* reality rather than a
+dashboard, regimes, and Research Memory reflect *today's* reality rather than a
 one-off ingestion. Invoked by the Celery beat task ``refresh_market_universe``.
 
 Design:

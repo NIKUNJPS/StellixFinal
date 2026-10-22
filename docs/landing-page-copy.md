@@ -1,5 +1,9 @@
 # Stellix Labs — Public Site Copy (Batch 15a)
 
+> **Historical (Batch 15a).** The public site has since been redesigned with new copy, and the
+> "Neo4j knowledge graph" described here became Research Memory on PostgreSQL (ADR 0012).
+> The live copy is in `frontend/app/(marketing)` and `frontend/lib/marketing/`.
+
 > **Status: APPROVED (2026-07-10) — Batch 15b builds pixels around this copy verbatim.**
 >
 > This document is the single source of truth for all on-page copy across the 8

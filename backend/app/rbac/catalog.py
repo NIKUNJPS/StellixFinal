@@ -13,7 +13,7 @@ pre-refactor code) proves it.
 
 Deliberately NOT permission-gated (every authenticated user, unchanged): creating,
 submitting, backtesting and validating strategies; evolution runs; ingestion; regime
-detection; research notes; the knowledge graph; the LLM research assistant; portfolio,
+detection; research notes; Research Memory; the LLM research assistant; portfolio,
 failures and market data views.
 """
 
@@ -53,6 +53,7 @@ class P:
     STRATEGY_VERSION = "strategy.version"
     STRATEGY_DELETE_ANY_DRAFT = "strategy.delete_any_draft"
     SIGNALS_VIEW = "signals.view"
+    AGENTS_RUN = "agents.run"
     # Notification routing (who is told about what — behaviour, not endpoint access)
     NOTIFY_APPROVAL_REQUESTS = "notifications.approval_requests"
     NOTIFY_FAILURE_ALERTS = "notifications.failure_alerts"
@@ -91,6 +92,7 @@ PERMISSION_CATALOG: tuple[PermissionSpec, ...] = (
     PermissionSpec(P.STRATEGY_VERSION, "Research", "Save rule and parameter changes as a new strategy version"),
     PermissionSpec(P.STRATEGY_DELETE_ANY_DRAFT, "Research", "Delete unsubmitted drafts created by other members"),
     PermissionSpec(P.SIGNALS_VIEW, "Research", "View this organization's Buy/Sell/Hold research signals for its active strategies"),
+    PermissionSpec(P.AGENTS_RUN, "Research", "Start multi-agent desk analyses and agent backtests (each run makes real LLM calls)"),
     PermissionSpec(P.NOTIFY_APPROVAL_REQUESTS, "Notifications", "Receive approval-request notifications"),
     PermissionSpec(P.NOTIFY_FAILURE_ALERTS, "Notifications", "Receive strategy failure alerts"),
     PermissionSpec(P.NOTIFY_BILLING_ALERTS, "Notifications", "Receive failed-payment alerts"),
@@ -124,26 +126,26 @@ SYSTEM_ROLES: tuple[SystemRoleSpec, ...] = (
         "researcher",
         "Researcher",
         "Builds, versions and tests strategies and research notes.",
-        frozenset({P.STRATEGY_VERSION, P.SIGNALS_VIEW}),
+        frozenset({P.STRATEGY_VERSION, P.SIGNALS_VIEW, P.AGENTS_RUN}),
     ),
     SystemRoleSpec(
         "quant_engineer",
         "Quant Engineer",
         "Research/build role: versions strategies and reviews the organization's validated signals.",
-        frozenset({P.STRATEGY_VERSION, P.SIGNALS_VIEW}),
+        frozenset({P.STRATEGY_VERSION, P.SIGNALS_VIEW, P.AGENTS_RUN}),
     ),
     SystemRoleSpec(
         "risk_manager",
         "Risk Manager",
         "Oversees live risk: approvals, retirement, manual failure flags and the kill switch.",
-        _GOVERNANCE_BASE | {P.AUDIT_VIEW_OWN_RISK, P.SIGNALS_VIEW},
+        _GOVERNANCE_BASE | {P.AUDIT_VIEW_OWN_RISK, P.SIGNALS_VIEW, P.AGENTS_RUN},
     ),
     SystemRoleSpec(
         "cio",
         "CIO",
         "Final governance authority: everything a risk manager can do, plus kill switch review.",
         _GOVERNANCE_BASE
-        | {P.KILLSWITCH_REVIEW, P.KILLSWITCH_HISTORY_ALL, P.AUDIT_VIEW_ORG_RISK, P.NOTIFY_BILLING_ALERTS, P.SIGNALS_VIEW},
+        | {P.KILLSWITCH_REVIEW, P.KILLSWITCH_HISTORY_ALL, P.AUDIT_VIEW_ORG_RISK, P.NOTIFY_BILLING_ALERTS, P.SIGNALS_VIEW, P.AGENTS_RUN},
     ),
     SystemRoleSpec(
         "compliance_officer",

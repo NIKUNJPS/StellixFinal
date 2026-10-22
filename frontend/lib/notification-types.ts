@@ -4,7 +4,9 @@ export type NotificationType =
   | "failure_detected"
   | "evolution_completed"
   | "approval_requested"
-  | "payment_failed";
+  | "payment_failed"
+  // Batch 31: a Market Terminal price alert fired.
+  | "price_alert";
 
 export interface NotificationRead {
   id: string;
@@ -31,4 +33,5 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   evolution_completed: "Evolution completed",
   approval_requested: "Approval requested",
   payment_failed: "Payment failed",
+  price_alert: "Price alert",
 };

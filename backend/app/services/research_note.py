@@ -1,6 +1,6 @@
 """Research Notebook service (Batch 7 minimal CRUD, extended Batch 10): full
 CRUD + autosave + full-text search, syncing every create/update into the
-knowledge graph via the existing GraphSyncService path (no parallel sync)."""
+Research Memory via the existing GraphSyncService path (no parallel sync)."""
 
 from __future__ import annotations
 

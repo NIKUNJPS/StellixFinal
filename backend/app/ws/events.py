@@ -93,6 +93,12 @@ async def publish_market_quotes(quotes: list[dict[str, Any]], metadata: dict[str
     await _publish_global({"type": "market_quotes", **metadata, "quotes": quotes, "timestamp": _now()})
 
 
+async def publish_etf_ticks(etfs: list[dict[str, Any]], metadata: dict[str, Any]) -> None:
+    """Real-time ETF trade prices from the streamer (at most ~1 event/second). Public
+    market data, so global scope — same reasoning as ``publish_market_quotes``."""
+    await _publish_global({"type": "etf_ticks", **metadata, "etfs": etfs, "timestamp": _now()})
+
+
 async def publish_screener_update(rows: list[dict[str, Any]], metadata: dict[str, Any]) -> None:
     """Batch 28: refreshed market-screener rows (feeds both the Screener table and
     the Sector Heatmap). Public data, so global scope."""
@@ -266,6 +272,64 @@ async def publish_approval_request(
             "robustness_score": round(robustness_score, 3),
             "message": "Strategy ready for review",
             "target_user_ids": [str(u) for u in approver_user_ids] if approver_user_ids else None,
+            "timestamp": _now(),
+        },
+    )
+
+
+async def publish_agent_progress(
+    org_id: str,
+    analysis_id: str,
+    ticker: str,
+    stage: str | None,
+    status: str,
+    rating: str | None = None,
+    backtest_run_id: str | None = None,
+    stages_done: int | None = None,
+    stages_total: int | None = None,
+) -> None:
+    """Batch 30 (ADR 0009): a multi-agent desk run finished a stage, completed, or failed.
+
+    ORG-SCOPED like ``strategy_signal``: an analysis is the tenant's private research.
+    """
+    await _publish(
+        org_id,
+        {
+            "type": "agent_progress",
+            "analysis_id": str(analysis_id),
+            "backtest_run_id": str(backtest_run_id) if backtest_run_id else None,
+            "ticker": ticker,
+            "stage": stage,
+            "status": status,
+            "rating": rating,
+            "stages_done": stages_done,
+            "stages_total": stages_total,
+            "timestamp": _now(),
+        },
+    )
+
+
+async def publish_price_alert(
+    org_id: str,
+    owner_user_id: str,
+    alert_id: str,
+    symbol: str,
+    condition: str,
+    target_price: float,
+    price: float,
+) -> None:
+    """Batch 31 (ADR 0010): a Market Terminal price alert fired. Org-scoped and
+    addressed to the alert's owner only (``target_user_ids``), like approval requests."""
+    await _publish(
+        org_id,
+        {
+            "type": "price_alert",
+            "alert_id": alert_id,
+            "symbol": symbol,
+            "condition": condition,
+            "target_price": target_price,
+            "price": price,
+            "target_user_ids": [owner_user_id],
             "timestamp": _now(),
         },
     )

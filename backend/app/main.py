@@ -19,7 +19,7 @@ from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.starlette import StarletteIntegration
 
 from app.api.router import api_router
-from app.clients import neo4j_client, redis_client
+from app.clients import redis_client
 from app.core.config import settings
 from app.core.error_handling import UnhandledExceptionMiddleware
 from app.core.logging import configure_logging
@@ -81,7 +81,7 @@ OPENAPI_TAGS = [
     {"name": "Regime Detection", "description": "Run the detection ensemble and read stored regimes, history, and cross-asset divergence."},
     {"name": "Strategy Lifecycle", "description": "Create strategies (rule DSL), backtest, validate, and move them through the approval lifecycle."},
     {"name": "Failure Intelligence", "description": "Recorded strategy failures, clusters, and heatmaps."},
-    {"name": "Knowledge Graph", "description": "The institutional-memory graph of strategies, failures, and lineage."},
+    {"name": "Research Memory", "description": "Tenant-scoped memory of strategies, failures, regimes, notes and lineage, derived from Postgres."},
     {"name": "Evolution Engine", "description": "Genetic-algorithm evolution runs and lineage."},
     {"name": "LLM Assistant", "description": "Research-assistant endpoints (price-forecast-guarded)."},
     {"name": "Governance & Compliance", "description": "Append-only audit log, kill switch, and compliance export."},
@@ -112,7 +112,7 @@ if settings.SENTRY_DSN:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Manage process-wide resources (DB engine pool, Neo4j driver, Redis client)."""
+    """Manage process-wide resources (DB engine pool, Redis client, Research Memory index)."""
     # Clients are created lazily on first use; nothing to eagerly open here.
     #
     # The WS bridge is the exception — it must be running before the first event is
@@ -120,10 +120,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # this process's browser sockets. Celery workers never start it (they publish to
     # Redis and have nothing to deliver to). Each API replica runs its own.
     await ws_bridge.start()
+    from app.graph import memory_index
+
+    memory_index.start()  # API process only: workers never serve Research Memory reads
     yield
     # Graceful shutdown: release pooled connections.
+    await memory_index.stop()
     await ws_bridge.stop()  # before close_client() — the bridge holds a Redis pubsub
-    await neo4j_client.close_driver()
     await redis_client.close_client()
     await dispose_engine()
 

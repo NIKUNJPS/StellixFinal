@@ -1,0 +1,14 @@
+failure_id,strategy,trigger,regime_at_failure,failure_timestamp,instrument_recorded,strategy_symbol,provenance,has_ai_explanation,numeric_validation_passed,has_shap_attribution
+10ec8202,QQQ Golden Cross,manual,Low-Volatility,2024-12-30,,QQQ,seed-script forced trigger (last bar of the seeded window),True,True,True
+035bf0f8,SPY Trend Continuation,drawdown_breach,Low-Volatility,2024-12-30,,SPY,seed-script forced trigger (last bar of the seeded window),True,True,True
+606b547d,SPY Golden Cross,drawdown_breach,Low-Volatility,2024-12-30,,SPY,seed-script forced trigger (last bar of the seeded window),True,True,True
+9ac337b7,QQQ Breakout Hold,regime_mismatch,Low-Volatility,2024-12-30,,QQQ,seed-script forced trigger (last bar of the seeded window),True,True,True
+783e55c3,SPY Trend Filter Plus,sharpe_decline,Low-Volatility,2024-12-30,,SPY,seed-script forced trigger (last bar of the seeded window),True,True,True
+550bb01a,SPY Oversold Bounce,regime_mismatch,Crisis,2026-07-22,,SPY,monitor sweep (live data),True,True,True
+eb50d393,"SPY Contrarian RSI (evolved (32.04035767, 62.34298572))",regime_mismatch,Crisis,2026-07-29,CRM,SPY,monitor sweep (live data),True,True,False
+94721fa0,SPY Dual-MA Momentum,drawdown_breach,Low-Volatility,2024-12-30,,SPY,seed-script forced trigger (last bar of the seeded window),True,True,True
+a8eb4908,QQQ Momentum Core,drawdown_breach,Sideways,2026-07-22,,QQQ,monitor sweep (live data),True,True,False
+f60e13f6,QQQ MACD Trend,regime_mismatch,Bear,2026-07-22,,QQQ,monitor sweep (live data),True,True,False
+22c1ace4,QQQ Strength Filter,regime_mismatch,Sideways,2026-07-22,,QQQ,monitor sweep (live data),True,True,False
+6bdfd6fd,QQQ Trend Rider,drawdown_breach,Low-Volatility,2026-07-22,,QQQ,monitor sweep (live data),True,True,True
+df993576,"SPY Contrarian RSI (evolved (32.04035767, 62.34298572))",regime_mismatch,Sideways,2026-07-29,ACGL,SPY,monitor sweep (live data),True,True,False

@@ -1,9 +1,8 @@
-"""Knowledge-graph query endpoints (Batch 7): the 5 named research queries + generic
-node detail / search. All tenant-scoped via the caller's JWT organization_id.
+"""Research Memory query endpoints: the 5 named research queries + generic record
+detail / search. All tenant-scoped via the caller's JWT organization_id.
 
-Read endpoints surface a clear 503 (not a silent empty list) when Neo4j is
-unreachable — an empty list of "recurring failure modes" would otherwise be
-indistinguishable from "the graph is actually empty."
+The index is in-process and derived from Postgres, so these reads never depend on an
+external service; an empty list means the organization genuinely has no matching records.
 """
 
 from __future__ import annotations
@@ -12,7 +11,6 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from neo4j.exceptions import GqlError
 
 from app.api.deps import get_current_user
 from app.graph.constants import NODE_LABELS
@@ -35,25 +33,10 @@ from app.schemas.graph import (
     SearchResultItem,
 )
 
-router = APIRouter(prefix="/graph", tags=["Knowledge Graph"])
-
-_UNAVAILABLE = HTTPException(
-    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-    detail="Knowledge graph is currently unreachable (Neo4j not connected)",
-)
-
+router = APIRouter(prefix="/graph", tags=["Research Memory"])
 
 def _org(current_user: User) -> str:
     return str(current_user.organization_id)
-
-
-async def _run(coro):
-    """Await a repository call, translating a Neo4j connectivity failure into a 503
-    rather than letting a raw driver exception or a silently-empty result through."""
-    try:
-        return await coro
-    except (GqlError, OSError) as exc:
-        raise _UNAVAILABLE from exc
 
 
 @router.get(
@@ -68,7 +51,7 @@ async def failed_strategies_by_regime(
 ) -> FailedStrategiesByRegimeResponse:
     since = datetime.now(UTC) - timedelta(days=months * 30)
     repo = GraphSyncService().repository
-    rows = await _run(repo.failed_strategies_by_regime(_org(current_user), regime=regime, since=since))
+    rows = await repo.failed_strategies_by_regime(_org(current_user), regime=regime, since=since)
     return FailedStrategiesByRegimeResponse(
         regime=regime, since=since, items=[FailedStrategyByRegimeItem(**r) for r in rows]
     )
@@ -84,7 +67,7 @@ async def lineage(
     current_user: User = Depends(get_current_user),
 ) -> LineageResponse:
     repo = GraphSyncService().repository
-    result = await _run(repo.lineage(_org(current_user), strategy_id=str(strategy_id)))
+    result = await repo.lineage(_org(current_user), strategy_id=str(strategy_id))
     if result["target"] is None:
         return LineageResponse(strategy_id=str(strategy_id), found=False)
     return LineageResponse(
@@ -107,7 +90,7 @@ async def robust_across_regimes(
     current_user: User = Depends(get_current_user),
 ) -> RobustAcrossRegimesResponse:
     repo = GraphSyncService().repository
-    rows = await _run(repo.robust_across_regimes(_org(current_user), min_regimes=min_regimes))
+    rows = await repo.robust_across_regimes(_org(current_user), min_regimes=min_regimes)
     return RobustAcrossRegimesResponse(
         min_regimes=min_regimes, items=[RobustAcrossRegimesItem(**r) for r in rows]
     )
@@ -123,9 +106,7 @@ async def recurring_failure_modes(
     current_user: User = Depends(get_current_user),
 ) -> RecurringFailureModesResponse:
     repo = GraphSyncService().repository
-    rows = await _run(
-        repo.recurring_failure_modes(_org(current_user), min_occurrences=min_occurrences)
-    )
+    rows = await repo.recurring_failure_modes(_org(current_user), min_occurrences=min_occurrences)
     return RecurringFailureModesResponse(
         min_occurrences=min_occurrences, items=[RecurringFailureModeItem(**r) for r in rows]
     )
@@ -140,7 +121,7 @@ async def hypotheses_leading_to_active(
     current_user: User = Depends(get_current_user),
 ) -> HypothesesLeadingToActiveResponse:
     repo = GraphSyncService().repository
-    rows = await _run(repo.hypotheses_leading_to_active(_org(current_user)))
+    rows = await repo.hypotheses_leading_to_active(_org(current_user))
     return HypothesesLeadingToActiveResponse(
         items=[
             HypothesisLeadingToActiveItem(
@@ -170,9 +151,9 @@ async def get_node(
             detail=f"Unknown node_type {node_type!r}; expected one of {sorted(NODE_LABELS)}",
         )
     repo = GraphSyncService().repository
-    result = await _run(repo.get_node(_org(current_user), node_type=node_type, node_id=node_id))
+    result = await repo.get_node(_org(current_user), node_type=node_type, node_id=node_id)
     if result is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Node not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Record not found")
     return NodeDetailResponse(**result)
 
 
@@ -192,7 +173,7 @@ async def search_nodes(
             detail=f"Unknown node_type {node_type!r}; expected one of {sorted(NODE_LABELS)}",
         )
     repo = GraphSyncService().repository
-    rows = await _run(repo.search_nodes(_org(current_user), q=q, node_type=node_type))
+    rows = await repo.search_nodes(_org(current_user), q=q, node_type=node_type)
     return SearchResponse(
         q=q,
         node_type=node_type,

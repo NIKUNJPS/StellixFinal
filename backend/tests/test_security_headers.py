@@ -5,7 +5,7 @@ The shared `client` fixture's `app` is imported once at module load, with
 `ENVIRONMENT` was set at that time (development, in the test run). Testing the
 production-only HSTS header therefore exercises `SecurityHeadersMiddleware`
 directly against a minimal throwaway Starlette app, rather than building a
-second full `create_app()` (which would carry its own DB/Neo4j/Redis-touching
+second full `create_app()` (which would carry its own DB/Redis-touching
 lifespan and routes with nothing to hermetically override).
 """
 

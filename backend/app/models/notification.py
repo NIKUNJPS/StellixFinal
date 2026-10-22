@@ -23,6 +23,8 @@ class NotificationType(str, enum.Enum):
     EVOLUTION_COMPLETED = "evolution_completed"
     APPROVAL_REQUESTED = "approval_requested"
     PAYMENT_FAILED = "payment_failed"
+    # Batch 31 (ADR 0010): a Market Terminal price alert fired.
+    PRICE_ALERT = "price_alert"
 
 
 class Notification(Base, UUIDPrimaryKeyMixin, TenantScopedModel):

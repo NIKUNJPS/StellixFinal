@@ -1,7 +1,7 @@
 # SOC 2 Type I Readiness
 
 **Scope:** the Stellix Labs platform (FastAPI backend, Next.js frontend, Celery
-workers, Postgres/TimescaleDB, Neo4j, Redis).
+workers, Postgres/TimescaleDB, Redis).
 **Status:** internal readiness assessment — **not** an audit, and **not** a claim of
 certification. Stellix Labs has **not** completed a SOC 2 Type I or Type II
 examination. This document maps existing, in-code controls to the relevant Trust
@@ -83,7 +83,7 @@ Two independent gates run on essentially every authenticated request, both insid
 - **Database encryption at rest:** **TO VERIFY.** There is no application-level
   database encryption in the codebase; the platform relies on managed data services
   (ADR-0004, `docs/adr/0004-managed-data-services.md`), so encryption-at-rest depends
-  on the managed Postgres/Neo4j provider's configuration and is not asserted here.
+  on the managed Postgres provider's configuration and is not asserted here.
 
 ### CC6.7 — Transmission and boundary protection
 
@@ -139,9 +139,8 @@ replica counts, autoscaling policy, and ingress/TLS specifics against the live c
 
 A disaster-recovery plan exists at `docs/disaster_recovery.md` with explicit v1
 targets: **whole-region RTO ≤ 4 hours**, and per-store RPO targets (Postgres ≤ ~5 min
-via the managed provider's point-in-time recovery; the Neo4j graph is treated as a
-*rebuildable projection* of Postgres, so its effective RPO is rebuild time, not backup
-age). Backups are taken nightly and before every migration. These are documented
+via the managed provider's point-in-time recovery; Research Memory is re-derived from
+Postgres by the API, so it has no backup of its own to lose). Backups are taken nightly and before every migration. These are documented
 targets, not yet evidenced by a live restore drill — **TO VERIFY** with a rehearsed
 recovery.
 
@@ -164,8 +163,8 @@ binds the org from the verified JWT; the unscoped `get_system_db` is reserved fo
 pre-auth flows and the audited superadmin plane. This is exercised by the isolation
 test suite (e.g. `backend/tests/test_data_isolation.py`,
 `backend/tests/test_graph_isolation.py`, `backend/tests/test_rbac_isolation.py`), and
-the knowledge graph applies the same per-org filter in every Cypher query
-(`backend/app/graph/`).
+Research Memory keys every record by organization, so its lookups are tenant-scoped by
+construction (`backend/app/graph/`).
 
 Cross-tenant access by the internal superadmin plane is deliberate and **independently
 logged**: every cross-org read and mutation writes a `superadmin_audit_log` row

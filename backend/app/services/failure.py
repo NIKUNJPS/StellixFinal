@@ -6,7 +6,7 @@ from __future__ import annotations
 import uuid
 
 import pandas as pd
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.metrics import failures_detected_total
@@ -220,11 +220,19 @@ async def run_clustering(organization_id: uuid.UUID, failure_id: uuid.UUID) -> l
 
 
 async def monitor_symbol(organization_id: uuid.UUID, symbol: str) -> list[str]:
-    """Monitor every ACTIVE strategy in an org against a symbol (chained off ingestion)."""
+    """Monitor the org's ACTIVE strategies that trade ``symbol`` (chained off ingestion).
+
+    A strategy is only ever judged against its OWN symbol (``Strategy.symbol``, Batch 26
+    Part B). Judging it against whichever symbol happened to be ingested failed
+    strategies on an unrelated instrument's regime — see docs/PLATFORM_STATE.md.
+    """
     async with get_tenant_session(organization_id) as session:
         active = (
             await session.execute(
-                select(Strategy.id).where(Strategy.status == StrategyStatus.ACTIVE)
+                select(Strategy.id).where(
+                    Strategy.status == StrategyStatus.ACTIVE,
+                    func.upper(Strategy.symbol) == symbol.strip().upper(),
+                )
             )
         ).scalars().all()
     created: list[str] = []
@@ -236,12 +244,21 @@ async def monitor_symbol(organization_id: uuid.UUID, symbol: str) -> list[str]:
 
 
 async def monitor_sweep() -> list[tuple[str, str]]:
-    """Daily sweep: every active strategy × every symbol its org has data for."""
+    """Daily sweep: every active strategy against ITS OWN symbol (where its org has data).
+
+    Previously this crossed every active strategy with every symbol the org held data
+    for (523 for the demo org), failing strategies on unrelated instruments' regimes.
+    A strategy with no symbol cannot be monitored and is skipped.
+    """
     async with get_system_session() as session:
         pairs = (
             await session.execute(
                 select(Strategy.organization_id, Strategy.id, MarketData.symbol)
-                .join(MarketData, MarketData.organization_id == Strategy.organization_id)
+                .join(
+                    MarketData,
+                    (MarketData.organization_id == Strategy.organization_id)
+                    & (func.upper(MarketData.symbol) == func.upper(Strategy.symbol)),
+                )
                 .where(Strategy.status == StrategyStatus.ACTIVE)
                 .distinct()
             )

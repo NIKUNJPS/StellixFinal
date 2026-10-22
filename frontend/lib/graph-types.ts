@@ -1,6 +1,14 @@
 /** Types mirroring backend app/schemas/graph.py. */
 
-export type NodeType = "Strategy" | "Regime" | "Performance" | "Failure" | "ResearchNote" | "Researcher";
+export type NodeType =
+  | "Strategy"
+  | "Regime"
+  | "Performance"
+  | "Failure"
+  | "ResearchNote"
+  | "Researcher"
+  // Batch 30 (ADR 0009): one node per multi-agent desk analysis.
+  | "AgentAnalysis";
 export type EdgeType =
   | "VALID_IN"
   | "FAILED_IN"
@@ -9,11 +17,21 @@ export type EdgeType =
   | "ADAPTED_FROM"
   | "EVALUATED_BY"
   | "CAUSED_BY"
-  | "AUTHORED_BY";
+  | "AUTHORED_BY"
+  | "ANALYZED_IN";
 
-export const NODE_TYPES: NodeType[] = ["Strategy", "Regime", "Performance", "Failure", "ResearchNote", "Researcher"];
+export const NODE_TYPES: NodeType[] = [
+  "Strategy",
+  "Regime",
+  "Performance",
+  "Failure",
+  "ResearchNote",
+  "Researcher",
+  "AgentAnalysis",
+];
 export const EDGE_TYPES: EdgeType[] = [
   "VALID_IN", "FAILED_IN", "MUTATED_FROM", "INSPIRED_BY", "ADAPTED_FROM", "EVALUATED_BY", "CAUSED_BY", "AUTHORED_BY",
+  "ANALYZED_IN",
 ];
 
 export const NODE_COLORS: Record<NodeType, string> = {
@@ -23,6 +41,7 @@ export const NODE_COLORS: Record<NodeType, string> = {
   Failure: "#dc2626",
   ResearchNote: "#8b5cf6",
   Researcher: "#64748b",
+  AgentAnalysis: "#06b6d4",
 };
 
 export interface GraphNodeProps {

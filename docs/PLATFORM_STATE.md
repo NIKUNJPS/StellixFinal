@@ -66,22 +66,33 @@ out explicitly rather than silently corrected.
   consume them. Drained/purged this session — this was stale message backlog, not a
   code defect (every failure was a clean `NoResultFound` on an orphaned reference).
 
-**A real incident, caught and handled live**
-- During this session's own verification, running `run_failure_monitor_sweep()` for
-  the first time against fully caught-up historical data triggered a **genuine**
-  `regime_mismatch` failure detection on the strategy that had been reported Active
-  (SPY Contrarian RSI, id `7ccfebeb-...`) — a real backtest-driven detection, not a bug
-  (verified the trigger logic, the honest SHAP-attribution omission for a low trade
-  count, and reproduced the finding directly). This left **zero** Active strategies
-  platform-wide. With explicit sign-off, a real eligible candidate
-  (`14462496-...`, same strategy family, already validated at composite 0.796 for its
-  current version) was activated through the **real** `/approve` governance endpoint —
-  not fabricated — and a real null `symbol` on that row was backfilled to `'SPY'` (same
-  unambiguous-lineage precedent as migration 0022's original backfill), after which
-  `refresh_strategy_signals` produced a real `HOLD` signal. This is presented as evidence
-  the governance and monitoring systems are real and load-bearing, not decorative — the
-  platform's own safety system found and acted on something a static status report
-  would have missed.
+**An incident during verification — and a misdiagnosis, corrected 2026-09-26**
+- During Batch 29 verification, `run_failure_monitor_sweep()` recorded a
+  `regime_mismatch` failure on the strategy that had been reported Active (SPY
+  Contrarian RSI, id `7ccfebeb-...`), leaving zero Active strategies. With explicit
+  sign-off, an eligible candidate (`14462496-...`, same strategy family, validated at
+  composite 0.796 for its current version) was activated through the real `/approve`
+  endpoint, its null `symbol` was backfilled to `'SPY'`, and it produced a real `HOLD`
+  signal.
+- **Correction.** Batch 29 described that failure as a genuine detection. It was not.
+  `monitor_sweep` (`app/services/failure.py`) evaluates every Active strategy against
+  **every symbol its org has market data for** (523 for Meridian), not against the
+  strategy's own `symbol`. The SPY strategy was failed using **ACGL**'s regime
+  (Sideways); on 2026-09-26 at 00:22 IST the replacement was failed the same way using
+  **CRM**'s regime (Crisis). Both strategies have `symbol = 'SPY'`. The trigger logic
+  itself was checked in Batch 29; which symbol it fired on was not. The sweep predates
+  `strategies.symbol` (Batch 26 Part B) and was never updated to use it.
+- **Fixed 2026-10-09.** `monitor_sweep` and `monitor_symbol` (`app/services/failure.py`)
+  now judge a strategy only against its OWN `Strategy.symbol` (case-insensitive; a
+  strategy with no symbol is skipped). Regression test:
+  `tests/test_failure_monitor_scope.py`. The two strategies that were wrongly failed
+  were left untouched (they remain `failed`, as permanent records).
+- **Current state:** one Active strategy in the demo org — "SPY Dip-in-Uptrend RSI
+  45/60" (human-authored, v1.0, validation composite 0.731 ≥ 0.70), activated through
+  the real `/strategies/{id}/approve` endpoint by the CIO account with a written
+  justification stating it was demo preparation. Its null `symbol` was backfilled to
+  `SPY` (the update API cannot set `symbol`); its version, validation evidence and the
+  0.70 gate were not touched.
 
 **Market Research widgets**
 - All 4 tabs browser-verified with real or honestly-degraded data: Macro ("FRED not
@@ -109,11 +120,20 @@ out explicitly rather than silently corrected.
 
 ## What Is Honestly Limited
 
-- **Market data refresh cadence is not live.** Screener/index quotes: refreshed
-  periodically (dashboard label: "every 2 min" for indices; screener/chart labeled
-  "Delayed OHLCV, refreshed on request — not real-time"), sourced from free yfinance
-  data with an inherent 15–20 minute vendor delay, honestly labeled as such everywhere
-  it's shown.
+- **Index quotes are delayed, not live.** Global index quotes are free yfinance data
+  with an inherent 15–20 minute vendor delay, refreshed every 30s (every 2 min before
+  2026-09-26) on a dedicated `realtime` Celery queue so long sweeps can't freeze them;
+  the screener refreshes every 2 min; the chart is "Delayed OHLCV, refreshed on
+  request". Labelled as such everywhere shown. Real-time index values are licensed data
+  this platform doesn't have.
+- **Real-time prices cover four ETFs, from one exchange.** SPY / QQQ / DIA / IWM
+  stream from Alpaca's free IEX feed (real trades from IEX only — a few percent of US
+  volume, not the consolidated tape), shown as ETFs with the index each tracks as
+  context. Needs `ALPACA_API_KEY_ID` / `ALPACA_API_SECRET_KEY` and a running
+  `python -m app.streaming.etf_stream`; not configured in this environment. Verified
+  end-to-end (connect, auth, subscribe, live ticking in the browser, stream-offline and
+  recovery states) against a simulated Alpaca feed in an isolated stack; **not yet
+  verified against the real Alpaca service**.
 - **Screener universe is bounded, not the full market**: exactly **56** well-known,
   liquid US equities across sectors, labeled explicitly on the page ("not the full
   market").
@@ -132,13 +152,8 @@ out explicitly rather than silently corrected.
     answer.
   - `FRED_API_KEY` — not present in `.env` at all. Macro dashboard shows "FRED not
     configured" with a link to get a free key, not blank/broken widgets.
-  - **Neo4j** — confirmed genuinely unreachable this session via a direct driver
-    connection attempt (`ServiceUnavailable`, connection refused on
-    `bolt://localhost:7687`), not merely "usually not running." Every Neo4j-touching
-    code path degrades honestly: the consistency sweep logs a per-org warning and
-    returns `graph_unreachable: true` rather than crashing; the Knowledge Graph page
-    returns a real `503` on query; `/system/health-detailed` reports it as `error`
-    alongside `postgres: ok`, `redis: ok`.
+  - **Neo4j** — retired (ADR 0012). Research Memory is derived from PostgreSQL inside
+    the API, so there is no graph database to run or to be unreachable.
 
 ## Known Architectural Decisions Worth Explaining If Asked
 
@@ -156,12 +171,11 @@ out explicitly rather than silently corrected.
   makes `audit_log`/`failures` genuinely append-only; the integration tests
   (`test_audit_log_append_only.py`, `test_failure_append_only.py`) prove the guarantee
   by connecting as a non-superuser role instead. See `docs/superadmin_isolation.md`.
-- **ADR-0008's full story is real evidence the governance model works, not just
-  documentation of it** — see "A real incident, caught and handled live" above: the
-  same class of bug ADR-0008 fixed (an Active strategy without current, matching
-  validation evidence) cannot occur again by construction, and this session's own
-  failure-detection run is a second, independent demonstration of the monitoring layer
-  actually doing its job on real data.
+- **ADR-0008's full story is real evidence the activation gate works, not just
+  documentation of it** — the same class of bug ADR-0008 fixed (an Active strategy
+  without current, matching validation evidence) cannot occur again by construction.
+  (Batch 29 also cited its failure-monitor run as a second demonstration; that claim
+  was withdrawn — see the correction above.)
 
 ## Real Numbers (as of this session, 2026-09-24, method noted)
 
@@ -175,6 +189,37 @@ out explicitly rather than silently corrected.
 | Organizations | 153 (154 before this session's E2E cleanup removed 1) | Live DB query |
 | Commits on `main` | 38 | `git rev-list --count main` |
 | ADRs | 8 numbered (0001–0008) + `ADR-FINAL.md` | `docs/adr/` |
+
+## Demo-readiness pass (2026-10-21)
+
+Scripts added under `scripts/` (all idempotent, API/engine-driven, no fabricated numbers):
+
+| Script | Purpose |
+|---|---|
+| `fill_demo_backtests.py` | Adds 10 well-known strategy families (Bollinger breakout, RSI pullback, MACD trend, low-vol trend, RSI mean-reversion), backtests + validates them, and re-runs the real backtest for every Meridian strategy so equity-curve series are cached (the dashboard overlay and Backtest Results read that Redis cache). |
+| `fill_failure_intelligence.py` | Sets `strategies.symbol` from the instrument each strategy was backtested on and generates the missing AI explanations through the audited, numerically-validated path. |
+| `seed_terminal_demo.py` | Per-user sample portfolio (real historical closes as entry prices) and price alerts around live quotes. |
+| `seed_governance_demo.py` | Risk Manager kill-switch on two weak candidates; CIO acknowledges one, one stays awaiting review. |
+| `api_sweep.py` | Logs in as each role and GETs every parameterless endpoint; reports errors and empty responses. |
+| `llm_setup.py` | Tests Gemini/Anthropic keys, discovers the Gemini models a key can use, and switches the provider lines in `.env`. |
+
+Code changes: dashboard top-performers now requires real trades and shows one strategy per family
+(evolution variants were five near-identical lines); failure routes resolve an instrument from the
+strategy when an append-only failure row never recorded one; Research Memory runs on PostgreSQL
+alone (ADR 0012; Neo4j retired).
+
+Known, intentional gaps: billing invoices
+and pending invitations are empty because no billing provider / mail relay is configured; two of the
+oldest failure rows (`ACGL`, `CRM` under an SPY strategy) predate the monitor-scope fix and are
+append-only, so they stay as recorded.
+
+## Evaluation evidence pack (2026-10-21)
+
+`docs/evaluation/` contains the measured-results evidence pack (implementation and test evidence, data provenance,
+protocol, results, held-out baselines and ablations, verified references). Its headline: the pipeline is implemented and
+tested (690 tests, 0 failing), but there is **no measured out-of-sample return advantage over buy-and-hold**, regime gating
+helped drawdown but not return or Sharpe, and the evolution engine does not generalize reliably. Start at
+`docs/evaluation/README.md`.
 
 ## What's Deliberately Deferred, Not Forgotten
 

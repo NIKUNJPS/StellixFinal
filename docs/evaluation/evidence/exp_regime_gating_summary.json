@@ -1,0 +1,238 @@
+{
+  "design": "train first 60% / test last 40%, per symbol; see script docstring",
+  "n_strategies": 32,
+  "gate_state_counts": {
+    "active": 27,
+    "no_allowed_regime": 5
+  },
+  "all": {
+    "gated_minus_ungated_total_return": {
+      "n": 32,
+      "mean_diff": -0.010491812534124928,
+      "median_diff": 0.0,
+      "better": 9,
+      "worse": 13,
+      "tied": 10,
+      "bootstrap_95ci_mean_diff": [
+        -0.0192202677459504,
+        -0.0028374296009819103
+      ],
+      "wilcoxon_p": 0.03907346725463867
+    },
+    "gated_minus_ungated_max_drawdown(less negative=better)": {
+      "n": 32,
+      "mean_diff": 0.0067410879003558,
+      "median_diff": 0.0018505417455318418,
+      "better": 17,
+      "worse": 1,
+      "tied": 14,
+      "bootstrap_95ci_mean_diff": [
+        0.003428058402248359,
+        0.010578957950990018
+      ],
+      "wilcoxon_p": 1.52587890625e-05
+    },
+    "gated_minus_buyhold_total_return(100% invested)": {
+      "n": 32,
+      "mean_diff": -1.104603923618196,
+      "median_diff": -1.0032142036152614,
+      "better": 0,
+      "worse": 32,
+      "tied": 0,
+      "bootstrap_95ci_mean_diff": [
+        -1.2491387194900463,
+        -0.989199603229436
+      ],
+      "wilcoxon_p": 7.944094101300401e-07
+    },
+    "ungated_minus_buyhold_total_return(100% invested)": {
+      "n": 32,
+      "mean_diff": -1.0941121110840712,
+      "median_diff": -0.9748916299460627,
+      "better": 0,
+      "worse": 32,
+      "tied": 0,
+      "bootstrap_95ci_mean_diff": [
+        -1.2402772062649798,
+        -0.9765060634495417
+      ],
+      "wilcoxon_p": 7.94848809569633e-07
+    },
+    "ungated_minus_buyhold_size_matched_total_return": {
+      "n": 32,
+      "mean_diff": -0.1392541554606074,
+      "median_diff": -0.1430312578803894,
+      "better": 0,
+      "worse": 32,
+      "tied": 0,
+      "bootstrap_95ci_mean_diff": [
+        -0.16329354194738202,
+        -0.12035970948141428
+      ],
+      "wilcoxon_p": 7.94848809569633e-07
+    },
+    "gated_minus_buyhold_size_matched_total_return": {
+      "n": 32,
+      "mean_diff": -0.14974596799473233,
+      "median_diff": -0.15062909336849892,
+      "better": 0,
+      "worse": 32,
+      "tied": 0,
+      "bootstrap_95ci_mean_diff": [
+        -0.17431120216300602,
+        -0.12920239589534965
+      ],
+      "wilcoxon_p": 7.94848809569633e-07
+    },
+    "ungated_minus_buyhold_daily_sharpe": {
+      "n": 32,
+      "mean_diff": -0.5036211847941627,
+      "median_diff": -0.475907935103381,
+      "better": 3,
+      "worse": 29,
+      "tied": 0,
+      "bootstrap_95ci_mean_diff": [
+        -0.64296696513087,
+        -0.3698073415541549
+      ],
+      "wilcoxon_p": 1.404028788281983e-06
+    },
+    "gated_minus_ungated_daily_sharpe": {
+      "n": 32,
+      "mean_diff": -0.0520200536752058,
+      "median_diff": 0.0,
+      "better": 13,
+      "worse": 9,
+      "tied": 10,
+      "bootstrap_95ci_mean_diff": [
+        -0.18111729116204595,
+        0.0757159240670951
+      ],
+      "wilcoxon_p": 0.5660676956176758
+    }
+  },
+  "active_gate_only": {
+    "gated_minus_ungated_total_return": {
+      "n": 27,
+      "mean_diff": -0.008324183184607202,
+      "median_diff": 0.0,
+      "better": 9,
+      "worse": 10,
+      "tied": 8,
+      "bootstrap_95ci_mean_diff": [
+        -0.016402039322644103,
+        -0.0010001774831222205
+      ],
+      "wilcoxon_p": 0.1336212158203125
+    },
+    "gated_minus_ungated_max_drawdown(less negative=better)": {
+      "n": 27,
+      "mean_diff": 0.005582591167812012,
+      "median_diff": 0.0028201664368066037,
+      "better": 14,
+      "worse": 1,
+      "tied": 12,
+      "bootstrap_95ci_mean_diff": [
+        0.002700826655157876,
+        0.009000793241212017
+      ],
+      "wilcoxon_p": 0.0001220703125
+    },
+    "gated_minus_buyhold_total_return(100% invested)": {
+      "n": 27,
+      "mean_diff": -1.0823865427779367,
+      "median_diff": -0.9997825722941585,
+      "better": 0,
+      "worse": 27,
+      "tied": 0,
+      "bootstrap_95ci_mean_diff": [
+        -1.2302172039532964,
+        -0.9666522088103543
+      ],
+      "wilcoxon_p": 5.601761882966655e-06
+    },
+    "ungated_minus_buyhold_total_return(100% invested)": {
+      "n": 27,
+      "mean_diff": -1.0740623595933294,
+      "median_diff": -0.9738453824189797,
+      "better": 0,
+      "worse": 27,
+      "tied": 0,
+      "bootstrap_95ci_mean_diff": [
+        -1.2248384302182318,
+        -0.9563282836890551
+      ],
+      "wilcoxon_p": 5.601761882966655e-06
+    },
+    "ungated_minus_buyhold_size_matched_total_return": {
+      "n": 27,
+      "mean_diff": -0.13544426652820188,
+      "median_diff": -0.14208975671967775,
+      "better": 0,
+      "worse": 27,
+      "tied": 0,
+      "bootstrap_95ci_mean_diff": [
+        -0.16287756823770874,
+        -0.11402109230414362
+      ],
+      "wilcoxon_p": 5.601761882966655e-06
+    },
+    "gated_minus_buyhold_size_matched_total_return": {
+      "n": 27,
+      "mean_diff": -0.14376844971280908,
+      "median_diff": -0.13599015059330744,
+      "better": 0,
+      "worse": 27,
+      "tied": 0,
+      "bootstrap_95ci_mean_diff": [
+        -0.17155404977834873,
+        -0.12050489712905724
+      ],
+      "wilcoxon_p": 5.601761882966655e-06
+    },
+    "ungated_minus_buyhold_daily_sharpe": {
+      "n": 27,
+      "mean_diff": -0.47162592945370035,
+      "median_diff": -0.47298349253782745,
+      "better": 3,
+      "worse": 24,
+      "tied": 0,
+      "bootstrap_95ci_mean_diff": [
+        -0.6156365141302239,
+        -0.3389029947101179
+      ],
+      "wilcoxon_p": 1.0989216703284973e-05
+    },
+    "gated_minus_ungated_daily_sharpe": {
+      "n": 27,
+      "mean_diff": 0.013950337569134415,
+      "median_diff": 0.0,
+      "better": 13,
+      "worse": 6,
+      "tied": 8,
+      "bootstrap_95ci_mean_diff": [
+        -0.10043920059348639,
+        0.14098868720308472
+      ],
+      "wilcoxon_p": 0.7380905151367188
+    }
+  },
+  "informed_vs_random_regime_choice": {
+    "n": 27,
+    "mean_percentile": 0.7179012345679012,
+    "share_above_median": 0.7777777777777778,
+    "wilcoxon_vs_0.5_p": 0.0004992288841342465
+  },
+  "informed_vs_exposure_matched_random": {
+    "n": 16,
+    "mean_percentile": 0.7286458333333333,
+    "share_above_median": 0.875,
+    "wilcoxon_vs_0.5_p": 0.0030434642674116268
+  },
+  "test_period_buyhold_total_return_by_symbol": {
+    "BTC-USD": 2.1783787489694295,
+    "GLD": 1.1140281862224852,
+    "QQQ": 0.8981405321247813,
+    "SPY": 1.034200901336506
+  }
+}

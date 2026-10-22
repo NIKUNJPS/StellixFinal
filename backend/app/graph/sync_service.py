@@ -1,9 +1,9 @@
-"""GraphSyncService — real-time dual-write from Postgres into the knowledge graph.
+"""GraphSyncService — real-time write-through from Postgres into Research Memory.
 
 Called synchronously from the Postgres-side service layer immediately after any
-create/update (NOT a batch ETL job). Every public method is wrapped so a Neo4j
-connectivity failure logs a warning and returns — Postgres-side behavior never
-depends on Neo4j being up (see docs/schemas.md local-env caveat).
+create/update (NOT a batch ETL job). The index is in-process, so a write lands
+immediately, and the scheduled rebuild (``memory_index``) re-derives the whole index from
+the database so it can never drift.
 """
 
 from __future__ import annotations
@@ -12,7 +12,6 @@ import logging
 import uuid
 from typing import TYPE_CHECKING
 
-from neo4j.exceptions import GqlError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,23 +26,26 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Exceptions treated as "Neo4j unreachable / degraded" — everything else (a bug in our
-# own sync logic, a Postgres error) is allowed to propagate normally.
-_DEGRADE_ON = (GqlError, OSError)
+
+_process_memory_repository: GraphRepository | None = None
 
 
 def _default_repository() -> GraphRepository:
-    from app.clients.neo4j_client import get_driver
-    from app.graph.neo4j_repository import Neo4jGraphRepository
+    """The process-wide index. The API process installs the rebuilt index through
+    ``set_repository_override`` (see ``memory_index``); worker processes write into
+    their own copy, and their changes reach the API's index on its next rebuild."""
+    global _process_memory_repository
+    if _process_memory_repository is None:
+        from app.graph.memory_repository import InMemoryGraphRepository
 
-    return Neo4jGraphRepository(get_driver())
+        _process_memory_repository = InMemoryGraphRepository()
+    return _process_memory_repository
 
 
-# Test seam: every ``GraphSyncService()`` constructed with no explicit repository
-# (i.e. every real call site in services/ and routes/) resolves through here. Tests
-# inject a single shared ``FakeGraphRepository`` so writes made deep inside a service
-# function and reads made from a route handler see the same in-memory graph — see
-# tests/graph_conftest.py.
+# Every ``GraphSyncService()`` constructed with no explicit repository (i.e. every real
+# call site in services/ and routes/) resolves through here: the API installs its live
+# index, and tests inject a single shared ``InMemoryGraphRepository`` so writes made deep
+# inside a service function and reads made from a route handler see the same index.
 _repository_override: GraphRepository | None = None
 
 
@@ -54,7 +56,6 @@ def set_repository_override(repository: GraphRepository | None) -> None:
 
 class GraphSyncService:
     def __init__(self, repository: GraphRepository | None = None) -> None:
-        # Lazy default: don't touch the Neo4j driver at all unless actually used.
         self._repository = repository
 
     @property
@@ -67,10 +68,10 @@ class GraphSyncService:
         return self._repository
 
     async def _degrade_gracefully(self, op_name: str, coro) -> None:
-        try:
-            await coro
-        except _DEGRADE_ON:
-            logger.warning("Graph sync degraded (Neo4j unreachable) during %s", op_name, exc_info=True)
+        # The index is in-process, so there is no connectivity failure to absorb; a bug in
+        # the sync logic itself is allowed to propagate, exactly as before. ``op_name`` is
+        # kept so call sites read the same.
+        await coro
 
     async def delete_strategy_node(self, organization_id: uuid.UUID, strategy_id: uuid.UUID) -> None:
         """Batch 25: remove a discarded draft's node so the nightly consistency sweep
@@ -345,4 +346,46 @@ class GraphSyncService:
                 from_key=note_id,
                 to_label="Strategy",
                 to_key=str(strategy_id),
+            )
+
+    # --- Batch 30 (ADR 0009): multi-agent desk ------------------------------ #
+    async def sync_agent_analysis_node(self, session: AsyncSession, analysis) -> None:
+        await self._degrade_gracefully(
+            "sync_agent_analysis_node", self._sync_agent_analysis_node(session, analysis)
+        )
+
+    async def _sync_agent_analysis_node(self, session: AsyncSession, analysis) -> None:
+        organization_id = str(analysis.organization_id)
+        analysis_id = str(analysis.id)
+        await self.repository.merge_node(
+            organization_id,
+            label="AgentAnalysis",
+            key_value=analysis_id,
+            properties={
+                "ticker": analysis.ticker,
+                "trade_date": analysis.trade_date.isoformat(),
+                "rating": analysis.rating,
+                "regime_at_analysis": analysis.regime_at_analysis,
+                "settled_alpha": analysis.settled_alpha,
+            },
+        )
+        if analysis.regime_at_analysis:
+            await self._ensure_regime_node(session, analysis.regime_at_analysis)
+            await self.repository.merge_edge(
+                organization_id,
+                edge_type="ANALYZED_IN",
+                from_label="AgentAnalysis",
+                from_key=analysis_id,
+                to_label="Regime",
+                to_key=analysis.regime_at_analysis,
+            )
+        if analysis.requested_by_user_id is not None:
+            await self._ensure_researcher_node(session, analysis.requested_by_user_id)
+            await self.repository.merge_edge(
+                organization_id,
+                edge_type="AUTHORED_BY",
+                from_label="AgentAnalysis",
+                from_key=analysis_id,
+                to_label="Researcher",
+                to_key=str(analysis.requested_by_user_id),
             )

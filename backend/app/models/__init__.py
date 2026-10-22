@@ -4,6 +4,7 @@ Importing every model here guarantees they are registered on ``Base.metadata`` s
 Alembic autogenerate and ``create_all`` see the full schema.
 """
 
+from app.models.agent_analysis import AgentAnalysis, AgentBacktestRun, AgentRunStatus
 from app.models.api_key import ApiKey
 from app.models.approval_record import ApprovalAction, ApprovalRecord
 from app.models.audit_log import AuditEventType, AuditLog
@@ -37,6 +38,16 @@ from app.models.strategy_signal import SignalType, StrategySignal
 from app.models.strategy_version import StrategyVersion
 from app.models.subscription import Subscription, SubscriptionStatus
 from app.models.superadmin_audit_log import SuperAdminAuditLog
+from app.models.terminal import (
+    HoldingPortfolio,
+    HoldingSide,
+    HoldingTransaction,
+    PriceAlert,
+    PriceAlertCondition,
+    PriceAlertStatus,
+    TerminalWatchlist,
+    TerminalWorkspace,
+)
 from app.models.trade_record import TradeRecord
 from app.models.user import User, UserRole
 from app.models.validation_result import ValidationResult
@@ -59,6 +70,17 @@ __all__ = [
     "StrategyStatus",
     "StrategyVersion",
     "StrategySignal",
+    "AgentAnalysis",
+    "AgentBacktestRun",
+    "AgentRunStatus",
+    "HoldingPortfolio",
+    "HoldingSide",
+    "HoldingTransaction",
+    "PriceAlert",
+    "PriceAlertCondition",
+    "PriceAlertStatus",
+    "TerminalWatchlist",
+    "TerminalWorkspace",
     "SignalType",
     "ApprovalRecord",
     "ApprovalAction",

@@ -20,6 +20,10 @@ class ChatRequest(BaseModel):
     # the three known values so an arbitrary string can't silently fall through
     # the router's `stakes == "high"` check and get billed on the wrong lane.
     stakes: Literal["low", "medium", "high"] = "low"
+    # Batch 31 (Market Terminal): the symbol the terminal is focused on. When set, the
+    # server prepends a context block it builds itself (quote, Stellix regime, recent
+    # headlines) — never client-supplied data.
+    context_symbol: str | None = Field(default=None, max_length=20, pattern=r"^[A-Za-z0-9.\-=^]{1,20}$")
 
 
 class HypothesisRequest(BaseModel):

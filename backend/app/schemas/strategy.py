@@ -55,7 +55,7 @@ class StrategyCreateRequest(BaseModel):
     exit_rules: dict = Field(default_factory=dict)
     risk_constraints: dict = Field(default_factory=dict)
     parent_strategy_id: uuid.UUID | None = None
-    # Batch 7: backs the knowledge-graph INSPIRED_BY edge.
+    # Batch 7: backs the Research Memory INSPIRED_BY relationship.
     inspired_by_note_id: uuid.UUID | None = None
 
     @field_validator("symbol")

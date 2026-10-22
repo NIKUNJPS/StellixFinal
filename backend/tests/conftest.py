@@ -4,7 +4,7 @@ These tests are hermetic — they do NOT require the Docker stack. Auth/RBAC/iso
 tests run against an in-memory SQLite database with the real ORM models; the FastAPI
 DB-session dependencies are overridden to use that SQLite session, and the in-process
 auth rate limiter is disabled (a dedicated test re-enables it). Integration against
-the real Postgres/Neo4j/Redis stack is documented in the README.
+the real Postgres/Redis stack is documented in the README.
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ import pytest_asyncio
 from app.api.deps import get_system_db, get_tenant_db, get_token_payload
 from app.clients import redis_client
 from app.core.rate_limit import (
+    agent_run_rate_limiter,
     backtest_rate_limiter,
     demo_request_rate_limiter,
     evolution_run_rate_limiter,
@@ -33,7 +34,7 @@ from app.core.token_bucket import reset_scope
 from app.db.base import Base
 from app.db.tenant import bind_organization, mark_session_unscoped
 from app.graph import sync_service
-from app.graph.fake_repository import FakeGraphRepository
+from app.graph.memory_repository import InMemoryGraphRepository
 from app.main import app
 from fastapi import Depends
 from httpx import ASGITransport, AsyncClient
@@ -56,6 +57,7 @@ _ALL_RATE_LIMITERS = (
     evolution_run_rate_limiter,
     llm_rate_limiter,
     demo_request_rate_limiter,
+    agent_run_rate_limiter,
 )
 
 
@@ -83,20 +85,11 @@ async def _fresh_redis_client_per_test():
 
 @pytest.fixture(autouse=True)
 def _default_fake_graph():
-    """Default every test to an in-memory knowledge graph, so the suite is hermetic
-    w.r.t. Neo4j whether or not one happens to be running.
-
-    The real Neo4j async driver caches one connection pool bound to the event loop
-    it was first used on; pytest-asyncio runs each test on its own loop, so once a
-    test reached the *real* driver (only possible when a Neo4j is running locally —
-    CI has none) later tests reused a now-dead socket and crashed with
-    'NoneType object has no attribute send'. Forcing the fake also means the suite
-    never writes test data into a real graph. Tests that assert on graph state
-    override this with the explicit `fake_graph_repo` fixture, and the degradation
-    tests override it with their always-down double; both are requested (non-autouse)
-    fixtures that set the override after this one, so they win.
+    """Give every test its own empty Research Memory index, so no test sees records
+    indexed by another. Tests that assert on index state request the explicit
+    `fake_graph_repo` fixture, which sets the override after this one, so it wins.
     """
-    sync_service.set_repository_override(FakeGraphRepository())
+    sync_service.set_repository_override(InMemoryGraphRepository())
     try:
         yield
     finally:
@@ -194,15 +187,15 @@ def enable_limiter(limiter) -> None:
 
 @pytest.fixture
 def fake_graph_repo():
-    """A shared in-memory graph repository, injected in place of the real Neo4j
-    driver for the duration of one test (opt-in: request this fixture explicitly).
+    """A shared Research Memory index for the duration of one test (opt-in: request
+    this fixture explicitly).
 
     Because ``GraphSyncService()`` call sites deep inside services/ and routes/
     construct fresh instances with no explicit repository, injection has to happen
     via the module-level override rather than FastAPI's dependency-override
     mechanism (which only reaches route-level dependencies).
     """
-    repo = FakeGraphRepository()
+    repo = InMemoryGraphRepository()
     sync_service.set_repository_override(repo)
     try:
         yield repo

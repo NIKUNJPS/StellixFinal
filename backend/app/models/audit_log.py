@@ -58,6 +58,9 @@ class AuditEventType(str, enum.Enum):
     ROLE_PERMISSIONS_CHANGED = "role_permissions_changed"
     # Batch 26 Part B: a strategy's Buy/Sell/Hold signal changed and was recorded.
     SIGNAL_GENERATED = "signal_generated"
+    # Batch 30 (ADR 0009): multi-agent desk.
+    AGENT_ANALYSIS_COMPLETED = "agent_analysis_completed"
+    AGENT_BACKTEST_COMPLETED = "agent_backtest_completed"
 
 
 class AuditLog(Base, UUIDPrimaryKeyMixin, TenantScopedModel):

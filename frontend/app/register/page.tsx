@@ -5,19 +5,19 @@ import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Home, ArrowLeft } from "lucide-react";
+import { ArrowRight, Check, Eye, EyeOff, Loader2, MailCheck } from "lucide-react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  AuthAlert,
+  AuthField,
+  AuthShell,
+  authButtonClass,
+  authInputClass,
+  authLinkClass,
+} from "@/components/auth/auth-shell";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { registerOrg } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 
 // Mirrors the backend password rule: ≥10 chars and at least one number.
 const schema = z.object({
@@ -32,39 +32,12 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-// --- Background Video Component with Subtle Dark Overlay ---
-function BackgroundVideo() {
-  return (
-    <div className="pointer-events-none fixed inset-0 z-0 h-full w-full overflow-hidden bg-[#08090B]">
-      {/* HTML5 Native Video Background */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        className="h-full w-full object-cover"
-      >
-        <source src="/Bgvideo.mp4" type="video/mp4" />
-      </video>
-
-      {/* Ultra-light Cinematic Vignette so the video remains completely unobstructed */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(circle at center, rgba(8, 9, 11, 0.05) 0%, rgba(8, 9, 11, 0.35) 75%, rgba(8, 9, 11, 0.65) 100%)",
-        }}
-      />
-    </div>
-  );
-}
-
 export default function RegisterPage() {
   const [serverError, setServerError] = useState<string | null>(null);
   // Batch 24: registration is now a request, not an instant sign-in. On success we
   // show a "pending approval" confirmation instead of redirecting to the dashboard.
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const {
     register,
     handleSubmit,
@@ -72,10 +45,11 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
-  const orgNameVal = watch("organization_name");
-  const fullNameVal = watch("full_name");
-  const emailVal = watch("email");
-  const passwordVal = watch("password");
+  const passwordVal = watch("password") ?? "";
+  const rules = [
+    { label: "10+ characters", ok: passwordVal.length >= 10 },
+    { label: "At least one number", ok: /\d/.test(passwordVal) },
+  ];
 
   async function onSubmit(values: FormValues) {
     setServerError(null);
@@ -89,256 +63,139 @@ export default function RegisterPage() {
 
   if (pendingMessage) {
     return (
-      <main className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden px-4 py-16 selection:bg-[#6F6B9B]/30">
-        <BackgroundVideo />
-
-        {/* Top-Right Home Navigation Button */}
-        <Link
-          href="/"
-          className="fixed top-6 right-6 z-20 flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.18] bg-[#0F1115]/40 text-[#9A9DA8] backdrop-blur-md transition-all duration-150 hover:border-white/40 hover:bg-[#0F1115]/80 hover:text-[#F5F5F7]"
-          title="Return to Home"
-        >
-          <Home className="h-4 w-4" />
-        </Link>
-
-        <div className="relative z-10 flex w-full max-w-[390px] flex-col items-center gap-4">
-          <Card
-            className="w-full rounded-2xl p-3 shadow-2xl backdrop-blur-sm transition-all duration-200"
-            style={{
-              backgroundColor: "rgba(15, 17, 21, 0.08)",
-              border: "1px solid rgba(255, 255, 255, 0.18)",
-              boxShadow:
-                "0 20px 60px -15px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.06)",
-            }}
-          >
-            <CardHeader className="space-y-1.5 pb-4">
-              <CardTitle className="text-xl font-bold tracking-tight text-[#F5F5F7]">
-                Request received
-              </CardTitle>
-              <CardDescription className="text-sm text-[#9A9DA8]">
-                Your workspace is pending approval.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <p
-                className="rounded-xl p-3.5 text-sm leading-relaxed text-[#F5F5F7]"
-                style={{
-                  backgroundColor: "rgba(92, 86, 142, 0.15)",
-                  border: "1px solid rgba(92, 86, 142, 0.35)",
-                }}
-              >
-                {pendingMessage}
-              </p>
-              <p className="text-sm leading-relaxed text-[#9A9DA8]">
-                You&apos;ll be able to sign in as soon as our team activates your
-                organization. We&apos;ll be in touch shortly.
-              </p>
-              <Link
-                href="/login"
-                className={buttonVariants({
-                  className:
-                    "mt-2 h-12 w-full rounded-xl text-sm font-semibold tracking-wide text-white shadow-sm transition-all duration-200 hover:brightness-110 active:scale-[0.99]",
-                })}
-                style={{
-                  backgroundColor: "#5C568E",
-                  border: "1px solid rgba(255, 255, 255, 0.18)",
-                  boxShadow: "0 4px 22px rgba(92, 86, 142, 0.5)",
-                }}
-              >
-                Back to sign in
-              </Link>
-            </CardContent>
-          </Card>
-
-          {/* Back to Home Link Below Card */}
-          <Link
-            href="/"
-            className="flex items-center gap-1.5 font-mono text-xs text-[#9A9DA8] transition-colors hover:text-[#F5F5F7]"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" /> Back to home
+      <AuthShell
+        aside="signup"
+        eyebrow="Request received"
+        title={
+          <>
+            You&apos;re on the <em>list.</em>
+          </>
+        }
+        description="Your workspace is pending approval."
+      >
+        <div className="flex flex-col gap-5">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gain-tint text-gain">
+            <MailCheck className="h-7 w-7" />
+          </div>
+          <AuthAlert tone="info">{pendingMessage}</AuthAlert>
+          <p className="text-[15px] leading-relaxed text-ink-2">
+            Check your inbox to verify your email. You&apos;ll be able to sign in as soon as our team activates your
+            organization — we&apos;ll be in touch shortly.
+          </p>
+          <Link href="/login" className={authButtonClass}>
+            Back to sign in
+          </Link>
+          <Link href="/" className="text-center text-[14px] font-medium text-ink-2 hover:text-brand">
+            Return to the website
           </Link>
         </div>
-      </main>
+      </AuthShell>
     );
   }
 
   return (
-    <main className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden px-4 py-16 selection:bg-[#6F6B9B]/30">
-      {/* Full-Screen Animated Network Video Background */}
-      <BackgroundVideo />
+    <AuthShell
+      aside="signup"
+      eyebrow="Create a workspace"
+      title={
+        <>
+          Start remembering <em>what failed.</em>
+        </>
+      }
+      description="Set up your organization. You'll be its first admin and can invite your team after approval."
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link href="/login" className={authLinkClass}>
+            Sign in
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5" noValidate>
+        <AuthField label="Organization name" htmlFor="reg-org" error={errors.organization_name?.message}>
+          <Input
+            id="reg-org"
+            placeholder="Acme Capital"
+            autoComplete="organization"
+            aria-invalid={!!errors.organization_name}
+            {...register("organization_name")}
+            className={authInputClass}
+          />
+        </AuthField>
 
-      {/* Top-Right Home Navigation Button */}
-      <Link
-        href="/"
-        className="fixed top-6 right-6 z-20 flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.18] bg-[#0F1115]/40 text-[#9A9DA8] backdrop-blur-md transition-all duration-150 hover:border-white/40 hover:bg-[#0F1115]/80 hover:text-[#F5F5F7]"
-        title="Return to Home"
-      >
-        <Home className="h-4 w-4" />
-      </Link>
+        <AuthField label="Full name" htmlFor="reg-name" optional error={errors.full_name?.message}>
+          <Input id="reg-name" placeholder="Jane Researcher" autoComplete="name" {...register("full_name")} className={authInputClass} />
+        </AuthField>
 
-      <div className="relative z-10 flex w-full max-w-[390px] flex-col items-center gap-4">
-        <Card
-          className="w-full rounded-2xl p-3 shadow-2xl backdrop-blur-sm transition-all duration-200"
-          style={{
-            backgroundColor: "rgba(15, 17, 21, 0.08)",
-            border: "1px solid rgba(255, 255, 255, 0.18)",
-            boxShadow:
-              "0 20px 60px -15px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.06)",
-          }}
-        >
-          <CardHeader className="space-y-2 pb-5">
-            <div className="flex items-center gap-2">
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{
-                  backgroundColor: "#6F6B9B",
-                  boxShadow: "0 0 8px rgba(111, 107, 155, 0.9)",
-                }}
-              />
-              <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-[#9A9DA8]">
-                Platform Access
-              </span>
-            </div>
-            <CardTitle className="text-[28px] font-bold tracking-tight text-[#F5F5F7]">
-              Create your organization
-            </CardTitle>
-            <CardDescription className="text-sm leading-relaxed text-[#9A9DA8]">
-              You&apos;ll be the admin of a new Stellix Labs workspace.
-            </CardDescription>
-          </CardHeader>
+        <AuthField label="Work email" htmlFor="reg-email" error={errors.email?.message}>
+          <Input
+            id="reg-email"
+            type="email"
+            placeholder="jane@acmecapital.com"
+            autoComplete="email"
+            aria-invalid={!!errors.email}
+            {...register("email")}
+            className={authInputClass}
+          />
+        </AuthField>
 
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-              <Field
-                label="Organization name"
-                error={errors.organization_name?.message}
+        <AuthField label="Password" htmlFor="reg-password" error={errors.password?.message}>
+          <div className="relative">
+            <Input
+              id="reg-password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Create a password"
+              autoComplete="new-password"
+              aria-invalid={!!errors.password}
+              {...register("password")}
+              className={`${authInputClass} pr-12`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-ink-3 hover:bg-ink/[0.05] hover:text-ink"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          <ul className="flex flex-wrap gap-2" aria-label="Password requirements">
+            {rules.map((r) => (
+              <li
+                key={r.label}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12.5px] font-medium transition-colors",
+                  r.ok ? "border-gain/25 bg-gain-tint text-gain" : "border-line bg-paper-sunken text-ink-3",
+                )}
               >
-                <Input
-                  placeholder="Acme Capital"
-                  {...register("organization_name")}
-                  className="h-11 rounded-xl text-sm text-[#F5F5F7] placeholder:text-[#666A76] transition-all duration-150 focus:border-white focus:outline-none focus:ring-0 focus-visible:border-white focus-visible:ring-0"
-                  style={{
-                    backgroundColor: "rgba(20, 22, 27, 0.15)",
-                    border: orgNameVal
-                      ? "1px solid rgba(255, 255, 255, 0.75)"
-                      : "1px solid rgba(255, 255, 255, 0.12)",
-                  }}
-                />
-              </Field>
+                <Check className={cn("h-3 w-3", r.ok ? "opacity-100" : "opacity-40")} strokeWidth={3} />
+                {r.label}
+              </li>
+            ))}
+          </ul>
+        </AuthField>
 
-              <Field
-                label="Full name"
-                error={errors.full_name?.message}
-                isOptional
-              >
-                <Input
-                  placeholder="Jane Researcher"
-                  {...register("full_name")}
-                  className="h-11 rounded-xl text-sm text-[#F5F5F7] placeholder:text-[#666A76] transition-all duration-150 focus:border-white focus:outline-none focus:ring-0 focus-visible:border-white focus-visible:ring-0"
-                  style={{
-                    backgroundColor: "rgba(20, 22, 27, 0.15)",
-                    border: fullNameVal
-                      ? "1px solid rgba(255, 255, 255, 0.75)"
-                      : "1px solid rgba(255, 255, 255, 0.12)",
-                  }}
-                />
-              </Field>
+        {serverError && <AuthAlert tone="error">{serverError}</AuthAlert>}
 
-              <Field label="Email" error={errors.email?.message}>
-                <Input
-                  type="email"
-                  placeholder="admin@acme.com"
-                  {...register("email")}
-                  className="h-11 rounded-xl text-sm text-[#F5F5F7] placeholder:text-[#666A76] transition-all duration-150 focus:border-white focus:outline-none focus:ring-0 focus-visible:border-white focus-visible:ring-0"
-                  style={{
-                    backgroundColor: "rgba(20, 22, 27, 0.15)",
-                    border: emailVal
-                      ? "1px solid rgba(255, 255, 255, 0.75)"
-                      : "1px solid rgba(255, 255, 255, 0.12)",
-                  }}
-                />
-              </Field>
+        <button type="submit" disabled={isSubmitting} className={`${authButtonClass} group mt-1`}>
+          {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {isSubmitting ? "Creating workspace…" : "Create workspace"}
+          {!isSubmitting && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
+        </button>
 
-              <Field label="Password" error={errors.password?.message}>
-                <Input
-                  type="password"
-                  placeholder="At least 10 chars, 1 number"
-                  {...register("password")}
-                  className="h-11 rounded-xl text-sm text-[#F5F5F7] placeholder:text-[#666A76] transition-all duration-150 focus:border-white focus:outline-none focus:ring-0 focus-visible:border-white focus-visible:ring-0"
-                  style={{
-                    backgroundColor: "rgba(20, 22, 27, 0.15)",
-                    border: passwordVal
-                      ? "1px solid rgba(255, 255, 255, 0.75)"
-                      : "1px solid rgba(255, 255, 255, 0.12)",
-                  }}
-                />
-              </Field>
-
-              {serverError && (
-                <p className="rounded-xl border border-[#E45B5B]/30 bg-[#E45B5B]/10 px-3.5 py-2.5 text-sm font-medium text-[#E45B5B]">
-                  {serverError}
-                </p>
-              )}
-
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="mt-2 h-12 rounded-xl text-sm font-semibold tracking-wide text-white shadow-sm transition-all duration-200 hover:brightness-110 active:scale-[0.99] disabled:opacity-40"
-                style={{
-                  backgroundColor: "#5C568E",
-                  border: "1px solid rgba(255, 255, 255, 0.18)",
-                  boxShadow: "0 4px 22px rgba(92, 86, 142, 0.5)",
-                }}
-              >
-                {isSubmitting ? "Creating…" : "Create organization"}
-              </Button>
-            </form>
-
-            <p className="mt-5 text-center text-sm text-[#666A76]">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="font-medium text-[#F5F5F7] transition-colors hover:underline"
-              >
-                Sign in
-              </Link>
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Back to Home Link Below Card */}
-        <Link
-          href="/"
-          className="flex items-center gap-1.5 font-mono text-xs text-[#9A9DA8] transition-colors hover:text-[#F5F5F7]"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" /> Back to home
-        </Link>
-      </div>
-    </main>
-  );
-}
-
-function Field({
-  label,
-  error,
-  isOptional,
-  children,
-}: {
-  label: string;
-  error?: string;
-  isOptional?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <Label className="text-sm font-semibold text-[#F5F5F7]">
-        {label}
-        {isOptional && (
-          <span className="ml-1 text-xs font-normal text-[#666A76]">(optional)</span>
-        )}
-      </Label>
-      {children}
-      {error && <span className="font-mono text-xs text-[#E45B5B]">{error}</span>}
-    </div>
+        <p className="text-center text-[13px] leading-relaxed text-ink-3">
+          By creating a workspace you agree to our{" "}
+          <Link href="/docs#terms" className="font-medium text-ink-2 underline underline-offset-2 hover:text-ink">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/docs#privacy" className="font-medium text-ink-2 underline underline-offset-2 hover:text-ink">
+            Privacy Policy
+          </Link>
+          .
+        </p>
+      </form>
+    </AuthShell>
   );
 }

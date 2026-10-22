@@ -7,7 +7,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from app.graph.fake_repository import FakeGraphRepository
+from app.graph.memory_repository import InMemoryGraphRepository
 
 ORG = "99999999-9999-9999-9999-999999999999"
 NOW = datetime(2026, 7, 5, tzinfo=UTC)
@@ -17,7 +17,7 @@ def _iso(dt: datetime) -> str:
     return dt.isoformat()
 
 
-async def _build_fixture(repo: FakeGraphRepository) -> None:
+async def _build_fixture(repo: InMemoryGraphRepository) -> None:
     # --- Strategies -------------------------------------------------------- #
     await repo.merge_node(ORG, label="Strategy", key_value="alpha", properties={
         "name": "Alpha", "version": "v1.0", "status": "active", "robustness_score": 0.9,
@@ -97,7 +97,7 @@ async def _build_fixture(repo: FakeGraphRepository) -> None:
 
 @pytest.fixture
 async def fixture_repo():
-    repo = FakeGraphRepository()
+    repo = InMemoryGraphRepository()
     await _build_fixture(repo)
     return repo
 

@@ -1,7 +1,7 @@
 """System Monitoring endpoints (Batch 12) — admin-only, extends Batch 0's
 /health into per-service uptime%/response-time, Celery worker liveness, job
-queue counts, real host resource gauges, and Batch 7's consistency-sweep
-alerts. Distinct from the unauthenticated, fast /health liveness probe —
+queue counts, real host resource gauges, and the Research Memory index
+status. Distinct from the unauthenticated, fast /health liveness probe —
 this is a heavier, richer, gated view."""
 
 from __future__ import annotations
@@ -13,8 +13,8 @@ from app.models.user import User
 from app.rbac.catalog import P
 from app.schemas.health import ServiceStatus
 from app.schemas.system_health import (
-    ConsistencyAlert,
     JobQueueEntry,
+    MemoryIndexStatus,
     ResourceGauges,
     ServiceHealthDetailed,
     SystemHealthDetailedResponse,
@@ -36,7 +36,7 @@ async def health_detailed(
     job_queue = await svc.get_job_queue_counts()
     failed_job_count = await svc.get_failed_job_count()
     resources = svc.get_resource_gauges()
-    consistency = await svc.get_consistency_alert(current_user.organization_id)
+    memory = await svc.get_memory_index_status(current_user.organization_id)
 
     overall = (
         ServiceStatus.OK
@@ -54,7 +54,7 @@ async def health_detailed(
         job_queue=[JobQueueEntry(**row) for row in job_queue],
         failed_job_count=failed_job_count,
         resources=ResourceGauges(**resources),
-        consistency_alert=ConsistencyAlert(**consistency) if consistency else None,
+        memory_index=MemoryIndexStatus(**memory) if memory else None,
         liveness=True,
         readiness=readiness,
     )

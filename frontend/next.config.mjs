@@ -7,6 +7,16 @@ const nextConfig = {
   // production image ships only the traced runtime files + a minimal node_modules,
   // not the full dev dependency tree. Runner copies .next/standalone + .next/static.
   output: "standalone",
+  // The Knowledge Graph pages became Research Memory (ADR 0012); keep old links working.
+  async redirects() {
+    return [
+      {
+        source: "/:role(admin|researcher|compliance|risk-manager|cio)/graph",
+        destination: "/:role/memory",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 // Batch 13: wraps build output with Sentry's instrumentation + (when

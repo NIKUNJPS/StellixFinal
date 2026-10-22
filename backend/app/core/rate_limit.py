@@ -133,3 +133,7 @@ evolution_run_rate_limiter = per_org_limiter(
 llm_rate_limiter = per_org_limiter(
     capacity=50, window_seconds=3600, scope="llm", category="LLM calls"
 )
+# Batch 30: one multi-agent desk run is dozens of LLM calls (a backtest, many runs).
+agent_run_rate_limiter = per_org_limiter(
+    capacity=20, window_seconds=3600, scope="agents:run", category="Agent desk runs"
+)

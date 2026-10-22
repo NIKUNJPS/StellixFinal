@@ -414,6 +414,91 @@ def run_evolution_task(
     return asyncio.run(_main())
 
 
+@celery_app.task(name="run_agent_analysis")
+@with_log_context
+def run_agent_analysis_task(organization_id: str, analysis_id: str, request_id: str | None = None) -> dict:
+    """Batch 30 (ADR 0009): one multi-agent desk run (TradingAgents pipeline). Minutes
+    long and LLM-bound; progress streams as org-scoped ``agent_progress`` events."""
+    from app.services.agent_desk import run_analysis
+
+    async def _main() -> dict:
+        try:
+            return await run_analysis(uuid.UUID(organization_id), uuid.UUID(analysis_id))
+        finally:
+            await dispose_engine()
+
+    return asyncio.run(_main())
+
+
+@celery_app.task(name="run_agent_backtest")
+@with_log_context
+def run_agent_backtest_task(organization_id: str, run_id: str, request_id: str | None = None) -> dict:
+    """Batch 30: a ticker x date grid of desk runs, scored by realised alpha per regime.
+    Resumable — re-running the task skips cells that already exist."""
+    from app.services.agent_desk import run_backtest
+
+    async def _main() -> dict:
+        try:
+            return await run_backtest(uuid.UUID(organization_id), uuid.UUID(run_id))
+        finally:
+            await dispose_engine()
+
+    return asyncio.run(_main())
+
+
+@celery_app.task(name="settle_agent_analyses")
+@with_log_context
+def settle_agent_analyses_task(organization_id: str | None = None, request_id: str | None = None) -> dict:
+    """Batch 30: append realised return / alpha + a reflection to every completed desk
+    call whose holding window has now traded. One org on demand, or every active org
+    from the nightly beat entry."""
+    from app.db.session import get_tenant_session
+    from app.services.agent_desk import settle_all_orgs, settle_org_pending
+
+    async def _main() -> dict:
+        try:
+            if organization_id is None:
+                return await settle_all_orgs()
+            async with get_tenant_session(uuid.UUID(organization_id)) as session:
+                return await settle_org_pending(session)
+        finally:
+            await dispose_engine()
+
+    return asyncio.run(_main())
+
+
+@celery_app.task(name="check_price_alerts")
+@with_log_context
+def check_price_alerts_task(request_id: str | None = None) -> dict:
+    """Batch 31 (ADR 0010): fire Market Terminal price alerts whose level was crossed.
+    One batched quote call for every symbol with an active alert, then per-org
+    evaluation in tenant-scoped sessions (notification + owner-addressed WS event)."""
+    from app.terminal.userdata import check_all_alerts
+
+    async def _main() -> dict:
+        try:
+            return await check_all_alerts()
+        finally:
+            await dispose_engine()
+
+    return asyncio.run(_main())
+
+
+@celery_app.task(name="warm_terminal_caches")
+@with_log_context
+def warm_terminal_caches_task(request_id: str | None = None) -> dict:
+    """Batch 31: pre-load the FINRA short-volume files for recent sessions."""
+    from app.terminal.market import warm_finra
+
+    async def _main() -> dict:
+        try:
+            return {"finra_days": await warm_finra()}
+        finally:
+            await dispose_engine()
+
+    return asyncio.run(_main())
+
+
 @celery_app.task(name="system_heartbeat")
 @with_log_context
 def system_heartbeat(request_id: str | None = None) -> dict:
@@ -438,22 +523,6 @@ def system_heartbeat(request_id: str | None = None) -> dict:
 
     asyncio.run(_main())
     return {"recorded": True}
-
-
-@celery_app.task(name="run_graph_consistency_sweep")
-@with_log_context
-def run_graph_consistency_sweep(request_id: str | None = None) -> dict:
-    from app.graph.consistency import run_consistency_sweep
-
-    async def _main() -> list[dict]:
-        try:
-            return await run_consistency_sweep()
-        finally:
-            await dispose_engine()
-
-    results = asyncio.run(_main())
-    flagged = [r for r in results if r["orphaned_graph_nodes"] or r["unsynced_strategies"] or r["missing_lineage_edges"]]
-    return {"organizations_checked": len(results), "organizations_flagged": len(flagged)}
 
 
 @celery_app.task(name="run_compliance_export")

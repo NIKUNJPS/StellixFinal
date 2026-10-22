@@ -40,6 +40,8 @@ _EVENT_PHRASES: dict[AuditEventType, str] = {
     AuditEventType.ROLE_UPDATED: "updated role",
     AuditEventType.ROLE_DELETED: "deleted role",
     AuditEventType.ROLE_PERMISSIONS_CHANGED: "changed the permissions of role",
+    AuditEventType.AGENT_ANALYSIS_COMPLETED: "completed a multi-agent analysis of",
+    AuditEventType.AGENT_BACKTEST_COMPLETED: "completed a multi-agent backtest over",
 }
 
 

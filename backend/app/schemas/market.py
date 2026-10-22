@@ -37,6 +37,31 @@ class GlobalIndicesResponse(BaseModel):
     quotes: list[IndexQuote]
 
 
+class RealtimeEtf(BaseModel):
+    symbol: str
+    name: str
+    # The index the ETF tracks — shown as context, never presented as the index value.
+    tracks: str
+    last_price: float | None
+    previous_close: float | None
+    change: float | None
+    change_pct: float | None
+    # Timestamp of the actual trade this price came from.
+    last_trade_at: datetime | None
+    status: Literal["ok", "unavailable"]
+    unavailable_reason: str | None
+
+
+class RealtimeEtfResponse(BaseModel):
+    configured: bool
+    # True only while the streamer process is connected and heartbeating.
+    stream_online: bool
+    provider: str
+    data_note: str
+    generated_at: datetime
+    etfs: list[RealtimeEtf]
+
+
 class MacroSeriesPoint(BaseModel):
     date: date
     value: float

@@ -1,269 +1,246 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Check, ShieldAlert } from "lucide-react";
+
+import {
+  FailureRecordCard,
+  MemoryMap,
+  PerRegimeTable,
+  RegimeLegend,
+  RegimeTape,
+  ValidationGate,
+} from "@/components/marketing/artifacts";
+import { Reveal } from "@/components/marketing/reveal";
+import { ButtonLink, CtaBand, Display, Eyebrow, PageHero, Tag } from "@/components/marketing/site";
 
 export const metadata: Metadata = {
-  title: "Features — Stellix Labs",
+  title: "Features — regime detection, failure intelligence, Research Memory",
   description:
-    "Regime-Aware Evaluation, Failure Preservation, Institutional Memory Graph, Multi-Method Validation, Evolutionary Strategy Improvement, LLM Research Assistant, Governance, Audit Trails, and Multi-Tenant Infrastructure.",
+    "Seven modules, each shown with a real product artifact: regime detection, regime-aware backtesting, five-method validation, failure intelligence, Research Memory, the evolution engine and a governed research assistant.",
 };
 
-// ---------------------------------------------------------------------------
-// Feature data — grouped into logical sections
-// ---------------------------------------------------------------------------
-
-const FEATURE_GROUPS = [
-  {
-    group: "Research Intelligence",
-    description:
-      "The systems that make research regime-aware, context-rich, and genuinely informed by history.",
-    features: [
-      {
-        name: "Regime-Aware Evaluation",
-        body: "Every backtest and validation run is split and labelled by market regime — Bull, Bear, High-Volatility, Low-Volatility, Sideways, or Crisis. A strategy is never evaluated in aggregate. It is evaluated in context.",
-        detail:
-          "Four detection algorithms (HMM, PELT, GMM, GARCH) form an ensemble. Each bar receives a voted regime label. The label is written into every downstream record permanently.",
-      },
-      {
-        name: "Failure Preservation",
-        body: "When a strategy triggers a failure condition, an immutable record is written. It captures the regime at failure, the trigger condition, SHAP feature attributions, and the performance breakdown.",
-        detail:
-          "Four trigger conditions: drawdown_breach, sharpe_decline, regime_mismatch, time_based_review. The failures table carries REVOKE UPDATE, DELETE at the database level — no record can be overwritten.",
-      },
-      {
-        name: "LLM Research Assistant",
-        body: "A conversational interface for strategy drafting, failure analysis, and hypothesis exploration. The assistant has access to the knowledge graph, failure records, and regime history.",
-        detail:
-          "The assistant generates strategy DSL JSON directly. Drafts are saved as candidates with full provenance — analyst, timestamp, source model, and the original prompt.",
-      },
-    ],
-  },
-  {
-    group: "Validation and Reliability",
-    description:
-      "Multiple independent methods to confirm that a strategy's performance is real, not a statistical artifact.",
-    features: [
-      {
-        name: "Multi-Method Validation",
-        body: "Five validation methods run on every strategy before it can be promoted to active: Walk-Forward, Monte Carlo, Permutation, Bootstrap, and Regime-Specific analysis. Each produces a score. The aggregate must exceed 0.70.",
-        detail:
-          "The 0.70 robustness gate is not configurable by default — it is a structural constraint. A strategy below threshold stays as a candidate regardless of backtest performance.",
-      },
-      {
-        name: "Evolutionary Strategy Improvement",
-        body: "A genetic algorithm seeds from validated, active strategies and their failure records. It mutates parameters, recombines logic trees, and registers the fittest offspring — with full lineage tracing.",
-        detail:
-          "Offspring inherit parent_strategy_id, evolution_generation, and the mutation description. The lineage graph in Neo4j makes the evolutionary path queryable at any depth.",
-      },
-    ],
-  },
-  {
-    group: "Institutional Memory",
-    description:
-      "The connective tissue that makes research cumulative rather than episodic.",
-    features: [
-      {
-        name: "Institutional Memory Graph",
-        body: "A Neo4j knowledge graph connects strategies, regimes, failures, performance records, research notes, and analysts. Patterns that span years and multiple strategy generations become queryable.",
-        detail:
-          "Six node types: Strategy, Regime, Failure, Performance, ResearchNote, Analyst. Eight edge types including FAILED_IN, CAUSED_BY, EVOLVED_FROM, DOCUMENTED_BY. Five named Cypher queries surface the most operationally useful patterns.",
-      },
-    ],
-  },
-  {
-    group: "Governance and Control",
-    description:
-      "Institutional-grade controls for research promotion, audit trails, and multi-tenant data isolation.",
-    features: [
-      {
-        name: "Governance and Approval Gates",
-        body: "Strategies require explicit approval by a designated role before promotion to active. The approval workflow is configurable per organisation. No strategy can self-promote.",
-        detail:
-          "Approval actions are logged with approver identity, timestamp, and rationale. Rejection triggers a candidate status update and notifies the originating analyst.",
-      },
-      {
-        name: "Audit Trails",
-        body: "Every significant action — strategy creation, approval, rejection, failure trigger, evolution run, graph query — is recorded with actor, timestamp, and context. Audit logs are immutable.",
-        detail:
-          "The audit log is designed for compliance review. Fields include: action_type, actor_id, resource_id, resource_type, regime_context, and a free-text rationale field.",
-      },
-      {
-        name: "Multi-Tenant Research Infrastructure",
-        body: "Every table that holds research data carries an organisation_id from migration one. A SQLAlchemy loader-criteria listener injects the tenant filter into every ORM query automatically.",
-        detail:
-          "A query against tenant data with no organisation bound doesn't silently return everything — it raises. Neo4j enforces the same constraint: every Cypher query is validated to reference $organization_id before execution.",
-      },
-    ],
-  },
-];
-
-// ---------------------------------------------------------------------------
-// Components
-// ---------------------------------------------------------------------------
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function RegimeVisual() {
+  const votes = [
+    ["Gaussian HMM", "Bear"],
+    ["PELT change-points", "High-Vol"],
+    ["Gaussian mixture", "Bear"],
+    ["GARCH(1,1)", "Bear"],
+  ];
   return (
-    <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.25em] text-[#A79CFF]">
-      {children}
-    </p>
+    <div className="rounded-2xl border border-line bg-paper-raised p-6">
+      <div className="flex items-center justify-between">
+        <p className="text-[13px] font-semibold text-ink">Ensemble vote · bar 2026-03-06</p>
+        <Tag tone="gain">confidence 0.75</Tag>
+      </div>
+      <ul className="mt-5 divide-y divide-line rounded-xl border border-line">
+        {votes.map(([model, vote]) => (
+          <li key={model} className="flex items-center justify-between px-4 py-2.5 text-[14px]">
+            <span className="text-ink-2">{model}</span>
+            <span className="font-code text-[13px] font-semibold text-ink">{vote}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-5 text-[12px] font-medium text-ink-3">Sample 12-month regime tape</p>
+      <RegimeTape className="mt-2" />
+      <RegimeLegend className="mt-4" />
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
-
-export default function FeaturesPage() {
+function EvolutionVisual() {
+  const best = [0.42, 0.51, 0.58, 0.63, 0.67, 0.71, 0.73, 0.76, 0.77, 0.79, 0.8, 0.81];
+  const mean = [0.21, 0.29, 0.36, 0.42, 0.47, 0.52, 0.55, 0.59, 0.61, 0.63, 0.64, 0.66];
+  const toPath = (arr: number[]) => arr.map((v, i) => `${i === 0 ? "M" : "L"} ${20 + i * 40} ${200 - v * 200}`).join(" ");
   return (
-    <div
-      className="min-h-screen"
-      style={{ backgroundColor: "#08080B", color: "#F4F3F7" }}
-    >
-      {/* ── Hero ── */}
-      <section className="border-b border-white/[0.06] px-6 py-24 sm:px-12 lg:px-20">
-        <div className="mx-auto max-w-4xl">
-          <SectionLabel>Features</SectionLabel>
-          <h1
-            className="text-[clamp(2.2rem,4.5vw,3.8rem)] font-medium leading-[1.06] tracking-[-0.04em]"
-            style={{ color: "#F4F3F7" }}
-          >
-            Nine capabilities. Each one
-            <br />
-            earns its place.
-          </h1>
-          <p
-            className="mt-7 max-w-2xl text-[17px] leading-[1.8]"
-            style={{ color: "rgba(244,243,247,0.5)" }}
-          >
-            Stellix Labs is not a collection of dashboards. Every feature serves
-            the core mission: preserving failure intelligence, detecting regime
-            shifts, and compounding institutional memory.
+    <div className="rounded-2xl border border-line bg-paper-raised p-6">
+      <div className="flex items-center justify-between">
+        <p className="text-[13px] font-semibold text-ink">Fitness over generations</p>
+        <div className="flex gap-4 text-[12px] text-ink-2">
+          <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 bg-brand" /> best</span>
+          <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 bg-ink-3" /> mean</span>
+        </div>
+      </div>
+      <svg viewBox="0 0 480 210" className="mt-4 h-auto w-full" role="img" aria-label="Sample fitness curve rising across twelve generations">
+        {[0.25, 0.5, 0.75].map((y) => (
+          <line key={y} x1="20" x2="460" y1={200 - y * 200} y2={200 - y * 200} stroke="#E4E1D9" strokeDasharray="3 4" />
+        ))}
+        <path d={toPath(mean)} fill="none" stroke="#5E6679" strokeWidth="2" />
+        <path d={toPath(best)} fill="none" stroke="#4B3FD1" strokeWidth="2.5" />
+        {best.map((v, i) => (
+          <circle key={i} cx={20 + i * 40} cy={200 - v * 200} r="3" fill="#FFFFFF" stroke="#4B3FD1" strokeWidth="2" />
+        ))}
+      </svg>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Tag tone="brand">MUTATED_FROM</Tag>
+        <Tag>tournament selection</Tag>
+        <Tag>elitism</Tag>
+      </div>
+    </div>
+  );
+}
+
+function AssistantVisual() {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-line bg-paper-raised">
+      <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <span className="font-code text-[12px] font-semibold text-ink">llm_audit_log · #8812</span>
+        <Tag tone="signal">human review required</Tag>
+      </div>
+      <div className="space-y-4 px-5 py-5 text-[14px]">
+        <div>
+          <p className="font-code text-[11px] uppercase tracking-wider text-ink-3">Prompt</p>
+          <p className="mt-1 text-ink">Why did Momentum 12-1 fail in February?</p>
+        </div>
+        <div>
+          <p className="font-code text-[11px] uppercase tracking-wider text-ink-3">Structured response</p>
+          <p className="mt-1 leading-relaxed text-ink-2">
+            Regime mismatch: validated in Bull/Low-Vol, deployed into High-Vol. Max drawdown{" "}
+            <span className="rounded bg-gain-tint px-1 font-code text-gain">−11.2% ✓</span> matches the failure record.
           </p>
         </div>
-      </section>
-
-      {/* ── Feature Groups ── */}
-      <div className="mx-auto max-w-5xl px-6 py-20 sm:px-12 lg:px-20">
-        <div className="space-y-24">
-          {FEATURE_GROUPS.map((group, gi) => (
-            <section key={group.group}>
-              {/* Group header */}
-              <div className="mb-12 flex items-start gap-6">
-                <span
-                  className="shrink-0 pt-1 font-mono text-[10px] font-semibold tracking-[0.1em]"
-                  style={{ color: "rgba(167,156,255,0.35)" }}
-                >
-                  {String(gi + 1).padStart(2, "0")}
-                </span>
-                <div>
-                  <h2
-                    className="mb-2 text-[22px] font-semibold tracking-[-0.02em]"
-                    style={{ color: "#F4F3F7" }}
-                  >
-                    {group.group}
-                  </h2>
-                  <p
-                    className="max-w-lg text-[14px] leading-[1.7]"
-                    style={{ color: "rgba(244,243,247,0.46)" }}
-                  >
-                    {group.description}
-                  </p>
-                </div>
-              </div>
-
-              {/* Features */}
-              <div className="space-y-1 pl-12">
-                {group.features.map((f) => (
-                  <details
-                    key={f.name}
-                    className="group border-b border-white/[0.06] last:border-b-0"
-                  >
-                    <summary
-                      className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 transition-colors duration-150"
-                      style={{ color: "#F4F3F7" }}
-                    >
-                      <div className="flex items-start gap-4">
-                        <span
-                          className="mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: "#A79CFF", opacity: 0.6 }}
-                        />
-                        <div>
-                          <h3
-                            className="text-[16px] font-medium leading-snug"
-                            style={{ color: "#F4F3F7" }}
-                          >
-                            {f.name}
-                          </h3>
-                          <p
-                            className="mt-1 text-[13px] leading-[1.65]"
-                            style={{ color: "rgba(244,243,247,0.46)" }}
-                          >
-                            {f.body}
-                          </p>
-                        </div>
-                      </div>
-                      {/* Expand / collapse indicator */}
-                      <span
-                        className="shrink-0 text-[18px] font-thin transition-transform duration-200 group-open:rotate-45"
-                        style={{ color: "rgba(167,156,255,0.5)" }}
-                        aria-hidden
-                      >
-                        +
-                      </span>
-                    </summary>
-
-                    {/* Technical detail — visible when expanded */}
-                    <div
-                      className="mb-5 ml-5 rounded-xl border-l-2 pl-5"
-                      style={{
-                        borderColor: "rgba(167,156,255,0.22)",
-                      }}
-                    >
-                      <p
-                        className="text-[13px] leading-[1.75]"
-                        style={{ color: "rgba(244,243,247,0.5)" }}
-                      >
-                        {f.detail}
-                      </p>
-                    </div>
-                  </details>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-
-        {/* ── Bottom CTA ── */}
-        <div className="mt-24 border-t border-white/[0.06] pt-16 text-center">
-          <h2
-            className="mb-3 text-[clamp(1.4rem,2.5vw,2rem)] font-medium tracking-[-0.025em]"
-            style={{ color: "#F4F3F7" }}
-          >
-            See every feature running live.
-          </h2>
-          <p
-            className="mb-8 text-[15px]"
-            style={{ color: "rgba(244,243,247,0.44)" }}
-          >
-            30-minute technical walkthrough. Real data. Real product.
+        <div className="flex items-start gap-2.5 rounded-xl border border-loss/20 bg-loss-tint px-3.5 py-3">
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-loss" />
+          <p className="text-[13px] text-ink">
+            <span className="font-semibold">Blocked before the model was called:</span> “Where will SPY close on Friday?” — price
+            forecasting is refused by design.
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link
-              href="/contact"
-              className="inline-flex h-11 items-center rounded-full px-7 text-[13px] font-semibold transition-opacity hover:opacity-90"
-              style={{ backgroundColor: "#A79CFF", color: "#08080B" }}
-            >
-              Request Demo
-            </Link>
-            <Link
-              href="/architecture"
-              className="inline-flex h-11 items-center rounded-full border px-7 text-[13px] font-medium transition-opacity hover:opacity-80"
-              style={{ borderColor: "rgba(255,255,255,0.12)", color: "rgba(244,243,247,0.65)" }}
-            >
-              View Architecture →
-            </Link>
-          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+const MODULES = [
+  {
+    id: "regime-detection",
+    name: "Regime detection",
+    tagline: "Nothing is ever measured context-free.",
+    body: "Four independent models — a Gaussian HMM, PELT change-point detection, a Gaussian mixture and a GARCH(1,1) volatility model — vote on the current regime. A self-consistency-weighted majority produces the label, with a fast Crisis override when conditional volatility spikes past an extreme percentile.",
+    bullets: ["Six regimes on every bar", "A confidence score per label", "Crisis override that doesn't wait for a majority"],
+    visual: <RegimeVisual />,
+  },
+  {
+    id: "backtesting",
+    name: "Regime-aware backtesting",
+    tagline: "One blended Sharpe is where strategies go to hide.",
+    body: "Vectorized simulation reports Sharpe, Sortino and Beta partitioned by regime, alongside a full per-trade record. A strategy with a strong headline number but a negative Crisis Sharpe is visibly fragile — no spreadsheet archaeology required.",
+    bullets: ["Metrics split across all six regimes", "Per-trade records", "Fragility visible at a glance"],
+    visual: <PerRegimeTable />,
+  },
+  {
+    id: "validation",
+    name: "Five-method validation",
+    tagline: "A robustness score that is five tests, not one.",
+    body: "Walk-forward (30%), regime cross-validation (30%), Monte-Carlo (20%), persistence (10%) and stress testing (10%) combine into a composite score. Below 0.50 fails; 0.50–0.70 stays a candidate; above 0.70 may be promoted. The gate is enforced in code.",
+    bullets: ["Weighted composite score", "Promotion threshold at 0.70", "Every sub-score kept for audit"],
+    visual: (
+      <div className="rounded-2xl border border-line bg-paper-raised p-6">
+        <ValidationGate />
+      </div>
+    ),
+  },
+  {
+    id: "failure-intelligence",
+    name: "Failure intelligence",
+    tagline: "The module no other platform ships.",
+    body: "Four triggers can catch a failing strategy — drawdown breach, Sharpe decline, regime mismatch or a manual flag. Each writes an immutable record: the regime it failed in, the metrics at failure, the market context, and a SHAP attribution of the five features most responsible.",
+    bullets: ["Four detection triggers", "SHAP top-5 attribution", "UPDATE and DELETE revoked at the role level"],
+    visual: <FailureRecordCard />,
+  },
+  {
+    id: "research-memory",
+    name: "Research Memory",
+    tagline: "Your firm's research, finally connected.",
+    body: "Six record types and eight relationship types connect scattered research into one memory, derived from PostgreSQL and rebuilt on a schedule so it never drifts from the database. Five questions ship out of the box — failed strategies by regime, evolutionary lineage, robust across regimes, recurring failure modes, and the hypotheses that became live strategies.",
+    bullets: ["5 built-in research-memory questions", "Interactive lineage explorer", "Tenant-scoped by construction"],
+    visual: <MemoryMap compact />,
+  },
+  {
+    id: "evolution",
+    name: "The evolution engine",
+    tagline: "Breed new strategies from the ones that survived.",
+    body: "A DEAP genetic algorithm with tournament selection, adaptive-sigma mutation and elitism. Every individual is backtested every generation through the regime-aware engine; the fittest are registered as candidates with a MUTATED_FROM edge to their parent.",
+    bullets: ["Adaptive mutation step", "Regime-aware fitness", "Lineage never lost"],
+    visual: <EvolutionVisual />,
+  },
+  {
+    id: "assistant",
+    name: "Research assistant",
+    tagline: "An AI collaborator with zero execution authority.",
+    body: "Claude drafts hypotheses, explains failures and critiques strategies through structured tool-use. Five safeguards are enforced: a price-forecast guard, no ability to mutate a strategy, mandatory human review of generated strategies, logging before every response, and numeric claims cross-checked against the record.",
+    bullets: ["Forecast prompts refused up front", "Every call logged before it returns", "Numbers verified against real records"],
+    visual: <AssistantVisual />,
+  },
+];
+
+export default function FeaturesPage() {
+  return (
+    <>
+      <PageHero
+        eyebrow="Features"
+        title={
+          <>
+            Seven modules. <em>Zero decorative</em> screenshots.
+          </>
+        }
+        intro="Every feature below is shown with an artifact that mirrors what the running product produces — a regime vote, a per-regime backtest, a validation breakdown, a sealed failure record."
+      >
+        <ButtonLink href="/register" size="lg" arrow>
+          Create a workspace
+        </ButtonLink>
+        <ButtonLink href="/pricing" variant="secondary" size="lg">
+          See pricing
+        </ButtonLink>
+      </PageHero>
+
+      <div className="sticky top-[72px] z-30 border-b border-line bg-paper/90 backdrop-blur-xl">
+        <nav className="mx-auto flex w-full max-w-[1240px] gap-1 overflow-x-auto px-5 py-2.5 [scrollbar-width:none] sm:px-8 [&::-webkit-scrollbar]:hidden" aria-label="Feature modules">
+          {MODULES.map((m, i) => (
+            <a
+              key={m.id}
+              href={`#${m.id}`}
+              className="shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-medium text-ink-2 transition-colors hover:bg-ink/[0.05] hover:text-ink"
+            >
+              <span className="mr-1.5 font-code text-[11px] text-ink-3">{String(i + 1).padStart(2, "0")}</span>
+              {m.name}
+            </a>
+          ))}
+        </nav>
+      </div>
+
+      {MODULES.map((m, i) => (
+        <section
+          key={m.id}
+          id={m.id}
+          className={i % 2 === 0 ? "scroll-mt-32 bg-paper py-20 sm:py-28" : "scroll-mt-32 border-y border-line bg-paper-raised py-20 sm:py-28"}
+        >
+          <div className="mx-auto grid w-full max-w-[1240px] items-center gap-12 px-5 sm:px-8 lg:grid-cols-2 lg:gap-20">
+            <Reveal className={i % 2 === 1 ? "lg:order-2" : undefined}>
+              <Eyebrow tone="ink">Module {String(i + 1).padStart(2, "0")}</Eyebrow>
+              <Display size="md" className="mt-4">
+                {m.name}
+              </Display>
+              <p className="mt-2 font-editorial text-[22px] leading-snug text-brand">{m.tagline}</p>
+              <p className="mt-6 text-[16.5px] leading-[1.75] text-ink-2">{m.body}</p>
+              <ul className="mt-7 space-y-3">
+                {m.bullets.map((b) => (
+                  <li key={b} className="flex items-start gap-3 text-[15px] text-ink">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-tint text-brand">
+                      <Check className="h-3 w-3" strokeWidth={3} />
+                    </span>
+                    {b}
+                  </li>
+                ))}
+              </ul>
+            </Reveal>
+            <Reveal delay={120} className={i % 2 === 1 ? "lg:order-1" : undefined}>
+              {m.visual}
+            </Reveal>
+          </div>
+        </section>
+      ))}
+
+      <div className="h-20 bg-paper" />
+      <CtaBand />
+    </>
   );
 }

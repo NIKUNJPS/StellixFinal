@@ -1,9 +1,7 @@
-"""Batch 17 coverage top-up for two zero-coverage critical paths surfaced by the
-final coverage audit:
+"""Batch 17 coverage top-up for a zero-coverage critical path surfaced by the final
+coverage audit (Research Memory's tenant isolation is covered by
+test_graph_isolation.py and test_graph_node_search_isolation.py):
 
-* app/graph/tenant_query.py :: run_scoped — the fail-closed tenant-scoping guard for
-  Cypher (constitution §3: Neo4j has no row-level security, so a query that forgets
-  the organization filter must raise, never silently cross tenants).
 * app/validation/engine.py :: run_validation — the orchestrator that runs the five
   validation methods and assembles the composite report (the individual methods are
   covered by test_validation.py; this covers the wiring/renormalization).
@@ -12,66 +10,8 @@ final coverage audit:
 from __future__ import annotations
 
 import pandas as pd
-import pytest
-from app.graph.tenant_query import GraphTenantError, run_scoped
 from app.validation import engine, methods
 from app.validation.composite import ValidationClassification
-
-
-# --------------------------------------------------------------------------- #
-# tenant_query.run_scoped — fail-closed tenant scoping
-# --------------------------------------------------------------------------- #
-class _FakeRecord:
-    def __init__(self, data: dict):
-        self._data = data
-
-    def data(self) -> dict:
-        return self._data
-
-
-class _FakeResult:
-    def __init__(self, records: list[dict]):
-        self._records = [_FakeRecord(r) for r in records]
-
-    def __aiter__(self):
-        async def _gen():
-            for r in self._records:
-                yield r
-
-        return _gen()
-
-
-class _FakeSession:
-    def __init__(self, records: list[dict]):
-        self._records = records
-        self.calls: list[tuple[str, dict]] = []
-
-    async def run(self, query: str, **params):
-        self.calls.append((query, params))
-        return _FakeResult(self._records)
-
-
-async def test_run_scoped_rejects_a_query_without_the_tenant_filter():
-    session = _FakeSession([])
-    with pytest.raises(GraphTenantError):
-        await run_scoped(session, "MATCH (n:Strategy) RETURN n", organization_id="org-1")
-    # Fail-closed: the query must never have reached the session.
-    assert session.calls == []
-
-
-async def test_run_scoped_runs_and_forwards_org_and_params():
-    session = _FakeSession([{"name": "Alpha"}, {"name": "Beta"}])
-    rows = await run_scoped(
-        session,
-        "MATCH (n:Strategy {organization_id: $organization_id}) "
-        "WHERE n.name = $name RETURN n.name AS name",
-        organization_id="org-1",
-        name="Alpha",
-    )
-    assert rows == [{"name": "Alpha"}, {"name": "Beta"}]
-    # organization_id is injected, and caller params pass through unchanged.
-    (query, params) = session.calls[0]
-    assert params == {"organization_id": "org-1", "name": "Alpha"}
 
 
 # --------------------------------------------------------------------------- #

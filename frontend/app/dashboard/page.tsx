@@ -7,6 +7,7 @@ import { memo, type ReactNode, useMemo } from "react";
 import { TiltSurface } from "@/components/dashboard/tilt-surface";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { GlobalMarkets } from "@/components/market/global-markets";
+import { RealtimeEtfs } from "@/components/market/realtime-etfs";
 import {
   useBenchmarkSymbol,
   useCurrentRegimeQuery,
@@ -265,6 +266,7 @@ export default function DashboardPage() {
         <div className="relative">
           <Greeting />
           <KpiRow symbol={symbol} />
+          <RealtimeEtfs />
           <GlobalMarkets />
           <ChartsGrid symbol={symbol} />
         </div>

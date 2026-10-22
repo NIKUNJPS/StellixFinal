@@ -1,0 +1,36 @@
+{
+  "generated_at_utc": "2026-10-21T12:38:21+00:00",
+  "organization": "meridian-capital",
+  "python": "3.11.9",
+  "platform": "Windows-10-10.0.26300-SP0",
+  "git_branch": "feat/tradingagents-integration",
+  "git_commit": "8d26eb4",
+  "git_uncommitted_files": 103,
+  "row_counts": {
+    "strategies": 121,
+    "performance_snapshots": 544,
+    "validation_results": 120,
+    "failures": 13,
+    "evolution_runs": 11,
+    "agent_analyses": 9,
+    "market_data_rows": 300843,
+    "regime_rows": 290343
+  },
+  "packages": {
+    "hmmlearn": "0.3.3",
+    "ruptures": "1.1.10",
+    "arch": "7.2.0",
+    "scikit-learn": "1.9.1",
+    "vectorbt": "1.0.0",
+    "deap": "1.4.4",
+    "shap": "0.51.0",
+    "lightgbm": "4.7.0",
+    "pandas": "2.3.3",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "SQLAlchemy": "2.0.54",
+    "fastapi": "0.139.0",
+    "langgraph": "1.2.12",
+    "anthropic": "0.125.0"
+  }
+}

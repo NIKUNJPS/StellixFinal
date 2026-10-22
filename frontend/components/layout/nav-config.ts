@@ -1,12 +1,14 @@
 import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
+  Bot,
   ClipboardCheck,
   CreditCard,
   Database,
   Dna,
   FlaskConical,
   LayoutDashboard,
+  LayoutGrid,
   NotebookText,
   PieChart,
   ScrollText,
@@ -33,6 +35,8 @@ export const ADMIN_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/portfolio", label: "Portfolio", icon: PieChart },
   { href: "/signals", label: "Signals", icon: Signal },
+  { href: "/terminal", label: "Terminal", icon: LayoutGrid },
+  { href: "/agents", label: "Agent Desk", icon: Bot },
   { href: "/market-research", label: "Market Research", icon: TrendingUp },
   { href: "/admin/failures", label: "Failure Intelligence", icon: AlertTriangle },
   { href: "/admin/governance", label: "Governance & Compliance", icon: ShieldCheck },
@@ -47,22 +51,26 @@ export const NAV_LINKS = ADMIN_NAV_LINKS;
 export const COMPLIANCE_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/signals", label: "Signals", icon: Signal },
+  { href: "/terminal", label: "Terminal", icon: LayoutGrid },
+  { href: "/agents", label: "Agent Desk", icon: Bot },
   { href: "/market-research", label: "Market Research", icon: TrendingUp },
   { href: "/compliance/governance", label: "Governance & Compliance", icon: ShieldCheck },
   { href: "/compliance/llm-audit", label: "LLM Audit Log", icon: ScrollText },
   { href: "/compliance/members", label: "Organization Members", icon: Users },
-  { href: "/compliance/graph", label: "Knowledge Graph", icon: Share2 },
+  { href: "/compliance/memory", label: "Research Memory", icon: Share2 },
 ];
 
 export const RESEARCHER_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/researcher/strategies", label: "Strategy Explorer", icon: FlaskConical },
   { href: "/signals", label: "Signals", icon: Signal },
+  { href: "/terminal", label: "Terminal", icon: LayoutGrid },
+  { href: "/agents", label: "Agent Desk", icon: Bot },
   { href: "/market-research", label: "Market Research", icon: TrendingUp },
   { href: "/researcher/failures", label: "Failure Intelligence", icon: AlertTriangle },
   { href: "/researcher/assistant", label: "Research Assistant", icon: Sparkles },
   { href: "/researcher/research", label: "Research Notebook", icon: NotebookText },
-  { href: "/researcher/graph", label: "Knowledge Graph", icon: Share2 },
+  { href: "/researcher/memory", label: "Research Memory", icon: Share2 },
 ];
 
 /* Batch 26 Part B: Quant Engineer is a research/build role (strategy.version +
@@ -73,12 +81,14 @@ export const QUANT_ENGINEER_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/strategies", label: "Strategy Explorer", icon: FlaskConical },
   { href: "/signals", label: "Signals", icon: Signal },
+  { href: "/terminal", label: "Terminal", icon: LayoutGrid },
+  { href: "/agents", label: "Agent Desk", icon: Bot },
   { href: "/market-research", label: "Market Research", icon: TrendingUp },
   { href: "/admin/research", label: "Research Notebook", icon: NotebookText },
-  { href: "/admin/graph", label: "Knowledge Graph", icon: Share2 },
+  { href: "/admin/memory", label: "Research Memory", icon: Share2 },
 ];
 
-/* Batch 25: the risk roles previously saw only Failure Intelligence + Graph, and
+/* Batch 25: the risk roles previously saw only Failure Intelligence + Research Memory, and
  * app/admin/layout.tsx bounced them off every /admin page — so Portfolio, the approval
  * queue and the kill switch existed but were unreachable. Every link below points at
  * a page whose backend endpoints already admit the role. */
@@ -86,21 +96,25 @@ export const RISK_MANAGER_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/risk-manager/portfolio", label: "Portfolio Risk", icon: PieChart },
   { href: "/signals", label: "Signals", icon: Signal },
+  { href: "/terminal", label: "Terminal", icon: LayoutGrid },
+  { href: "/agents", label: "Agent Desk", icon: Bot },
   { href: "/market-research", label: "Market Research", icon: TrendingUp },
   { href: "/risk-manager/governance", label: "Approvals & Kill Switch", icon: ShieldCheck },
   { href: "/risk-manager/failures", label: "Failure Intelligence", icon: AlertTriangle },
-  { href: "/risk-manager/graph", label: "Knowledge Graph", icon: Share2 },
+  { href: "/risk-manager/memory", label: "Research Memory", icon: Share2 },
 ];
 
 export const CIO_NAV_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/cio/portfolio", label: "Performance & Portfolio", icon: PieChart },
   { href: "/signals", label: "Signals", icon: Signal },
+  { href: "/terminal", label: "Terminal", icon: LayoutGrid },
+  { href: "/agents", label: "Agent Desk", icon: Bot },
   { href: "/market-research", label: "Market Research", icon: TrendingUp },
   { href: "/cio/governance", label: "Approvals & Kill Switch", icon: ShieldCheck },
   { href: "/cio/kill-switch-reviews", label: "Kill Switch Reviews", icon: ClipboardCheck },
   { href: "/cio/failures", label: "Failure Intelligence", icon: AlertTriangle },
-  { href: "/cio/graph", label: "Knowledge Graph", icon: Share2 },
+  { href: "/cio/memory", label: "Research Memory", icon: Share2 },
 ];
 
 /**
@@ -128,6 +142,8 @@ export function navLinksForAccess({ roleKey, isCustomRole, permissions }: NavAcc
     { href: "/admin/assistant", label: "Research Assistant", icon: Sparkles },
   ];
   if (can("signals.view")) links.push({ href: "/signals", label: "Signals", icon: Signal });
+  links.push({ href: "/terminal", label: "Terminal", icon: LayoutGrid });
+  links.push({ href: "/agents", label: "Agent Desk", icon: Bot });
   links.push({ href: "/market-research", label: "Market Research", icon: TrendingUp });
   if (["governance.view", "audit.view.all", "audit.view.org_risk", "audit.view.own_risk", "compliance.export"].some(can)) {
     links.push({ href: "/admin/governance", label: "Governance & Compliance", icon: ShieldCheck });
@@ -136,7 +152,7 @@ export function navLinksForAccess({ roleKey, isCustomRole, permissions }: NavAcc
   if (can("members.view")) links.push({ href: "/admin/members", label: "Organization Members", icon: Users });
   if (can("billing.manage")) links.push({ href: "/admin/billing", label: "Billing", icon: CreditCard });
   if (can("system.monitor")) links.push({ href: "/admin/system", label: "System Monitoring", icon: ServerCog });
-  links.push({ href: "/admin/graph", label: "Knowledge Graph", icon: Share2 });
+  links.push({ href: "/admin/memory", label: "Research Memory", icon: Share2 });
   return links;
 }
 
@@ -176,7 +192,7 @@ export const BREADCRUMB_LABELS: Record<string, string> = {
   evolution: "Evolution",
   regimes: "Regimes",
   governance: "Governance",
-  graph: "Knowledge Graph",
+  memory: "Research Memory",
   assistant: "Research Assistant",
   "llm-audit": "LLM Audit Log",
   research: "Research Notebook",
@@ -191,6 +207,9 @@ export const BREADCRUMB_LABELS: Record<string, string> = {
   "kill-switch-reviews": "Kill Switch Reviews",
   edit: "New Version",
   "market-research": "Market Research",
+  agents: "Agent Desk",
+  terminal: "Terminal",
+  backtests: "Agent Backtests",
 };
 
 /**

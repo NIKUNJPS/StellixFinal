@@ -11,13 +11,13 @@ identity, not from the test data happening to differ.
 from __future__ import annotations
 
 import pytest
-from app.graph.fake_repository import FakeGraphRepository
+from app.graph.memory_repository import InMemoryGraphRepository
 
 from tests.helpers import bearer
 from tests.helpers import register_activate_login as register
 
 
-async def _seed_org(repo: FakeGraphRepository, org_id: str, *, name_suffix: str) -> None:
+async def _seed_org(repo: InMemoryGraphRepository, org_id: str, *, name_suffix: str) -> None:
     """Seed one org with a full set of graph data, using identical key VALUES
     (shared UUIDs/labels) across orgs — only organization_id differs."""
     strategy_id = "11111111-1111-1111-1111-111111111111"

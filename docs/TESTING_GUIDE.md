@@ -17,7 +17,6 @@ Start services **in this order**. Each must be healthy before the next.
 |---|---|---|---|---|
 | 1 | Postgres + TimescaleDB | `cd infra && docker compose --env-file .env up -d postgres` | **5433** | `docker compose ps` → healthy |
 | 2 | Redis | (same compose file) `... up -d redis` | 6379 | healthy |
-| 3 | Neo4j | `... up -d neo4j` | 7687 / 7474 | healthy |
 | 4 | Backend | `cd backend`<br>`.venv/Scripts/python.exe -m uvicorn app.main:app --reload --port 8000` | 8000 | `Application startup complete` + `WS bridge started` |
 | 5 | Celery worker | `cd backend`<br>`.venv/Scripts/python.exe -m celery -A app.worker.celery_app.celery_app worker --loglevel=info --pool=solo` | — | `celery@<host> ready.` + 14 tasks listed |
 | 6 | Frontend | `cd frontend && npm run dev` | 3000 | `✓ Ready in Ns` |
@@ -31,9 +30,7 @@ Start services **in this order**. Each must be healthy before the next.
 ```bash
 curl http://localhost:8000/health
 ```
-**PASS:** HTTP 200 with `postgres: ok`, `redis: ok`, `neo4j: ok`.
-**Note:** if Neo4j isn't installed, `neo4j: error` and overall `status: error` is the
-*correct, honest* response — see §7.
+**PASS:** HTTP 200 with `postgres: ok`, `redis: ok`.
 
 ### 0.2 Test suite
 ```bash
@@ -64,6 +61,12 @@ cd backend && .venv/Scripts/python.exe ../scripts/seed_demo_data.py
 | risk_manager | `s.okonkwo@meridian.com` | `MeridianDemo2026!` |
 | cio | `j.whitfield@meridian.com` | `MeridianDemo2026!` |
 | compliance_officer | `a.reyes@meridian.com` | `MeridianDemo2026!` |
+| quant_engineer | `quant@meridian.com` | `MeridianDemo2026!` |
+| superadmin (platform, cross-tenant) | `admin@stellixlabs.com` | `Finalyear123$` |
+
+All Meridian users belong to org slug `meridian-capital`; the superadmin belongs to
+`stellix-internal` and lands on `/superadmin`. These are created by
+`scripts/seed_demo_data.py` — local/dev only, never reuse them in production.
 
 ---
 
@@ -159,7 +162,7 @@ non-zero; equity curve, lifecycle donut, regime timeline, failure heatmap all re
 ### 2.2 Sidebar navigation
 Click every link. All 15 should load without a blank screen:
 Dashboard · Strategy Explorer · Portfolio · Failure Intelligence · Evolution Engine ·
-Regime Monitor · Governance & Compliance · Knowledge Graph · Research Assistant ·
+Regime Monitor · Governance & Compliance · Research Memory · Research Assistant ·
 LLM Audit Log · Research Notebook · Data Ingest · System Monitoring · Billing · Settings.
 
 > **Known cosmetic issue:** 9 of these pages render **without the left sidebar**
@@ -283,24 +286,24 @@ ADR-0005 (Safeguard 5) regression — report it.
 
 ---
 
-## 6. Knowledge graph — `/admin/graph`
+## 6. Research Memory — `/admin/memory`
 
-**If Neo4j is NOT running:** the page shows a clean error/empty state within a few
-seconds. **This is expected and correct** — skip to §6.3.
+Research Memory is built from PostgreSQL inside the API (ADR 0012), so it works on any
+machine that runs the backend — there is no graph database to start. Give it a few
+seconds after the API starts for the first build.
 
 ### 6.1 Named query
 Run *robust across regimes* or *recurring failure modes*.
 **PASS:** real results render (not an empty canvas).
 
 ### 6.2 Lineage
-Find an evolved strategy → trace parent → child edges.
+Find an evolved strategy → trace parent → child relationships.
 **PASS:** `MUTATED_FROM` lineage visible.
 
-### 6.3 What this proves without Neo4j running
-The integration is real, not mocked: 6 node types, 8 edge types, 5 named queries, all
-tenant-scoped at the query-builder level, plus a nightly Postgres↔Neo4j drift check. The
-**graph is a derived projection** of Postgres — it can be rebuilt, which is why its
-disaster-recovery RPO is "rebuild time", not backup age.
+### 6.3 Index status
+Open **System Monitoring** → *Research Memory Index*.
+**PASS:** a recent "Last rebuilt" time and non-zero strategy / failure counts for an
+organization with research history.
 
 ---
 
@@ -457,7 +460,6 @@ curl -s http://localhost:8000/openapi.json | grep -ci superadmin      # must pri
 
 | Symptom | Cause | Correct explanation |
 |---|---|---|
-| Knowledge Graph shows an error | Neo4j not running | Derived store; rebuildable from Postgres. Integration is real + tested. |
 | Research Assistant errors | No `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` | Deferred-credential pattern; inert without keys by design. |
 | Jobs stay `pending` | Celery worker not running (or missing `--pool=solo`) | Async-by-design; the UI polls honestly rather than faking a result. |
 | Billing checkout doesn't complete | No Stripe keys | UI + plan structure still render. |
@@ -514,7 +516,7 @@ backend/.venv/Scripts/python.exe scripts/cleanup_e2e_artifacts.py --execute
 | 4.4 | Illegal transition → 409 | ☐ |
 | 4.5 | Approval gate | ☐ |
 | 5.1–5.4 | Validation, failures, SHAP, clustering | ☐ |
-| 6 | Knowledge graph *(or documented N/A)* | ☐ |
+| 6 | Research Memory | ☐ |
 | 7.1 | Evolution | ☐ |
 | 7.2 | LLM streaming + routing + guard | ☐ |
 | 8 | Portfolio + correlation | ☐ |

@@ -4,7 +4,40 @@ Stellix Labs is original code. This file credits open-source projects whose idea
 code meaningfully influenced specific features, as required by their licenses or as
 good practice even where not strictly required.
 
-## OpenTerminal (Batch 28 — Market Research widgets)
+## TradingAgents (Batch 30 — Multi-Agent Desk)
+
+- **Project:** [TradingAgents](https://github.com/TauricResearch/TradingAgents)
+  (Xiao, Sun, Luo & Wang, *TradingAgents: Multi-Agents LLM Financial Trading
+  Framework*, arXiv:2412.20138)
+- **Author:** Tauric Research and TradingAgents contributors
+- **License:** Apache License 2.0
+- **Version used:** v0.5.1, pinned to commit `35543d0248bf89fcb92b17a15858ad0c0e940687`
+
+Unlike OpenTerminal below, TradingAgents is used **as a dependency, unmodified**
+(`requirements.txt`). Stellix code in `backend/app/agents/` drives its LangGraph
+pipeline, agents, rating parser, settlement and reflection. No TradingAgents source
+file is copied into this repository, and none is modified. See ADR 0009 for how it
+is integrated (point-in-time regime context, Postgres memory, audit logging,
+Safeguard 1 redaction of price levels).
+
+Per the Apache License 2.0, a copy of the license is available at
+<http://www.apache.org/licenses/LICENSE-2.0> and ships with the installed
+`tradingagents` package. TradingAgents is provided "AS IS", without warranties or
+conditions of any kind, and its authors state it is designed for research purposes
+and is not financial, investment, or trading advice.
+
+## OpenTerminal (Batch 28 — Market Research widgets; Batch 31 — Market Terminal)
+
+> **Batch 31 update (ADR 0010).** The Market Terminal (`/terminal`) reproduces OpenTerminal's
+> full feature set and UX concepts: widget workspace, ⌘K palette, ⌥-number shortcuts,
+> charting, quote, news, screener, heatmap, options, crypto, macro, portfolio, calendar,
+> insiders, short volume, recap, AI and TV. It is again a **native re-implementation**; no
+> OpenTerminal source file is copied. Each feature is backed by an official or published
+> source instead of OpenTerminal's `scanner.tradingview.com`, `api.nasdaq.com`, Forex
+> Factory and hotlinked or restreamed TV sources. The feature-by-source table is in
+> `docs/adr/0010-market-terminal-openterminal-parity.md`. The MIT notice below covers the
+> concepts adopted.
+
 
 - **Project:** [OpenTerminal](https://github.com/ErTasselli/OpenTerminal)
 - **Author:** ErTasselli and OpenTerminal contributors
@@ -72,3 +105,21 @@ sourcing policy does not adopt these silently. Evaluated and rejected for this b
 
 Used directly as an npm dependency (`frontend/package.json`), not copied or modified.
 Included here because it's the same library OpenTerminal uses for its charting widget.
+
+## Alpaca Market Data API (real-time US ETF prices)
+
+- **Provider:** [Alpaca](https://alpaca.markets) — official, documented API
+  ([real-time stock data](https://docs.alpaca.markets/docs/real-time-stock-pricing-data),
+  [streaming protocol](https://docs.alpaca.markets/docs/streaming-market-data))
+- **Plan used:** the free *Basic* market-data plan. Per Alpaca's docs it provides
+  real-time coverage from the **IEX exchange only** (not the consolidated tape),
+  websocket subscriptions for 30 symbols, and a connection limit that "in many
+  subscriptions (or without one) … is 1".
+- **What Stellix does with it:** `app/streaming/etf_stream.py` holds one websocket to
+  `wss://stream.data.alpaca.markets/v2/iex`, subscribes to trades for SPY, QQQ, DIA
+  and IWM, and seeds each session's previous close from `GET /v2/stocks/snapshots`
+  (`feed=iex`). Prices are shown as ETF prices with the index each ETF tracks as
+  context — never as the index value itself — and labelled "IEX only".
+- **Credentials:** the account and key pair belong to the project owner
+  (`ALPACA_API_KEY_ID`, `ALPACA_API_SECRET_KEY`); unset means the feature reports
+  "not configured".

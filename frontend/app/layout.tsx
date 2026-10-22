@@ -26,11 +26,11 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Stellix Labs — The Institutional Memory Layer for Quant Research",
+    default: "Stellix Labs — Research that remembers why it failed",
     template: "%s · Stellix Labs",
   },
   description:
-    "The only quant research platform that records why every strategy failed, in which market regime, and compounds that memory so your team never rediscovers the same dead end twice.",
+    "Stellix Labs records a permanent autopsy for every quant strategy that breaks — the market regime, the trigger, the features responsible — and compounds it into a research memory your whole desk can query.",
   icons: {
     icon: "/logo-mark.png",
     apple: "/logo-mark.png",
@@ -38,9 +38,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Stellix Labs",
-    title: "Your failed strategies are your most valuable research. Stellix Labs remembers them.",
+    title: "Research that remembers why it failed — Stellix Labs",
     description:
-      "Regime-conditioned. Failure-aware. Compounding over time. The institutional memory layer for quantitative research.",
+      "The institutional memory layer for quantitative research. Regime-conditioned, failure-aware, and compounding with every strategy you test.",
     images: ["/logo.png"],
   },
   twitter: { card: "summary_large_image", images: ["/logo.png"] },

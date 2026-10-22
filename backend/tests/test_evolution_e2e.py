@@ -1,6 +1,6 @@
 """Test 6 (required order): a real (small population/generation count for test
 speed) evolution run against real backtested strategies — confirms at least one
-evolved candidate is produced, registered, and linked via MUTATED_FROM in Neo4j."""
+evolved candidate is produced, registered, and linked via MUTATED_FROM in Research Memory."""
 
 from __future__ import annotations
 

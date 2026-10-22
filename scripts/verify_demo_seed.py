@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Verify the seeded Meridian demo org (Batch 16).
 
-Runs the five named knowledge-graph queries against the real Neo4j graph and
+Builds this org's Research Memory from Postgres, runs its five named queries and
 prints the Postgres-side KPIs the dashboards read, so the seed's Definition of
 Done ("5 graph queries return interesting results; every major page populated")
 can be checked with actual output rather than asserted.
@@ -39,10 +39,11 @@ except ImportError:
 from sqlalchemy import func, select  # noqa: E402
 
 import app.models  # noqa: E402,F401
-from app.clients.neo4j_client import get_driver  # noqa: E402
 from app.db.session import get_system_session, get_tenant_session  # noqa: E402
 from app.db.tenant import bind_organization, mark_session_unscoped  # noqa: E402
-from app.graph.neo4j_repository import Neo4jGraphRepository  # noqa: E402
+from app.graph.backfill import backfill_org  # noqa: E402
+from app.graph.memory_repository import InMemoryGraphRepository  # noqa: E402
+from app.graph.sync_service import GraphSyncService  # noqa: E402
 from app.models.evolution_run import EvolutionRun  # noqa: E402
 from app.models.failure import Failure  # noqa: E402
 from app.models.market_data import MarketData  # noqa: E402
@@ -133,7 +134,8 @@ async def dashboard_kpis(org_id: str) -> tuple[str | None, str | None]:
 
 
 async def graph_queries(org_id: str, failure_regime: str | None, grandchild: str | None) -> None:
-    repo = Neo4jGraphRepository(get_driver())
+    repo = InMemoryGraphRepository()
+    await backfill_org(org_id, ORG_SLUG, sync=GraphSyncService(repository=repo))
 
     _hr("GRAPH QUERY 1 — failed_strategies_by_regime")
     if failure_regime:
@@ -189,8 +191,6 @@ async def graph_queries(org_id: str, failure_regime: str | None, grandchild: str
         hyp = (r.get("hypothesis") or "")[:70]
         print(f"    • note → active: {names}")
         print(f"      hypothesis: {hyp}…")
-
-    await get_driver().close()
 
 
 async def main() -> None:

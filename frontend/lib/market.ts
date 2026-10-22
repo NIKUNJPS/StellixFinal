@@ -37,6 +37,38 @@ export async function getGlobalIndices(): Promise<GlobalIndicesFeed> {
   return (await res.json()) as GlobalIndicesFeed;
 }
 
+/** Real-time trade price for an index-tracking ETF (mirrors app/schemas/market.py
+ * RealtimeEtf). An ETF is shown as an ETF — `tracks` is context, not the index value. */
+export interface RealtimeEtf {
+  symbol: string;
+  name: string;
+  tracks: string;
+  last_price: number | null;
+  previous_close: number | null;
+  change: number | null;
+  change_pct: number | null;
+  /** Time of the actual trade this price came from. */
+  last_trade_at: string | null;
+  status: "ok" | "unavailable";
+  unavailable_reason: string | null;
+}
+
+export interface RealtimeEtfFeed {
+  configured: boolean;
+  /** True only while the streamer process is connected and heartbeating. */
+  stream_online: boolean;
+  provider: string;
+  data_note: string;
+  generated_at: string;
+  etfs: RealtimeEtf[];
+}
+
+export async function getRealtimeEtfs(): Promise<RealtimeEtfFeed> {
+  const res = await apiFetch("/market/realtime-etfs");
+  if (!res.ok) throw new Error(await errorMessage(res, "Failed to load real-time ETF prices"));
+  return (await res.json()) as RealtimeEtfFeed;
+}
+
 /** "42s ago" / "3m ago" / "2h ago" — the only freshness claim the UI makes. */
 export function formatAge(fromIso: string | null, nowMs: number): string {
   if (!fromIso) return "never";

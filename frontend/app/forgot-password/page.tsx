@@ -2,17 +2,17 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  AuthAlert,
+  AuthField,
+  AuthShell,
+  authButtonClass,
+  authInputClass,
+  authLinkClass,
+} from "@/components/auth/auth-shell";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { requestPasswordReset } from "@/lib/auth";
 
 export default function ForgotPasswordPage() {
@@ -42,57 +42,62 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="container mx-auto flex min-h-screen max-w-md items-center justify-center py-16">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Forgot password</CardTitle>
-          <CardDescription>We&apos;ll send a reset link if that email has an account.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {submitted ? (
-            <div className="flex flex-col gap-3">
-              <p className="text-sm text-muted-foreground">
-                If an account exists for that email, a password reset link has been sent.
-              </p>
-              {devResetLink && (
-                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
-                  <p className="mb-1 text-xs text-amber-500">
-                    Dev-only (no email provider configured yet):
-                  </p>
-                  <Link href={devResetLink} className="break-all text-stellix-highlight hover:underline">
-                    {devResetLink}
-                  </Link>
-                </div>
-              )}
-              <Link href="/login" className="text-center text-sm text-stellix-highlight hover:underline">
-                Back to sign in
+    <AuthShell
+      eyebrow="Password reset"
+      title={
+        <>
+          Forgot your <em>password?</em>
+        </>
+      }
+      description="Enter your email and we'll send a reset link if it has an account."
+      footer={
+        <>
+          Remembered it?{" "}
+          <Link href="/login" className={authLinkClass}>
+            Back to sign in
+          </Link>
+        </>
+      }
+    >
+      {submitted ? (
+        <div className="flex flex-col gap-4">
+          <AuthAlert tone="success">If an account exists for that email, a password reset link has been sent.</AuthAlert>
+          {devResetLink && (
+            <AuthAlert tone="warning">
+              <span className="block text-[12.5px]">Dev-only (no email provider configured yet):</span>
+              <Link href={devResetLink} className="mt-1 block break-all font-code text-[12.5px] text-brand hover:underline">
+                {devResetLink}
               </Link>
-            </div>
-          ) : (
-            <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-              <div className="flex flex-col gap-1.5">
-                <Label>Email</Label>
-                <Input type="email" placeholder="admin@acme.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label>Organization slug (optional)</Label>
-                <Input placeholder="acme-capital" value={slug} onChange={(e) => setSlug(e.target.value)} />
-              </div>
-              {error && (
-                <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {error}
-                </p>
-              )}
-              <Button type="submit" disabled={busy || !email}>
-                {busy ? "Sending…" : "Send reset link"}
-              </Button>
-              <Link href="/login" className="text-center text-sm text-muted-foreground hover:underline">
-                Back to sign in
-              </Link>
-            </form>
+            </AuthAlert>
           )}
-        </CardContent>
-      </Card>
-    </main>
+          <Link href="/login" className={authButtonClass}>
+            Back to sign in
+          </Link>
+        </div>
+      ) : (
+        <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
+          <AuthField label="Email" htmlFor="fp-email">
+            <Input
+              id="fp-email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@yourfirm.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className={authInputClass}
+            />
+          </AuthField>
+          <AuthField label="Organization slug" htmlFor="fp-slug" optional>
+            <Input id="fp-slug" placeholder="acme-capital" value={slug} onChange={(e) => setSlug(e.target.value)} className={authInputClass} />
+          </AuthField>
+          {error && <AuthAlert tone="error">{error}</AuthAlert>}
+          <button type="submit" disabled={busy || !email} className={authButtonClass}>
+            {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+            {busy ? "Sending…" : "Send reset link"}
+          </button>
+        </form>
+      )}
+    </AuthShell>
   );
 }

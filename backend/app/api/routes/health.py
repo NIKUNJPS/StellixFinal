@@ -1,4 +1,4 @@
-"""Health endpoints — live connectivity status for Postgres, Neo4j, and Redis.
+"""Health endpoints — live connectivity status for Postgres and Redis.
 
 GET /health always returns HTTP 200 (even when a dependency is down); the body carries
 per-service status so a monitoring UI can render each independently — this contract is

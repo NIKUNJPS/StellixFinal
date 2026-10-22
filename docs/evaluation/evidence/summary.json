@@ -1,0 +1,236 @@
+{
+  "data_universes": {
+    "research_symbols": [
+      "BTC-USD",
+      "ETH-USD",
+      "GLD",
+      "QQQ",
+      "SPY"
+    ],
+    "screener_symbols": 518,
+    "screener_bars_median": 564.0,
+    "screener_first_bar_min": "2024-07-23",
+    "screener_last_bar_max": "2026-10-20"
+  },
+  "regime_persistence_research": [
+    {
+      "symbol": "BTC-USD",
+      "bars": 2829,
+      "mean_confidence": 0.6315835984446801,
+      "transitions": 388.0,
+      "mean_run_length_bars": 7.272493573264781,
+      "median_run_length_bars": 2.0
+    },
+    {
+      "symbol": "ETH-USD",
+      "bars": 799,
+      "mean_confidence": 0.6411138923654568,
+      "transitions": 84.0,
+      "mean_run_length_bars": 9.4,
+      "median_run_length_bars": 2.0
+    },
+    {
+      "symbol": "GLD",
+      "bars": 1941,
+      "mean_confidence": 0.5690365790829469,
+      "transitions": 454.0,
+      "mean_run_length_bars": 4.265934065934066,
+      "median_run_length_bars": 2.0
+    },
+    {
+      "symbol": "QQQ",
+      "bars": 1941,
+      "mean_confidence": 0.5801133436373004,
+      "transitions": 240.0,
+      "mean_run_length_bars": 8.053941908713693,
+      "median_run_length_bars": 2.0
+    },
+    {
+      "symbol": "SPY",
+      "bars": 2695,
+      "mean_confidence": 0.6006493506493507,
+      "transitions": 419.0,
+      "mean_run_length_bars": 6.416666666666667,
+      "median_run_length_bars": 2.0
+    }
+  ],
+  "regime_persistence_all_symbols": {
+    "symbols": 523,
+    "median_mean_run_length_bars": 7.363636363636363,
+    "median_confidence": 0.6107536764705882
+  },
+  "strategies": {
+    "total": 121,
+    "by_status": {
+      "candidate": 100,
+      "failed": 13,
+      "retired": 5,
+      "draft": 2,
+      "active": 1
+    },
+    "by_creator": {
+      "ga_engine": 84,
+      "human": 37
+    },
+    "evolved_variants": 84,
+    "with_validation": 120,
+    "validation_classification": {
+      "auto_fail": 63,
+      "candidate": 51,
+      "eligible_active": 6
+    }
+  },
+  "failures": {
+    "total": 13,
+    "by_trigger": {
+      "regime_mismatch": 6,
+      "drawdown_breach": 5,
+      "manual": 1,
+      "sharpe_decline": 1
+    },
+    "by_provenance": {
+      "monitor sweep (live data)": 7,
+      "seed-script forced trigger (last bar of the seeded window)": 6
+    },
+    "with_ai_explanation": 13,
+    "numeric_validation_passed": 13,
+    "with_shap": 8
+  },
+  "evolution_runs": [
+    {
+      "run_id": "fb1677bb",
+      "symbol": "SPY",
+      "status": "completed",
+      "population": 10,
+      "max_generations": 5,
+      "generations_run": 3,
+      "best_fitness": -0.32932730306858304,
+      "seed_strategies": 1,
+      "candidates_produced": 3
+    },
+    {
+      "run_id": "5cad8086",
+      "symbol": "SPY",
+      "status": "completed",
+      "population": 10,
+      "max_generations": 5,
+      "generations_run": 3,
+      "best_fitness": -0.32932730306858304,
+      "seed_strategies": 1,
+      "candidates_produced": 4
+    },
+    {
+      "run_id": "5ad07e00",
+      "symbol": "SPY",
+      "status": "completed",
+      "population": 20,
+      "max_generations": 50,
+      "generations_run": 10,
+      "best_fitness": 0.9265955451342374,
+      "seed_strategies": 27,
+      "candidates_produced": 10
+    },
+    {
+      "run_id": "0fad77c0",
+      "symbol": "SPY",
+      "status": "completed",
+      "population": 20,
+      "max_generations": 50,
+      "generations_run": 10,
+      "best_fitness": 0.9265955451342374,
+      "seed_strategies": 43,
+      "candidates_produced": 5
+    },
+    {
+      "run_id": "5ffa3042",
+      "symbol": "SPY",
+      "status": "completed",
+      "population": 20,
+      "max_generations": 50,
+      "generations_run": 10,
+      "best_fitness": 0.9265955451342374,
+      "seed_strategies": 48,
+      "candidates_produced": 7
+    },
+    {
+      "run_id": "3c401697",
+      "symbol": "SPY",
+      "status": "completed",
+      "population": 20,
+      "max_generations": 50,
+      "generations_run": 10,
+      "best_fitness": 0.9941084159060232,
+      "seed_strategies": 23,
+      "candidates_produced": 4
+    },
+    {
+      "run_id": "25f6b6b0",
+      "symbol": "SPY",
+      "status": "completed",
+      "population": 20,
+      "max_generations": 50,
+      "generations_run": 10,
+      "best_fitness": 0.9265955451342374,
+      "seed_strategies": 37,
+      "candidates_produced": 6
+    },
+    {
+      "run_id": "36d26590",
+      "symbol": "SPY",
+      "status": "failed",
+      "population": 60,
+      "max_generations": 40,
+      "generations_run": 0,
+      "best_fitness": NaN,
+      "seed_strategies": 2,
+      "candidates_produced": 0
+    },
+    {
+      "run_id": "21570617",
+      "symbol": "SPY",
+      "status": "completed",
+      "population": 24,
+      "max_generations": 40,
+      "generations_run": 17,
+      "best_fitness": 5.85571888484016,
+      "seed_strategies": 2,
+      "candidates_produced": 14
+    },
+    {
+      "run_id": "0ac18bbb",
+      "symbol": "QQQ",
+      "status": "completed",
+      "population": 24,
+      "max_generations": 40,
+      "generations_run": 10,
+      "best_fitness": 0.7792664911226658,
+      "seed_strategies": 1,
+      "candidates_produced": 9
+    },
+    {
+      "run_id": "100a16c4",
+      "symbol": "BTC-USD",
+      "status": "completed",
+      "population": 24,
+      "max_generations": 40,
+      "generations_run": 24,
+      "best_fitness": 0.9732717477782469,
+      "seed_strategies": 2,
+      "candidates_produced": 14
+    }
+  ],
+  "evolution_lineage": {
+    "pairs_with_both_validations": 87,
+    "evolved_pairs": 84,
+    "evolved_mean_delta": 0.04985952380952382,
+    "evolved_improved": 57,
+    "evolved_worse": 24,
+    "evolved_equal": 3,
+    "evolved_cleared_0_70": 5
+  },
+  "agent_analyses": {
+    "total": 9,
+    "completed": 6,
+    "settled": 5
+  }
+}

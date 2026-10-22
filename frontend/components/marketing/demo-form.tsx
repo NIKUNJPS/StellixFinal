@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonClass } from "@/components/marketing/site";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { submitDemoRequest } from "@/lib/contact";
@@ -33,7 +33,7 @@ const TEAM_SIZES = [
 const INTERESTS = [
   ["regime_detection", "Regime Detection"],
   ["failure_intelligence", "Failure Intelligence"],
-  ["knowledge_graph", "Knowledge Graph"],
+  ["knowledge_graph", "Research Memory"],
   ["evolution_engine", "Evolution Engine"],
   ["validation_governance", "Validation & Governance"],
   ["full_platform", "The full platform"],
@@ -70,9 +70,13 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+// Shared with the auth screens' look: white field, warm border, brand focus ring.
+const inputClass =
+  "mt-1.5 h-11 rounded-xl border-line-strong bg-paper-raised px-3.5 text-[15px] text-ink placeholder:text-ink-3 focus-visible:border-brand focus-visible:ring-4 focus-visible:ring-brand/15 focus-visible:ring-offset-0";
+
 function FieldError({ msg }: { msg?: string }) {
   if (!msg) return null;
-  return <p className="mt-1 text-xs text-destructive">{msg}</p>;
+  return <p className="mt-1.5 text-[13px] font-medium text-loss">{msg}</p>;
 }
 
 export function DemoForm() {
@@ -99,15 +103,15 @@ export function DemoForm() {
 
   if (isSubmitSuccessful && !errors.root) {
     return (
-      <div className="rounded-2xl border border-emerald-600/40 bg-emerald-600/[0.06] p-8 text-center">
-        <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-400" />
-        <h2 className="mt-4 font-display text-2xl font-semibold">Request received. Check your inbox.</h2>
-        <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
+      <div className="rounded-2xl border border-gain/25 bg-gain-tint p-8 text-center">
+        <CheckCircle2 className="mx-auto h-10 w-10 text-gain" />
+        <h2 className="mt-4 font-editorial text-3xl text-ink">Request received. Check your inbox.</h2>
+        <p className="mx-auto mt-3 max-w-lg text-[15px] leading-relaxed text-ink-2">
           We&apos;ve logged your request and pinged our team in real time — a real person will reach out within one
           business day to schedule your walkthrough. In the meantime, the architecture page is the fastest way to
           see what makes Stellix Labs different.
         </p>
-        <Link href="/architecture" className={cn(buttonVariants({ variant: "outline" }), "mt-6")}>
+        <Link href="/architecture" className={buttonClass("secondary", "md", "mt-6")}>
           Read the architecture →
         </Link>
       </div>
@@ -115,7 +119,7 @@ export function DemoForm() {
   }
 
   const selectClass =
-    "h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-accent/60";
+    "h-11 w-full rounded-xl border border-line-strong bg-paper-raised px-3.5 text-[15px] text-ink outline-none transition-shadow focus:border-brand focus:ring-4 focus:ring-brand/15";
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
@@ -129,38 +133,38 @@ export function DemoForm() {
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <Label htmlFor="first_name">First name</Label>
-          <Input id="first_name" placeholder="Jane" className="mt-1.5" {...register("first_name")} />
+          <Label className="text-[14px] font-semibold text-ink" htmlFor="first_name">First name</Label>
+          <Input id="first_name" placeholder="Jane" className={inputClass} {...register("first_name")} />
           <FieldError msg={errors.first_name?.message} />
         </div>
         <div>
-          <Label htmlFor="last_name">Last name</Label>
-          <Input id="last_name" placeholder="Okafor" className="mt-1.5" {...register("last_name")} />
+          <Label className="text-[14px] font-semibold text-ink" htmlFor="last_name">Last name</Label>
+          <Input id="last_name" placeholder="Okafor" className={inputClass} {...register("last_name")} />
           <FieldError msg={errors.last_name?.message} />
         </div>
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <Label htmlFor="work_email">Work email</Label>
-          <Input id="work_email" type="email" placeholder="jane@yourfirm.com" className="mt-1.5" {...register("work_email")} />
+          <Label className="text-[14px] font-semibold text-ink" htmlFor="work_email">Work email</Label>
+          <Input id="work_email" type="email" placeholder="jane@yourfirm.com" className={inputClass} {...register("work_email")} />
           <FieldError msg={errors.work_email?.message} />
         </div>
         <div>
-          <Label htmlFor="company">Company</Label>
-          <Input id="company" placeholder="Your firm" className="mt-1.5" {...register("company")} />
+          <Label className="text-[14px] font-semibold text-ink" htmlFor="company">Company</Label>
+          <Input id="company" placeholder="Your firm" className={inputClass} {...register("company")} />
           <FieldError msg={errors.company?.message} />
         </div>
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <Label htmlFor="job_title">Job title</Label>
-          <Input id="job_title" placeholder="Head of Quant Research" className="mt-1.5" {...register("job_title")} />
+          <Label className="text-[14px] font-semibold text-ink" htmlFor="job_title">Job title</Label>
+          <Input id="job_title" placeholder="Head of Quant Research" className={inputClass} {...register("job_title")} />
           <FieldError msg={errors.job_title?.message} />
         </div>
         <div>
-          <Label htmlFor="firm_type">Firm type</Label>
+          <Label className="text-[14px] font-semibold text-ink" htmlFor="firm_type">Firm type</Label>
           <select id="firm_type" defaultValue="" className={cn(selectClass, "mt-1.5")} {...register("firm_type")}>
             <option value="" disabled>
               Select…
@@ -177,7 +181,7 @@ export function DemoForm() {
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <Label htmlFor="team_size">Team size</Label>
+          <Label className="text-[14px] font-semibold text-ink" htmlFor="team_size">Team size</Label>
           <select id="team_size" defaultValue="" className={cn(selectClass, "mt-1.5")} {...register("team_size")}>
             <option value="" disabled>
               Select…
@@ -191,7 +195,7 @@ export function DemoForm() {
           <FieldError msg={errors.team_size?.message} />
         </div>
         <div>
-          <Label htmlFor="source">How did you hear about us? (optional)</Label>
+          <Label className="text-[14px] font-semibold text-ink" htmlFor="source">How did you hear about us? (optional)</Label>
           <select id="source" defaultValue="" className={cn(selectClass, "mt-1.5")} {...register("source")}>
             <option value="">Select…</option>
             {SOURCES.map(([v, l]) => (
@@ -204,31 +208,31 @@ export function DemoForm() {
       </div>
 
       <div>
-        <Label htmlFor="use_case_description">Use case description</Label>
+        <Label className="text-[14px] font-semibold text-ink" htmlFor="use_case_description">Use case description</Label>
         <textarea
           id="use_case_description"
           rows={4}
           placeholder="What research problem are you trying to solve? What's failed before?"
-          className="mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-accent/60"
+          className="mt-1.5 w-full rounded-xl border border-line-strong bg-paper-raised px-3.5 py-2.5 text-[15px] text-ink outline-none transition-shadow placeholder:text-ink-3 focus:border-brand focus:ring-4 focus:ring-brand/15"
           {...register("use_case_description")}
         />
         <div className="mt-1 flex items-center justify-between">
           <FieldError msg={errors.use_case_description?.message} />
-          <span className={cn("ml-auto text-xs", useCaseLen > 500 ? "text-destructive" : "text-muted-foreground")}>
+          <span className={cn("ml-auto text-xs", useCaseLen > 500 ? "text-loss" : "text-ink-3")}>
             {useCaseLen}/500 — minimum 20 characters.
           </span>
         </div>
       </div>
 
       <div>
-        <Label>Primary interest</Label>
+        <Label className="text-[14px] font-semibold text-ink">Primary interest</Label>
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
           {INTERESTS.map(([v, l]) => (
             <label
               key={v}
-              className="flex cursor-pointer items-center gap-2.5 rounded-md border border-border bg-card/40 px-3 py-2.5 text-sm hover:border-accent/40"
+              className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-line bg-paper px-3.5 py-2.5 text-[14.5px] text-ink transition-colors hover:border-brand/40 has-[:checked]:border-brand/50 has-[:checked]:bg-brand-tint"
             >
-              <input type="checkbox" value={v} className="h-4 w-4 accent-[#0066FF]" {...register("primary_interest")} />
+              <input type="checkbox" value={v} className="h-4 w-4 accent-[#4B3FD1]" {...register("primary_interest")} />
               {l}
             </label>
           ))}
@@ -238,10 +242,10 @@ export function DemoForm() {
 
       <div>
         <label className="flex cursor-pointer items-start gap-2.5 text-sm">
-          <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#0066FF]" {...register("consent")} />
-          <span className="text-muted-foreground">
+          <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#4B3FD1]" {...register("consent")} />
+          <span className="text-ink-2">
             I agree to the{" "}
-            <Link href="/docs#privacy" className="text-accent hover:underline">
+            <Link href="/docs#privacy" className="font-semibold text-brand hover:underline">
               Privacy Policy
             </Link>{" "}
             and to Stellix Labs contacting me about this request.
@@ -251,15 +255,15 @@ export function DemoForm() {
       </div>
 
       {errors.root && (
-        <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="rounded-xl border border-loss/25 bg-loss-tint px-3.5 py-2.5 text-sm font-medium text-loss">
           {errors.root.message}
         </p>
       )}
 
-      <Button type="submit" size="lg" disabled={isSubmitting}>
+      <button type="submit" disabled={isSubmitting} className={buttonClass("primary", "lg", "w-full sm:w-auto")}>
         {isSubmitting ? "Submitting…" : "Request my demo"}
-        {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
-      </Button>
+        {!isSubmitting && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
+      </button>
     </form>
   );
 }

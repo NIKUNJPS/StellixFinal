@@ -177,7 +177,7 @@ def feed_metadata() -> dict:
             f"A curated, bounded universe of {len(SCREENER_UNIVERSE)} well-known, liquid US "
             "equities across sectors — not the full market."
         ),
-        "refresh_interval_seconds": settings.MARKET_QUOTES_REFRESH_SECONDS,
+        "refresh_interval_seconds": settings.MARKET_SCREENER_REFRESH_SECONDS,
         "data_delay_note": "Delayed quotes (typically 15-20 min), refreshed periodically",
     }
 

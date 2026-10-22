@@ -34,5 +34,4 @@ class HealthResponse(BaseModel):
 
     status: ServiceStatus
     postgres: ServiceHealth
-    neo4j: ServiceHealth
     redis: ServiceHealth

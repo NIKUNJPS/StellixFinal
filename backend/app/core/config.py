@@ -45,10 +45,11 @@ class Settings(BaseSettings):
         "postgresql+psycopg://stellix:change-me-postgres@localhost:5432/stellix"
     )
 
-    # ---- Neo4j --------------------------------------------------------------
-    NEO4J_URI: str = "bolt://localhost:7687"
-    NEO4J_USER: str = "neo4j"
-    NEO4J_PASSWORD: str = "change-me-neo4j"
+    # ---- Research Memory ----------------------------------------------------
+    # The lineage / failure-memory index is derived from Postgres inside the API process
+    # and rebuilt this often (seconds, minimum 30) so work done by Celery workers shows up.
+    # See docs/adr/0012-research-memory-on-postgres.md.
+    RESEARCH_MEMORY_REFRESH_SECONDS: int = 300
 
     # ---- Redis --------------------------------------------------------------
     REDIS_URL: str = "redis://:change-me-redis@localhost:6379/0"
@@ -103,7 +104,60 @@ class Settings(BaseSettings):
     # pattern as everywhere else: unset key -> that provider is unavailable and
     # the router degrades (Gemini falls back to Claude; see LLMCostRouter.call).
     GEMINI_API_KEY: str | None = None
-    GEMINI_MODEL: str = "gemini-2.5-flash"
+    # gemini-2.5-flash now 404s for new keys; scripts/llm_setup.py discovers what a key can use.
+    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
+
+    # ---- Multi-agent desk: TradingAgents (Batch 30, ADR 0009) -----------------
+    # Provider key is a TradingAgents provider name. "google" uses GEMINI_API_KEY,
+    # "anthropic" uses ANTHROPIC_API_KEY — the same credentials as the cost router,
+    # so the desk is inert-until-configured exactly like the rest of the LLM layer.
+    AGENTS_LLM_PROVIDER: str = "google"
+    AGENTS_DEEP_MODEL: str = "gemini-3.8-flash"
+    AGENTS_QUICK_MODEL: str = "gemini-3.5-flash-lite"
+    AGENTS_MAX_DEBATE_ROUNDS: int = 1
+    AGENTS_MAX_RISK_ROUNDS: int = 1
+    # Trading days after the analysis date over which a call is scored.
+    AGENTS_HOLDING_DAYS: int = 5
+    # Each backtest cell is a full multi-agent run with real LLM cost.
+    AGENTS_BACKTEST_MAX_CELLS: int = 40
+    # TradingAgents' own data cache / results scratch space.
+    AGENTS_DATA_DIR: str = "var/tradingagents"
+    # Batch 30b — the rest of TradingAgents v0.5.1's options.
+    # Any TradingAgents provider: google | anthropic | openai | xai | deepseek | qwen |
+    # qwen-cn | glm | glm-cn | minimax | minimax-cn | openrouter | mistral | kimi | groq |
+    # nvidia | ollama | openai_compatible. google/anthropic reuse GEMINI_API_KEY /
+    # ANTHROPIC_API_KEY; every other provider reads AGENTS_LLM_API_KEY (ollama and
+    # openai_compatible may be keyless). AGENTS_LLM_BACKEND_URL overrides the endpoint
+    # (required for openai_compatible, e.g. http://localhost:8000/v1 for vLLM).
+    AGENTS_LLM_API_KEY: str | None = None
+    AGENTS_LLM_BACKEND_URL: str | None = None
+    # Language of analyst reports and the final decision (internal debate stays English).
+    AGENTS_OUTPUT_LANGUAGE: str = "English"
+    # Fundamentals vendor chain. sec_edgar serves US statements exactly as filed on the
+    # analysis date (restatements never leak backwards) and falls through to yfinance
+    # for non-SEC filers. SEC asks callers to identify themselves.
+    AGENTS_FUNDAMENTALS_VENDORS: str = "sec_edgar,yfinance"
+    SEC_EDGAR_USER_AGENT: str | None = None
+    # TypeSafe Jev social-post screening (optional): drops StockTwits/Reddit posts not
+    # about the company and counts the rest by stance. Unset -> posts pass unscreened.
+    TYPESAFE_API_KEY: str | None = None
+    TYPESAFE_DEFAULT_MODEL: str | None = None
+    # LangGraph checkpoint after every agent, per analysis, so a retried run resumes
+    # from the last finished agent instead of paying for the whole pipeline again.
+    AGENTS_CHECKPOINT_ENABLED: bool = True
+
+    # ---- Market Terminal (Batch 31, ADR 0010) ----------------------------------
+    # Annualised risk-free rate for options Greeks, used only when FRED DGS3MO is
+    # unavailable (no FRED key or FRED down); the response says which one was used.
+    TERMINAL_RISK_FREE_RATE: float = 0.04
+    # Live TV: each broadcaster's OFFICIAL YouTube channel, embedded with YouTube's own
+    # live_stream player. JSON list of {"label", "youtube_channel_id"}; empty = defaults.
+    TERMINAL_TV_CHANNELS: str = ""
+    # Upstream request timeout for every terminal data source, seconds.
+    TERMINAL_SOURCE_TIMEOUT_SECONDS: float = 15.0
+    # Optional free CoinGecko "Demo" API key (coingecko.com/en/api) for higher rate
+    # limits; keyless works but is throttled, and Binance tickers are the fallback.
+    COINGECKO_API_KEY: str | None = None
 
     # ---- Macro dashboard (Batch 28) -------------------------------------------
     # FRED (Federal Reserve Economic Data) — a real, official, documented API
@@ -118,18 +172,34 @@ class Settings(BaseSettings):
     # ---- Global market indices (Batch 25) ------------------------------------
     # Periodically refreshed, DELAYED public index quotes for the dashboard — not a
     # real-time feed. Free providers delay index prices (typically ~15-20 min,
-    # exchange-dependent) and throttle aggressive polling, so the default refresh is
-    # two minutes. Plugging in a paid real-time provider means implementing
+    # exchange-dependent), so a faster poll only shortens how long a new delayed
+    # print takes to appear. 30s is one batched request for 9 symbols — well inside
+    # what the provider tolerates. Plugging in a paid real-time provider means implementing
     # MarketDataProvider.fetch_latest_quotes and setting MARKET_QUOTES_REALTIME=true.
     MARKET_QUOTES_ENABLED: bool = True
     MARKET_QUOTES_PROVIDER: str = "yfinance"
-    MARKET_QUOTES_REFRESH_SECONDS: int = 120
+    MARKET_QUOTES_REFRESH_SECONDS: int = 30
+    # The screener polls 56 symbols per call, so it keeps a gentler cadence.
+    MARKET_SCREENER_REFRESH_SECONDS: int = 120
+    # Signals are evaluated on daily bars; re-evaluating faster adds no freshness.
+    STRATEGY_SIGNALS_REFRESH_SECONDS: int = 120
     # A symbol whose last successful refresh is older than this is shown as
     # unavailable rather than as a frozen number.
     MARKET_QUOTES_STALE_AFTER_SECONDS: int = 900
     MARKET_QUOTES_REALTIME: bool = False
     # Every tracked exchange is closed from Friday's US close to Sunday evening UTC.
     MARKET_QUOTES_SKIP_WEEKENDS: bool = True
+
+    # ---- Real-time US ETFs (Alpaca IEX feed) ---------------------------------
+    # Genuinely real-time trade prices for a few index-tracking ETFs, streamed by
+    # `python -m app.streaming.etf_stream`. Free Alpaca "Basic" plan: real-time IEX
+    # trades (one exchange, not the consolidated tape), 30 symbols, ONE websocket
+    # connection per account — so run exactly one streamer. Deferred-credential
+    # pattern: unset => the dashboard says "not configured", never a fabricated tick.
+    ALPACA_API_KEY_ID: str | None = None
+    ALPACA_API_SECRET_KEY: str | None = None
+    ALPACA_STREAM_URL: str = "wss://stream.data.alpaca.markets/v2/iex"
+    ALPACA_DATA_URL: str = "https://data.alpaca.markets"
 
     # ---- Governance & compliance export (Batch 10) --------------------------
     # Rendered JSON/PDF exports land here, named "<job_id>.<format>". Local disk is

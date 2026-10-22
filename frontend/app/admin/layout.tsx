@@ -7,14 +7,14 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { useAuthStore } from "@/store/auth-store";
 
 const ROLE_ROUTE_ROOTS: Record<string, string> = { risk_manager: "/risk-manager", cio: "/cio" };
-const RISK_ROLE_SECTIONS = ["portfolio", "governance", "failures", "graph"];
+const RISK_ROLE_SECTIONS = ["portfolio", "governance", "failures", "memory"];
 
 /**
  * Chrome + auth gate for every /admin/* route.
  *
  * Redirects Compliance Officer users to their dedicated /compliance/* routes.
  * Batch 25: risk_manager/cio are mapped to their own equivalents of every /admin page
- * they are allowed to use (portfolio, governance, failures, graph) instead of being
+ * they are allowed to use (portfolio, governance, failures, memory) instead of being
  * bounced to Failure Intelligence regardless of what they asked for.
  */
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -31,8 +31,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         router.replace("/compliance/llm-audit");
       } else if (pathname === "/admin/members") {
         router.replace("/compliance/members");
-      } else if (pathname === "/admin/graph") {
-        router.replace("/compliance/graph");
+      } else if (pathname === "/admin/memory") {
+        router.replace("/compliance/memory");
       } else {
         router.replace("/compliance/governance");
       }
@@ -45,8 +45,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         router.replace(pathname.replace("/admin/assistant", "/researcher/assistant"));
       } else if (pathname?.startsWith("/admin/research")) {
         router.replace(pathname.replace("/admin/research", "/researcher/research"));
-      } else if (pathname?.startsWith("/admin/graph")) {
-        router.replace(pathname.replace("/admin/graph", "/researcher/graph"));
+      } else if (pathname?.startsWith("/admin/memory")) {
+        router.replace(pathname.replace("/admin/memory", "/researcher/memory"));
       } else {
         router.replace("/researcher/strategies");
       }

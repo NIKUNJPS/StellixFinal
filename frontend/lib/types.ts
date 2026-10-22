@@ -15,10 +15,9 @@ export interface ServiceHealth {
 export interface HealthResponse {
   status: ServiceStatus;
   postgres: ServiceHealth;
-  neo4j: ServiceHealth;
   redis: ServiceHealth;
 }
 
 /** The probed backing services, in display order. */
-export const HEALTH_SERVICES = ["postgres", "neo4j", "redis"] as const;
+export const HEALTH_SERVICES = ["postgres", "redis"] as const;
 export type HealthServiceKey = (typeof HEALTH_SERVICES)[number];

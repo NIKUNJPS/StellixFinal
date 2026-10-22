@@ -50,6 +50,46 @@ _CHAT_SYSTEM_PROMPT = (
 )
 
 
+async def _terminal_context(db: AsyncSession, symbol: str) -> str:
+    """Batch 31: server-built context for a terminal-focused chat — the delayed quote,
+    this org's latest Stellix regime label for the symbol, and recent headlines. Every
+    part is optional; a failing source is simply left out (and said so)."""
+    from app.terminal import market
+
+    lines = [f"TERMINAL CONTEXT for {symbol} (delayed market data; cite it as such):"]
+    try:
+        q = (await market.quote_detail(symbol))["data"]
+        fields = [("last", "Last"), ("change_pct", "Change %"), ("market_cap", "Market cap"),
+                  ("pe_ratio", "P/E"), ("eps", "EPS"), ("fifty_two_week_low", "52w low"),
+                  ("fifty_two_week_high", "52w high"), ("beta", "Beta")]
+        lines.append("- Quote: " + ", ".join(f"{label} {q[k]}" for k, label in fields if q.get(k) is not None))
+        if q.get("sector"):
+            lines.append(f"- Sector: {q['sector']} / {q.get('industry')}")
+    except Exception:  # noqa: BLE001 — context is best-effort
+        lines.append("- Quote: unavailable right now.")
+    regime = (
+        await db.execute(
+            select(RegimeLabelRecord)
+            .where(RegimeLabelRecord.symbol == symbol)
+            .order_by(RegimeLabelRecord.timestamp.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    if regime is not None:
+        label = getattr(regime.regime_label, "value", regime.regime_label)
+        lines.append(f"- Stellix regime: {label} (confidence {regime.confidence_score:.2f}, "
+                     f"as of {regime.timestamp.date().isoformat()})")
+    else:
+        lines.append("- Stellix regime: no regime label for this symbol in your organization.")
+    try:
+        headlines = (await market.news(symbol, None))["data"][:5]
+        for h in headlines:
+            lines.append(f"- Headline ({h.get('publisher')}, {h.get('published_at')}): {h['title']}")
+    except Exception:  # noqa: BLE001
+        lines.append("- Headlines: unavailable right now.")
+    return "\n".join(lines)
+
+
 async def _recent_market_context(db: AsyncSession, symbol: str) -> dict:
     row = (
         await db.execute(
@@ -149,6 +189,7 @@ def _sse(payload: dict) -> str:
 async def chat_stream(
     payload: ChatRequest,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_tenant_db),
 ) -> StreamingResponse:
     """Stream a research-chat answer over SSE (Batch 18).
 
@@ -169,6 +210,11 @@ async def chat_stream(
     except PricePredictionRejected as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
+    user_prompt = payload.message
+    if payload.context_symbol:
+        context = await _terminal_context(db, payload.context_symbol.upper())
+        user_prompt = f"{context}\n\nQUESTION:\n{payload.message}"
+
     model_key = llm_router.route("chat", payload.stakes)
     organization_id = current_user.organization_id
     user_id = current_user.id
@@ -180,7 +226,7 @@ async def chat_stream(
             async for item in llm_router.stream_text(
                 model_key=model_key,
                 system_prompt=_CHAT_SYSTEM_PROMPT,
-                user_prompt=payload.message,
+                user_prompt=user_prompt,
             ):
                 if "usage" in item:
                     usage = item["usage"]
@@ -214,7 +260,7 @@ async def chat_stream(
                             organization_id=organization_id,
                             user_id=user_id,
                             function_name="chat",
-                            full_prompt=f"SYSTEM:\n{_CHAT_SYSTEM_PROMPT}\n\nUSER:\n{payload.message}",
+                            full_prompt=f"SYSTEM:\n{_CHAT_SYSTEM_PROMPT}\n\nUSER:\n{user_prompt}",
                             full_response="".join(text_parts),
                             model_used=usage["model_name"],
                             model_key=usage["model_key"],
@@ -296,28 +342,20 @@ async def graph_summary(
 
     repo = GraphSyncService().repository
     org = str(current_user.organization_id)
-    try:
-        if query_name == "failed-strategies-by-regime":
-            regime = result_id or "Bear"
-            since = datetime.now(UTC) - timedelta(days=730)
-            raw_results = {"items": await repo.failed_strategies_by_regime(org, regime=regime, since=since)}
-        elif query_name == "lineage":
-            if not result_id:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="lineage requires result_id=<strategy_id>")
-            raw_results = await repo.lineage(org, strategy_id=result_id)
-        elif query_name == "robust-across-regimes":
-            raw_results = {"items": await repo.robust_across_regimes(org, min_regimes=4)}
-        elif query_name == "recurring-failure-modes":
-            raw_results = {"items": await repo.recurring_failure_modes(org, min_occurrences=3)}
-        else:
-            raw_results = {"items": await repo.hypotheses_leading_to_active(org)}
-    except HTTPException:
-        raise
-    except Exception as exc:  # noqa: BLE001 — surface as a clean 503, matching Batch 7's graph routes
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Knowledge graph is currently unreachable (Neo4j not connected)",
-        ) from exc
+    if query_name == "failed-strategies-by-regime":
+        regime = result_id or "Bear"
+        since = datetime.now(UTC) - timedelta(days=730)
+        raw_results = {"items": await repo.failed_strategies_by_regime(org, regime=regime, since=since)}
+    elif query_name == "lineage":
+        if not result_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="lineage requires result_id=<strategy_id>")
+        raw_results = await repo.lineage(org, strategy_id=result_id)
+    elif query_name == "robust-across-regimes":
+        raw_results = {"items": await repo.robust_across_regimes(org, min_regimes=4)}
+    elif query_name == "recurring-failure-modes":
+        raw_results = {"items": await repo.recurring_failure_modes(org, min_occurrences=3)}
+    else:
+        raw_results = {"items": await repo.hypotheses_leading_to_active(org)}
 
     llm = LLMService(db, organization_id=current_user.organization_id, user_id=current_user.id)
     try:

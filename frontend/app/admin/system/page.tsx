@@ -332,48 +332,41 @@ export default function SystemMonitoringPage() {
                 </CardContent>
               </Card>
 
-              {/* CONSISTENCY ALERTS */}
+              {/* RESEARCH MEMORY INDEX */}
               <Card
                 className={`lg:col-span-2 ${cardClass}`}
                 style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.08)" }}
               >
                 <CardHeader className="border-b border-white/[0.06] p-5">
                   <CardTitle className="text-sm font-semibold tracking-wide text-[#F5F5F7]">
-                    Knowledge Graph Consistency Sweep
+                    Research Memory Index
                   </CardTitle>
                   <CardDescription className="mt-0.5 text-xs text-[#808495]">
-                    Scheduled audit sweep comparing relational strategy state with Neo4j graph nodes.
+                    Lineage and failure memory, rebuilt from PostgreSQL on a schedule so it never drifts from the database.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-5">
-                  {!data.consistency_alert ? (
-                    <p className="text-xs text-[#808495]">No consistency sweep has run yet for this organization.</p>
-                  ) : data.consistency_alert.graph_unreachable ? (
-                    <div className="flex items-center gap-2 rounded-xl border border-[#FBBF24]/30 bg-[#FBBF24]/10 p-3 text-xs text-[#FBBF24]">
-                      <AlertTriangle className="h-4 w-4 shrink-0" />
-                      <span>
-                        Graph database was unreachable during last sweep (
-                        {new Date(data.consistency_alert.checked_at).toLocaleString()}).
-                      </span>
-                    </div>
+                  {!data.memory_index ? (
+                    <p className="text-xs text-[#808495]">The index is building — it is available a few seconds after the API starts.</p>
                   ) : (
                     <div className="flex flex-col gap-2 font-mono text-xs">
                       <div className="flex flex-wrap items-center gap-6">
                         <div>
-                          <span className="text-[#808495]">Orphaned Nodes: </span>
-                          <span className="font-bold text-[#F5F5F7]">{data.consistency_alert.orphaned_graph_nodes.length}</span>
+                          <span className="text-[#808495]">Strategies: </span>
+                          <span className="font-bold text-[#F5F5F7]">{data.memory_index.strategies}</span>
                         </div>
                         <div>
-                          <span className="text-[#808495]">Unsynced Strategies: </span>
-                          <span className="font-bold text-[#F5F5F7]">{data.consistency_alert.unsynced_strategies.length}</span>
+                          <span className="text-[#808495]">Failure records: </span>
+                          <span className="font-bold text-[#F5F5F7]">{data.memory_index.failures}</span>
                         </div>
                         <div>
-                          <span className="text-[#808495]">Missing Lineage Edges: </span>
-                          <span className="font-bold text-[#F5F5F7]">{data.consistency_alert.missing_lineage_edges.length}</span>
+                          <span className="text-[#808495]">Research notes: </span>
+                          <span className="font-bold text-[#F5F5F7]">{data.memory_index.research_notes}</span>
                         </div>
                       </div>
                       <p className="mt-2 text-[10px] text-[#808495]">
-                        Last sweep completed: {new Date(data.consistency_alert.checked_at).toLocaleString()}
+                        Last rebuilt: {new Date(data.memory_index.rebuilt_at).toLocaleString()} · refreshes every{" "}
+                        {Math.round(data.memory_index.refresh_seconds / 60)} min
                       </p>
                     </div>
                   )}

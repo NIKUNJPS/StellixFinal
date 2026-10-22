@@ -1,0 +1,64 @@
+# Real-time ETF streamer — holds ONE websocket to Alpaca's IEX feed and pushes trade
+# prices to the dashboard via Redis. Same image as the backend; only the command
+# differs. Exactly one replica, and Recreate (never RollingUpdate): Alpaca's free plan
+# allows a single connection per account, so a second pod during a rollout would be
+# refused with error 406. With no ALPACA_* keys in the secret it idles harmlessly.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stellix-etf-streamer
+  namespace: stellix
+  labels:
+    app.kubernetes.io/name: stellix-etf-streamer
+    app.kubernetes.io/component: streamer
+    app.kubernetes.io/part-of: stellix-labs
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: stellix-etf-streamer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: stellix-etf-streamer
+        app.kubernetes.io/component: streamer
+        app.kubernetes.io/part-of: stellix-labs
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 15
+      containers:
+        - name: etf-streamer
+          image: ghcr.io/stellix-labs/stellix-backend:latest
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "app.streaming.etf_stream"]
+          envFrom:
+            - configMapRef:
+                name: stellix-config
+            - secretRef:
+                name: stellix-secrets
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

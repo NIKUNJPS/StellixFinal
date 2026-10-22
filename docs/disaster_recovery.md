@@ -1,7 +1,7 @@
 # Stellix Labs — Disaster Recovery (v1)
 
-Backup, restore, and failure-handling procedures for the three stateful stores
-(PostgreSQL/TimescaleDB, Neo4j, Redis) and the Celery job system. In production
+Backup, restore, and failure-handling procedures for the two stateful stores
+(PostgreSQL/TimescaleDB, Redis) and the Celery job system. In production
 these are managed cloud services (see `docs/adr/0004-managed-data-services.md`),
 so the *authoritative* backups are the provider's automated snapshots + PITR; the
 commands below are the self-managed equivalents and the restore drills you run.
@@ -10,10 +10,9 @@ commands below are the self-managed equivalents and the restore drills you run.
 
 - **PostgreSQL is the single source of truth.** Every strategy, failure, regime
   label, research note, performance record, and audit entry lives here.
-- **Neo4j is a *derived projection*.** The knowledge graph is a real-time dual-write
-  from the Postgres service layer (`GraphSyncService`), not an independent store.
-  If Neo4j is lost, it is **rebuilt from Postgres** — it is never the only copy of
-  anything. This makes the graph's effective RPO the rebuild time, not its backup age.
+- **Research Memory is derived, in-process data.** The API builds it from Postgres at
+  startup and rebuilds it every `RESEARCH_MEMORY_REFRESH_SECONDS` (ADR 0012). It has no
+  storage of its own, so there is nothing to back up: restoring Postgres restores it.
 - **Redis is ephemeral.** It holds the cache, rate-limiter token buckets, and the
   Celery broker/result queues. None of it is a system of record; a total Redis loss
   drops in-flight/queued jobs (see §4) but no durable data.
@@ -23,7 +22,7 @@ commands below are the self-managed equivalents and the restore drills you run.
 | Store | RPO (max data loss) | RTO (time to restore) | Basis |
 | --- | --- | --- | --- |
 | PostgreSQL | **≤ 5 min** | **≤ 1 hr** | managed continuous WAL archiving / PITR |
-| Neo4j (graph) | **0** (derived) | **≤ 2 hr** | rebuilt from Postgres, or ≤ 24h dump |
+| Research Memory | **0** (derived) | minutes after API start | re-derived from Postgres automatically |
 | Redis | n/a (ephemeral) | minutes | recreate; re-enqueue lost jobs |
 | App tier (stateless) | n/a | minutes | redeploy from image (`v1.0.0`) |
 
@@ -84,43 +83,13 @@ psql --dbname=stellix_restore -c "SELECT max(created_at) FROM audit_log;"
 
 ---
 
-## 2. Neo4j backup & restore
+## 2. Research Memory
 
-Because the graph is derived, prefer **rebuild** over restore. Keep dumps anyway for
-fast recovery.
-
-### Backup (offline dump — Community Edition)
-Community Edition has no online/incremental backup, so dump a stopped database (a
-brief window; acceptable given the graph is non-authoritative):
-```bash
-neo4j stop
-neo4j-admin database dump neo4j \
-  --to-path=/backups/neo4j \
-  --overwrite-destination=true
-neo4j start
-```
-Managed Neo4j (AuraDB) takes automatic daily snapshots — use those in production;
-the command above is for the self-managed/dev equivalent.
-
-### Restore (from a dump)
-```bash
-neo4j stop
-neo4j-admin database load neo4j \
-  --from-path=/backups/neo4j \
-  --overwrite-destination=true
-neo4j start
-```
-
-### Rebuild from Postgres (the preferred path)
-The graph is fully reconstructible from Postgres. Point the backend at the empty
-Neo4j and either (a) re-run the seed's graph sync path, or (b) run the nightly
-consistency sweep, which detects the missing nodes/edges:
-```bash
-# Trigger the reconciliation task (also runs nightly at 03:00 UTC on beat):
-celery -A app.worker.celery_app.celery_app call run_graph_consistency_sweep
-```
-For a full cold rebuild, replay each org's entities through `GraphSyncService`
-(the same synchronous dual-write the services use on every create/update).
+Research Memory (lineage, recurring failure modes, the five research queries) has no
+storage of its own: the API derives it from Postgres at startup and on every refresh
+(ADR 0012). Recovery is therefore automatic — restore Postgres (§1), start the API, and
+the index is rebuilt within seconds. The System Monitoring page shows when it was last
+rebuilt and how many records it holds.
 
 ---
 
@@ -180,13 +149,13 @@ tasks first (otherwise late-ack redelivery would duplicate failures/candidates).
 
 ## 5. Recovery runbook (region-level outage, summary)
 
-1. **Provision** managed Postgres, Neo4j, Redis in the standby region.
+1. **Provision** managed Postgres and Redis in the standby region.
 2. **Restore Postgres** via the provider's PITR to the latest consistent point
    (≤ 5 min RPO), or `pg_restore` the newest dump.
 3. **Deploy** the app tier: `kubectl apply` the `v1.0.0` manifests
    (`infra/k8s/`), run the migration Job, point the ConfigMap/Secret at the new
    endpoints.
-4. **Rebuild the graph** from Postgres (§2) — do not wait on a Neo4j restore.
+4. **Research Memory** rebuilds itself from Postgres when the API starts — nothing to do.
 5. **Redis**: fresh instance; re-enqueue any jobs that were `running`/`pending` at
    the outage (query the tracking tables for non-terminal statuses).
 6. **Verify**: `GET /health/ready` returns 200 on all backend pods (it 503s while
@@ -218,7 +187,7 @@ A backup you've never restored is a hope, not a backup. Run this drill on a sche
      (SELECT count(*) FROM audit_log)       AS audit_rows;"
    ```
 3. **Run the integration test suite against the restored DB.** The hermetic suite uses
-   SQLite, but the `integration`-marked tests exercise the real Postgres/Neo4j/Redis
+   SQLite, but the `integration`-marked tests exercise the real Postgres/Redis
    stack and are the strongest automated proof the restore is coherent:
    ```bash
    DATABASE_URL=postgresql+asyncpg://$PGUSER@$PGHOST/stellix_verify \

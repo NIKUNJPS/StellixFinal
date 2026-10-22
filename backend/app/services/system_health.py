@@ -1,11 +1,10 @@
 """System Monitoring page (Batch 12) — extends Batch 0's /health into a richer,
 admin-only view: per-service status/uptime%/response-time, Celery worker
 liveness (via a dedicated heartbeat task, not just "is the broker reachable"),
-job queue counts, real host resource gauges (psutil), and Batch 7's
-consistency-sweep alerts.
+job queue counts, real host resource gauges (psutil), and the Research Memory
+index status.
 
-Uptime% and consistency-sweep results are Redis-backed (a ring buffer / a
-TTL'd latest-result key) rather than new Postgres tables — this is
+Uptime% is Redis-backed (a ring buffer) rather than a new Postgres table — this is
 operational telemetry, not durable business data (see docs/schemas.md
 "System health-detailed").
 """
@@ -22,15 +21,13 @@ from datetime import UTC, datetime
 import psutil
 from sqlalchemy import text
 
-from app.clients import neo4j_client, redis_client
+from app.clients import redis_client
 from app.core.metrics import service_health_gauge
 from app.db.session import get_system_session
 
 _UPTIME_HISTORY_LEN = 100
 _HEARTBEAT_KEY = "system:celery_heartbeat"
 _HEARTBEAT_STALE_AFTER_SECONDS = 90  # beat schedule is every 60s; allow one missed tick
-_CONSISTENCY_KEY_PREFIX = "system:consistency:"
-_CONSISTENCY_TTL_SECONDS = 48 * 3600
 
 
 async def _record_check(service: str, ok: bool) -> float:
@@ -120,7 +117,6 @@ async def get_service_health() -> dict[str, dict]:
     services = {
         "postgres": _check_postgres,
         "timescaledb": _check_timescaledb,
-        "neo4j": neo4j_client.verify_connectivity,
         "redis": redis_client.verify_connectivity,
         "celery_worker": _check_celery_worker,
     }
@@ -207,20 +203,22 @@ async def get_failed_job_count() -> int:
         await backend_client.aclose()
 
 
-async def record_consistency_sweep_result(result: dict) -> None:
-    redis = redis_client.get_client()
-    org_id = result["organization_id"]
-    payload = {**result, "checked_at": datetime.now(UTC).isoformat()}
-    await redis.set(
-        f"{_CONSISTENCY_KEY_PREFIX}{org_id}", json.dumps(payload), ex=_CONSISTENCY_TTL_SECONDS
-    )
+async def get_memory_index_status(organization_id: uuid.UUID) -> dict | None:
+    """Research Memory index status for one org: when this process last rebuilt it and
+    how many of the org's records it holds. Counts are read from the org's own slice of
+    the index, so no other tenant's numbers are ever exposed. None before the first build."""
+    from app.graph import memory_index
+    from app.graph.sync_service import GraphSyncService
 
-
-async def get_consistency_alert(organization_id: uuid.UUID) -> dict | None:
-    """Latest consistency-sweep result for one org, or None if the sweep has
-    never run (or its TTL expired) for this org."""
-    redis = redis_client.get_client()
-    raw = await redis.get(f"{_CONSISTENCY_KEY_PREFIX}{organization_id}")
-    if raw is None:
+    status = memory_index.last_status()
+    if status is None:
         return None
-    return json.loads(raw)
+    repo = GraphSyncService().repository
+    org = str(organization_id)
+    return {
+        "rebuilt_at": status["rebuilt_at"],
+        "refresh_seconds": status["refresh_seconds"],
+        "strategies": await repo.count_nodes(org, node_type="Strategy"),
+        "failures": await repo.count_nodes(org, node_type="Failure"),
+        "research_notes": await repo.count_nodes(org, node_type="ResearchNote"),
+    }

@@ -1,0 +1,87 @@
+{
+  "totals": {
+    "tests": 690,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 9,
+    "time_seconds": 267.037
+  },
+  "files": 110,
+  "by_area": {
+    "Backtest and strategy DSL": {
+      "files": 11,
+      "passed": 71,
+      "failed": 0,
+      "skipped": 0
+    },
+    "Data ingestion": {
+      "files": 3,
+      "passed": 8,
+      "failed": 0,
+      "skipped": 1
+    },
+    "Evolution (GA)": {
+      "files": 6,
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0
+    },
+    "Failure intelligence": {
+      "files": 11,
+      "passed": 28,
+      "failed": 0,
+      "skipped": 1
+    },
+    "Knowledge graph": {
+      "files": 8,
+      "passed": 30,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LLM layer and safeguards": {
+      "files": 6,
+      "passed": 36,
+      "failed": 0,
+      "skipped": 0
+    },
+    "Market terminal": {
+      "files": 1,
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0
+    },
+    "Multi-agent desk": {
+      "files": 1,
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0
+    },
+    "Platform / other": {
+      "files": 42,
+      "passed": 261,
+      "failed": 0,
+      "skipped": 6
+    },
+    "Regime detection": {
+      "files": 6,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 1
+    },
+    "Security, RBAC and tenancy": {
+      "files": 11,
+      "passed": 137,
+      "failed": 0,
+      "skipped": 0
+    },
+    "Validation (5 methods)": {
+      "files": 4,
+      "passed": 32,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "skip_reasons": {
+    "integration test; set RUN_INTEGRATION=1 to run": 9
+  }
+}

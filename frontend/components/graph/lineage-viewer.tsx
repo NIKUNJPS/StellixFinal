@@ -1,0 +1,423 @@
+"use client";
+
+import cytoscape, { type Core, type ElementDefinition, type LayoutOptions } from "cytoscape";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { getGraphNode, searchGraphNodes } from "@/lib/graph";
+import { EDGE_TYPES, NODE_COLORS, NODE_TYPES, type EdgeType, type GraphNodeProps, type NodeType } from "@/lib/graph-types";
+
+const LAYOUTS = {
+  "force-directed": {
+    name: "cose",
+    animate: false,
+    padding: 40,
+    nodeRepulsion: () => 18000,
+    idealEdgeLength: () => 140,
+    nodeOverlap: 40,
+    componentSpacing: 120,
+  } as LayoutOptions,
+  hierarchical: { name: "breadthfirst", animate: false, padding: 30, spacingFactor: 1.2 } as LayoutOptions,
+  concentric: { name: "concentric", animate: false, padding: 30, minNodeSpacing: 40 } as LayoutOptions,
+};
+type LayoutKey = keyof typeof LAYOUTS;
+
+// Unconnected results (e.g. a name search) have nothing for the force/tree/ring
+// layouts to work with and collapse into a single overlapping column, so lay them
+// out as a grid instead until there are relationships to show.
+const GRID_LAYOUT = { name: "grid", animate: false, padding: 30, avoidOverlap: true, avoidOverlapPadding: 30 } as LayoutOptions;
+
+function runLayoutOn(cy: Core, key: LayoutKey) {
+  cy.layout(cy.edges().length === 0 ? GRID_LAYOUT : LAYOUTS[key]).run();
+}
+
+function keyPropFor(nodeType: string): string {
+  const map: Record<string, string> = {
+    Strategy: "strategy_id", Regime: "regime_id", Performance: "performance_id",
+    Failure: "failure_id", ResearchNote: "note_id", Researcher: "user_id",
+  };
+  return map[nodeType] ?? "id";
+}
+
+const LABEL_MAX = 28;
+
+/** Short, readable label: markdown markers stripped (notes are stored as markdown),
+ * whitespace collapsed, and long text cut with an ellipsis. */
+function nodeLabel(nodeType: string, props: GraphNodeProps): string {
+  const raw =
+    (props.name as string) ||
+    (props.regime_label as string) ||
+    (props.content as string) ||
+    (props.trigger_condition as string) ||
+    `${nodeType}`;
+  const clean = raw
+    .replace(/[#*_`>]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return clean.length > LABEL_MAX ? `${clean.slice(0, LABEL_MAX - 1).trimEnd()}…` : clean;
+}
+
+export interface GraphElements {
+  nodes: { id: string; type: NodeType | string; properties: GraphNodeProps }[];
+  /** ``source``/``target`` must be the composite ``"{type}:{id}"`` form matching a
+   * node's element id (built from ``node.type`` + ``node.id`` above), not a raw id —
+   * see the query-result transforms in app/admin/graph/page.tsx. */
+  edges: { source: string; target: string; type: string }[];
+}
+
+interface LineageViewerProps {
+  /** Externally-provided elements (e.g. from a Research Query result). Replaces the
+   * current graph when it changes. */
+  seed?: GraphElements | null;
+}
+
+export function LineageViewer({ seed }: LineageViewerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const cyRef = useRef<Core | null>(null);
+  const [layout, setLayout] = useState<LayoutKey>("force-directed");
+  // The tap handler is registered once, so it reads the current layout from a ref.
+  const layoutRef = useRef<LayoutKey>("force-directed");
+  const [visibleNodeTypes, setVisibleNodeTypes] = useState<Set<string>>(new Set(NODE_TYPES));
+  const [visibleEdgeTypes, setVisibleEdgeTypes] = useState<Set<string>>(new Set(EDGE_TYPES));
+  const [search, setSearch] = useState("");
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<{ nodeType: string; nodeId: string; props: GraphNodeProps } | null>(null);
+  const [selectedEdges, setSelectedEdges] = useState<{ direction: string; edge_type: string; other: GraphNodeProps; otherLabels: string[] }[]>([]);
+
+  // Initialize Cytoscape once.
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const cy = cytoscape({
+      container: containerRef.current,
+      style: [
+        {
+          selector: "node",
+          style: {
+            "background-color": "data(color)",
+            label: "data(label)",
+            "font-size": 10,
+            color: "#F5F5F7",
+            "text-valign": "bottom",
+            "text-margin-y": 6,
+            "text-wrap": "ellipsis",
+            "text-max-width": "140px",
+            "text-background-color": "#0B0D12",
+            "text-background-opacity": 0.85,
+            "text-background-padding": "2px",
+            width: 28,
+            height: 28,
+          },
+        },
+        {
+          selector: "edge",
+          style: {
+            width: 1.5,
+            "line-color": "#4B4B70",
+            "target-arrow-color": "#4B4B70",
+            "target-arrow-shape": "triangle",
+            "curve-style": "bezier",
+            // Edge names stay hidden until hovered or until an endpoint is selected;
+            // printing VALID_IN on every line turned busy graphs into noise.
+            label: "",
+            "font-size": 8,
+            color: "#9A9DA8",
+          },
+        },
+        {
+          selector: "edge.hover, edge.hl, edge:selected",
+          style: { label: "data(label)", "line-color": "#8B7CFF", "target-arrow-color": "#8B7CFF", "z-index": 10 },
+        },
+        {
+          selector: "node:selected",
+          style: { "border-width": 3, "border-color": "#F5F5F7" },
+        },
+      ],
+      wheelSensitivity: 0.2,
+    });
+    cyRef.current = cy;
+
+    cy.on("mouseover", "edge", (evt) => evt.target.addClass("hover"));
+    cy.on("mouseout", "edge", (evt) => evt.target.removeClass("hover"));
+    cy.on("select", "node", (evt) => evt.target.connectedEdges().addClass("hl"));
+    cy.on("unselect", "node", (evt) => evt.target.connectedEdges().removeClass("hl"));
+    cy.on("tap", "node", async (evt) => {
+      const n = evt.target;
+      const nodeType = n.data("type") as string;
+      const nodeId = n.data("key") as string;
+      try {
+        const detail = await getGraphNode(nodeType as NodeType, nodeId);
+        setSelected({ nodeType, nodeId, props: detail.node });
+        setSelectedEdges([
+          ...detail.outgoing.map((e) => ({ direction: "out", edge_type: e.edge_type, other: e.other, otherLabels: e.other_labels })),
+          ...detail.incoming.map((e) => ({ direction: "in", edge_type: e.edge_type, other: e.other, otherLabels: e.other_labels })),
+        ]);
+        // Expand-on-click: merge the neighbor nodes/edges into the visible graph.
+        const newElements: ElementDefinition[] = [];
+        const addNeighbor = (labels: string[], props: GraphNodeProps, edgeType: string, direction: "out" | "in") => {
+          const otherType = labels[0] ?? "Strategy";
+          const key = String(props[keyPropFor(otherType)] ?? "");
+          if (!key) return;
+          const otherId = `${otherType}:${key}`;
+          if (cy.getElementById(otherId).empty()) {
+            newElements.push({
+              data: { id: otherId, key, type: otherType, label: nodeLabel(otherType, props), color: NODE_COLORS[otherType as NodeType] ?? "#9A9DA8" },
+            });
+          }
+          const edgeId = direction === "out" ? `${n.id()}->${otherId}:${edgeType}` : `${otherId}->${n.id()}:${edgeType}`;
+          if (cy.getElementById(edgeId).empty()) {
+            newElements.push({
+              data: direction === "out"
+                ? { id: edgeId, source: n.id(), target: otherId, type: edgeType, label: edgeType }
+                : { id: edgeId, source: otherId, target: n.id(), type: edgeType, label: edgeType },
+            });
+          }
+        };
+        detail.outgoing.forEach((e) => addNeighbor(e.other_labels, e.other, e.edge_type, "out"));
+        detail.incoming.forEach((e) => addNeighbor(e.other_labels, e.other, e.edge_type, "in"));
+        if (newElements.length) {
+          cy.add(newElements);
+          n.connectedEdges().addClass("hl"); // the tapped record's new links are labelled too
+          runLayoutOn(cy, layoutRef.current);
+        }
+      } catch (err) {
+        setSearchError(err instanceof Error ? err.message : "Failed to load node detail");
+      }
+    });
+
+    return () => {
+      cy.destroy();
+      cyRef.current = null;
+    };
+  }, []);
+
+  // Load seed elements whenever they change.
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy || !seed) return;
+    cy.elements().remove();
+    setSelected(null);
+    setSelectedEdges([]);
+    const elements: ElementDefinition[] = [];
+    const seenNodes = new Set<string>();
+    for (const node of seed.nodes) {
+      const id = `${node.type}:${node.id}`;
+      if (seenNodes.has(id)) continue;
+      seenNodes.add(id);
+      elements.push({
+        data: { id, key: node.id, type: node.type, label: nodeLabel(node.type, node.properties), color: NODE_COLORS[node.type as NodeType] ?? "#9A9DA8" },
+      });
+    }
+    for (const [i, edge] of seed.edges.entries()) {
+      elements.push({ data: { id: `seed-edge-${i}`, source: edge.source, target: edge.target, type: edge.type, label: edge.type } });
+    }
+    cy.add(elements);
+    runLayoutOn(cy, layout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed]);
+
+  const runLayout = useCallback((key: LayoutKey) => {
+    setLayout(key);
+    layoutRef.current = key;
+    if (cyRef.current) runLayoutOn(cyRef.current, key);
+  }, []);
+
+  const applyFilters = useCallback((nodeTypes: Set<string>, edgeTypes: Set<string>) => {
+    const cy = cyRef.current;
+    if (!cy) return;
+    cy.nodes().forEach((n) => {
+      n.style("display", nodeTypes.has(n.data("type")) ? "element" : "none");
+    });
+    cy.edges().forEach((e) => {
+      const sourceVisible = nodeTypes.has(e.source().data("type"));
+      const targetVisible = nodeTypes.has(e.target().data("type"));
+      const typeVisible = edgeTypes.has(e.data("type"));
+      e.style("display", sourceVisible && targetVisible && typeVisible ? "element" : "none");
+    });
+  }, []);
+
+  useEffect(() => {
+    applyFilters(visibleNodeTypes, visibleEdgeTypes);
+  }, [visibleNodeTypes, visibleEdgeTypes, applyFilters]);
+
+  function toggleNodeType(t: string) {
+    setVisibleNodeTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t);
+      else next.add(t);
+      return next;
+    });
+  }
+
+  function toggleEdgeType(t: string) {
+    setVisibleEdgeTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t);
+      else next.add(t);
+      return next;
+    });
+  }
+
+  async function runSearch() {
+    setSearchError(null);
+    if (!search.trim()) return;
+    try {
+      const result = await searchGraphNodes(search.trim());
+      const cy = cyRef.current;
+      if (!cy) return;
+      const elements: ElementDefinition[] = [];
+      for (const item of result.items) {
+        const key = String(item.properties[keyPropFor(item.node_type)] ?? "");
+        const id = `${item.node_type}:${key}`;
+        if (cy.getElementById(id).empty()) {
+          elements.push({
+            data: { id, key, type: item.node_type, label: nodeLabel(item.node_type, item.properties), color: NODE_COLORS[item.node_type as NodeType] ?? "#9A9DA8" },
+          });
+        }
+      }
+      cy.add(elements);
+      runLayoutOn(cy, layout);
+      if (result.items.length === 0) setSearchError("No matches");
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : "Search failed");
+    }
+  }
+
+  function exportPng() {
+    const cy = cyRef.current;
+    if (!cy) return;
+    const uri = cy.png({ full: true, scale: 2, bg: "#08090B" });
+    const a = document.createElement("a");
+    a.href = uri;
+    a.download = "research-memory.png";
+    a.click();
+  }
+
+  return (
+    <div className="flex flex-col gap-3 text-[#9A9DA8]">
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && runSearch()}
+          placeholder="Search by name..."
+          className="h-8 w-48 border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] placeholder:text-[#666A76]"
+          data-testid="graph-search-input"
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={runSearch}
+          data-testid="graph-search-button"
+          className="border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] hover:border-white/[0.12] hover:bg-[#14161B]/80"
+        >
+          Search
+        </Button>
+        <div className="ml-2 flex gap-1">
+          {(Object.keys(LAYOUTS) as LayoutKey[]).map((key) => (
+            <Button
+              key={key}
+              size="sm"
+              variant={layout === key ? "default" : "outline"}
+              onClick={() => runLayout(key)}
+              data-testid={`layout-${key}`}
+              className={
+                layout === key
+                  ? "border border-white/[0.15] bg-[#14161B] text-xs text-[#F5F5F7] shadow-sm"
+                  : "border-white/[0.06] bg-transparent text-xs text-[#9A9DA8] hover:border-white/[0.12] hover:bg-[#14161B]/50 hover:text-[#F5F5F7]"
+              }
+            >
+              {key}
+            </Button>
+          ))}
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          className="ml-auto border-white/[0.06] bg-[#14161B] text-xs text-[#F5F5F7] hover:border-white/[0.12] hover:bg-[#14161B]/80"
+          onClick={exportPng}
+          data-testid="export-png"
+        >
+          Export PNG
+        </Button>
+      </div>
+      {searchError && <p className="text-xs text-[#E45B5B]">{searchError}</p>}
+
+      <div className="flex flex-wrap gap-3 text-xs">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[#666A76]">Nodes:</span>
+          {NODE_TYPES.map((t) => (
+            <button
+              key={t}
+              onClick={() => toggleNodeType(t)}
+              data-testid={`node-filter-${t}`}
+              className="flex items-center gap-1 rounded-full border border-white/[0.06] bg-[#14161B] px-2 py-0.5 text-[#F5F5F7] transition-opacity"
+              style={{ opacity: visibleNodeTypes.has(t) ? 1 : 0.35 }}
+            >
+              <span className="inline-block h-2 w-2 rounded-full" style={{ background: NODE_COLORS[t] }} />
+              {t}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[#666A76]">Edges:</span>
+          {EDGE_TYPES.map((t) => (
+            <button
+              key={t}
+              onClick={() => toggleEdgeType(t)}
+              data-testid={`edge-filter-${t}`}
+              className="rounded-full border border-white/[0.06] bg-[#14161B] px-2 py-0.5 text-[#F5F5F7] transition-opacity"
+              style={{ opacity: visibleEdgeTypes.has(t) ? 1 : 0.35 }}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="relative">
+        <div
+          ref={containerRef}
+          className="h-[480px] w-full rounded-md border border-white/[0.06] bg-[#08090B]"
+          data-testid="cytoscape-canvas"
+        />
+        {selected && (
+          <div className="absolute right-0 top-0 h-full w-72 overflow-y-auto border-l border-white/[0.06] bg-[#0F1115] p-4 text-[#F5F5F7] shadow-2xl">
+            <div className="mb-2 flex items-center justify-between">
+              <Badge className="border border-white/[0.08] bg-[#14161B] text-xs text-[#F5F5F7]">{selected.nodeType}</Badge>
+              <button className="text-xs text-[#666A76] hover:text-[#F5F5F7]" onClick={() => setSelected(null)} data-testid="close-detail-panel">
+                close
+              </button>
+            </div>
+            <h4 className="mb-2 text-sm font-medium text-[#F5F5F7]">{nodeLabel(selected.nodeType, selected.props)}</h4>
+            <dl className="space-y-1 text-xs">
+              {Object.entries(selected.props)
+                .filter(([k]) => k !== "organization_id")
+                .map(([k, v]) => (
+                  <div key={k} className="flex justify-between gap-2">
+                    <dt className="text-[#666A76]">{k}</dt>
+                    <dd className="truncate text-right text-[#9A9DA8]">{String(v)}</dd>
+                  </div>
+                ))}
+            </dl>
+            {selectedEdges.length > 0 && (
+              <div className="mt-3 border-t border-white/[0.06] pt-2">
+                <h5 className="mb-1 text-xs font-medium text-[#666A76]">Edges</h5>
+                <ul className="space-y-1 text-xs text-[#9A9DA8]">
+                  {selectedEdges.map((e, i) => (
+                    <li key={i} className="truncate">
+                      {e.direction === "out" ? "→" : "←"} {e.edge_type}{" "}
+                      <span className="text-[#F5F5F7]">{nodeLabel(e.otherLabels[0] ?? "", e.other)}</span>
+                      <span className="text-[#666A76]"> · {e.otherLabels[0]}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

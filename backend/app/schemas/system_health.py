@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from datetime import datetime
 
 from pydantic import BaseModel
@@ -34,13 +33,14 @@ class ResourceGauges(BaseModel):
     disk_total_gb: float
 
 
-class ConsistencyAlert(BaseModel):
-    organization_id: uuid.UUID
-    graph_unreachable: bool
-    orphaned_graph_nodes: list[str]
-    unsynced_strategies: list[str]
-    missing_lineage_edges: list[str]
-    checked_at: datetime
+class MemoryIndexStatus(BaseModel):
+    """Research Memory index for the caller's organization (rebuilt from Postgres)."""
+
+    rebuilt_at: datetime
+    refresh_seconds: int
+    strategies: int
+    failures: int
+    research_notes: int
 
 
 class SystemHealthDetailedResponse(BaseModel):
@@ -49,7 +49,7 @@ class SystemHealthDetailedResponse(BaseModel):
     job_queue: list[JobQueueEntry]
     failed_job_count: int
     resources: ResourceGauges
-    consistency_alert: ConsistencyAlert | None
+    memory_index: MemoryIndexStatus | None
     # Batch 13: same two checks GET /health/live and GET /health/ready expose
     # as machine-facing probe endpoints, surfaced here too for the human
     # dashboard view — liveness is always true if this response returned at

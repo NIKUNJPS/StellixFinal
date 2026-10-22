@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import uuid
 
 import pandas as pd
@@ -32,6 +33,8 @@ from app.strategy import lifecycle
 from app.ws import events as ws_events
 
 _TUNABLE_KEYS = ("parameters", "entry_rules", "exit_rules", "risk_constraints")
+# Evolution names variants "<parent> (evolved (<params>))"; the family is everything before it.
+_EVOLVED_SUFFIX = re.compile(r"\s*\(evolved.*$", re.IGNORECASE)
 
 
 def _fire(coro) -> None:
@@ -847,20 +850,31 @@ async def get_top_performers(session: AsyncSession, *, limit: int = 5) -> list[d
             .join(PerformanceSnapshot, PerformanceSnapshot.strategy_id == Strategy.id)
             .where(PerformanceSnapshot.regime_label == AGGREGATE_LABEL)
             .where(PerformanceSnapshot.sharpe_ratio.is_not(None))
+            # A Sharpe from a backtest that never traded is not a performance claim.
+            .where(PerformanceSnapshot.trade_count > 0)
             .order_by(PerformanceSnapshot.sharpe_ratio.desc())
-            .limit(limit * 2)  # over-fetch: some may lack a (separately-cached) equity curve
+            .limit(limit * 40)  # over-fetch: families repeat and some lack a cached equity curve
         )
     ).all()
 
     items: list[dict] = []
+    seen_families: set[str] = set()
     for strategy_id, name, robustness_score, sharpe_ratio in rows:
+        # Evolution spawns dozens of near-identical variants ("X (evolved (…))"); the overlay
+        # should compare different strategies, so show only the best of each family.
+        family_display = _EVOLVED_SUFFIX.sub("", name).strip()
+        family = family_display.lower()
+        if family in seen_families:
+            continue
         charts = await get_backtest_charts(strategy_id)
         if charts is None:
             continue
+        seen_families.add(family)
         items.append(
             {
                 "strategy_id": strategy_id,
-                "name": name,
+                # Evolved variants carry their raw parameter vector in the name; show the family.
+                "name": f"{family_display} (optimised variant)" if family_display != name else name,
                 "sharpe_ratio": sharpe_ratio,
                 "robustness_score": robustness_score,
                 "equity_curve": charts["equity_curve"],

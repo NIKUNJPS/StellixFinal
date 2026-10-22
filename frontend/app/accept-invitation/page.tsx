@@ -3,17 +3,17 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import { Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  AuthAlert,
+  AuthField,
+  AuthShell,
+  authButtonClass,
+  authInputClass,
+  authLinkClass,
+} from "@/components/auth/auth-shell";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { acceptInvitation } from "@/lib/auth";
 
 function AcceptInvitationForm() {
@@ -49,91 +49,82 @@ function AcceptInvitationForm() {
 
   if (!token) {
     return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Invalid invitation link</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            This link is missing its invitation token. Ask your administrator to send a
-            new invitation.
-          </p>
-        </CardContent>
-      </Card>
+      <AuthShell aside="signup" eyebrow="Team invitation" title={<>Invalid invitation <em>link.</em></>}>
+        <AuthAlert tone="error">
+          This link is missing its invitation token. Ask your administrator to send a new invitation.
+        </AuthAlert>
+      </AuthShell>
     );
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Join your team</CardTitle>
-        <CardDescription>
-          Set a password to activate your Stellix Labs seat. Your role has already been
-          assigned by the administrator who invited you.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {done ? (
-          <p className="text-sm text-emerald-500">
-            Welcome aboard — redirecting to sign in…
-          </p>
-        ) : (
-          <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="invite-name">Full name</Label>
-              <Input
-                id="invite-name"
-                placeholder="Jane Quant"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="invite-password">Password</Label>
-              <Input
-                id="invite-password"
-                type="password"
-                placeholder="At least 10 chars, 1 number"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="invite-confirm">Confirm password</Label>
-              <Input
-                id="invite-confirm"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </div>
-            {error && (
-              <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {error}
-              </p>
-            )}
-            <Button type="submit" disabled={busy || !password}>
-              {busy ? "Joining…" : "Accept invitation"}
-            </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link href="/login" className="text-stellix-highlight hover:underline">
-                Sign in
-              </Link>
-            </p>
-          </form>
-        )}
-      </CardContent>
-    </Card>
+    <AuthShell
+      aside="signup"
+      eyebrow="Team invitation"
+      title={
+        <>
+          Join your <em>team.</em>
+        </>
+      }
+      description="Set a password to activate your seat. Your role has already been assigned by the administrator who invited you."
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link href="/login" className={authLinkClass}>
+            Sign in
+          </Link>
+        </>
+      }
+    >
+      {done ? (
+        <AuthAlert tone="success">Welcome aboard — redirecting to sign in…</AuthAlert>
+      ) : (
+        <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
+          <AuthField label="Full name" htmlFor="invite-name">
+            <Input
+              id="invite-name"
+              autoComplete="name"
+              placeholder="Jane Quant"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className={authInputClass}
+            />
+          </AuthField>
+          <AuthField label="Password" htmlFor="invite-password" hint="At least 10 characters, including one number.">
+            <Input
+              id="invite-password"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={authInputClass}
+            />
+          </AuthField>
+          <AuthField label="Confirm password" htmlFor="invite-confirm">
+            <Input
+              id="invite-confirm"
+              type="password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className={authInputClass}
+            />
+          </AuthField>
+          {error && <AuthAlert tone="error">{error}</AuthAlert>}
+          <button type="submit" disabled={busy || !password} className={authButtonClass}>
+            {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+            {busy ? "Joining…" : "Accept invitation"}
+          </button>
+        </form>
+      )}
+    </AuthShell>
   );
 }
 
 export default function AcceptInvitationPage() {
   return (
-    <main className="container mx-auto flex min-h-screen max-w-md items-center justify-center py-16">
-      <Suspense fallback={null}>
-        <AcceptInvitationForm />
-      </Suspense>
-    </main>
+    <Suspense fallback={null}>
+      <AcceptInvitationForm />
+    </Suspense>
   );
 }

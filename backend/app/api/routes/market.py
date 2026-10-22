@@ -16,9 +16,10 @@ from app.schemas.market import (
     GlobalIndicesResponse,
     HeatmapResponse,
     MacroResponse,
+    RealtimeEtfResponse,
     ScreenerResponse,
 )
-from app.services import macro_data, market_chart, market_quotes, market_screener
+from app.services import macro_data, market_chart, market_quotes, market_screener, realtime_etf
 
 router = APIRouter(prefix="/market", tags=["Market Data"])
 
@@ -36,6 +37,16 @@ async def global_indices(_user: User = Depends(get_current_user)) -> GlobalIndic
         # once a minute platform-wide. The response still reports what is true NOW.
         refresh_requested = await market_quotes.request_refresh_if_idle()
     return GlobalIndicesResponse(**payload, refresh_requested=refresh_requested)
+
+
+@router.get(
+    "/realtime-etfs",
+    response_model=RealtimeEtfResponse,
+    summary="Real-time trade prices for index-tracking US ETFs (Alpaca IEX feed; "
+    "honest 'not configured' / 'stream offline' states)",
+)
+async def realtime_etfs(_user: User = Depends(get_current_user)) -> RealtimeEtfResponse:
+    return RealtimeEtfResponse(**await realtime_etf.get_latest())
 
 
 @router.get(

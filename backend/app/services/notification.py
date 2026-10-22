@@ -23,6 +23,7 @@ DEFAULT_NOTIFICATION_PREFERENCES: dict[str, bool] = {
     NotificationType.EVOLUTION_COMPLETED.value: True,
     NotificationType.APPROVAL_REQUESTED.value: True,
     NotificationType.PAYMENT_FAILED.value: True,
+    NotificationType.PRICE_ALERT.value: True,
 }
 
 

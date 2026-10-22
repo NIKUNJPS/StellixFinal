@@ -59,7 +59,7 @@ async def list_failures(
     total = await db.scalar(select(func.count()).select_from(Failure).where(*conditions))
     rows = (
         await db.execute(
-            select(Failure, Strategy.name)
+            select(Failure, Strategy.name, Strategy.symbol)
             .join(Strategy, Strategy.id == Failure.strategy_id)
             .where(*conditions)
             .order_by(Failure.failure_timestamp.desc())
@@ -74,11 +74,11 @@ async def list_failures(
             FailureListItem.model_validate(failure).model_copy(
                 update={
                     "llm_explanation_status": explanation_status(failure),
-                    "symbol": (failure.market_context_snapshot or {}).get("symbol"),
+                    "symbol": _failure_symbol(failure, strategy_symbol),
                     "strategy_name": name,
                 }
             )
-            for failure, name in rows
+            for failure, name, strategy_symbol in rows
         ],
     )
 
@@ -130,6 +130,14 @@ async def failure_heatmap(
     )
 
 
+def _failure_symbol(failure: Failure, strategy_symbol: str | None) -> str | None:
+    """The instrument a failure belongs to. The failure row is append-only, so older rows
+    that never recorded one are resolved read-side from the strategy's own instrument
+    (the symbol it was backtested and monitored on) instead of being edited."""
+    recorded = (failure.market_context_snapshot or {}).get("symbol")
+    return recorded or (strategy_symbol.strip().upper() if strategy_symbol else None)
+
+
 async def _get_failure_or_404(db: AsyncSession, failure_id: uuid.UUID) -> Failure:
     failure = (
         await db.execute(select(Failure).where(Failure.id == failure_id))
@@ -151,7 +159,7 @@ async def get_failure(
     return FailureRead.model_validate(failure).model_copy(
         update={
             "llm_explanation_status": status_value,
-            "symbol": (failure.market_context_snapshot or {}).get("symbol"),
+            "symbol": _failure_symbol(failure, strategy.symbol if strategy else None),
             "strategy_name": strategy.name if strategy else None,
             "background_worker_online": await is_worker_online() if status_value == "queued" else None,
         }

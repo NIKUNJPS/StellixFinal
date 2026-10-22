@@ -11,8 +11,8 @@ What it deliberately does NOT change: the strategy's lifecycle ``status`` and it
 approval records. A re-backtest refreshes evidence; promoting or retiring a strategy
 stays a governed, human decision.
 
-Because ``regime_compatibility`` drives the knowledge graph's ``VALID_IN`` edges, run
-``scripts.backfill_graph`` afterwards to keep Neo4j consistent with Postgres.
+``regime_compatibility`` drives Research Memory's ``VALID_IN`` relationships; the API
+rebuilds that index from Postgres on its next refresh, so nothing else needs running.
 
 Symbol selection: strategies do not store a symbol (it is a backtest parameter), so it
 is derived from the strategy name — the convention the demo data follows — and falls
@@ -110,8 +110,8 @@ async def main() -> int:
     for name, why in failures[:25]:
         print(f"  {name[:40]:40} {why}", flush=True)
     if ok:
-        print("\nNOTE: regime_compatibility changed -> re-run scripts.backfill_graph "
-              "to refresh the graph's VALID_IN edges.", flush=True)
+        print("\nNOTE: regime_compatibility changed -> Research Memory picks up the new VALID_IN "
+              "relationships on the API's next rebuild.", flush=True)
     return 0
 
 

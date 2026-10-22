@@ -1,0 +1,114 @@
+{
+  "strategies": [
+    "SPY Breakout Hold",
+    "SPY Contrarian RSI",
+    "QQQ Bollinger Breakout (Turtle-style)",
+    "QQQ Breakout Hold",
+    "GLD Bollinger Breakout",
+    "Gold Momentum Overlay v2",
+    "BTC Momentum",
+    "BTC Volatility Breakout"
+  ],
+  "seeds": [
+    1,
+    2,
+    3
+  ],
+  "population": 24,
+  "generations": 15,
+  "n_strategies": 8,
+  "mean_by_method": {
+    "genetic_algorithm": {
+      "train_fitness": 5.949719879825171,
+      "test_fitness": 0.1833649820076191,
+      "train_total_return": 0.3298572246721128,
+      "test_total_return": 0.08991569707973703,
+      "test_trades": 17.0
+    },
+    "random_search": {
+      "train_fitness": 2.017407231650373,
+      "test_fitness": 0.06443411599691988,
+      "train_total_return": 1.0976775467077213,
+      "test_total_return": 0.3009371271416698,
+      "test_trades": 15.291666666666666
+    },
+    "seed_unchanged": {
+      "train_fitness": 0.7539381342197756,
+      "test_fitness": 0.05064983610099467,
+      "train_total_return": 0.27229393606542335,
+      "test_total_return": 0.08751228483585473,
+      "test_trades": 19.375
+    }
+  },
+  "train_fitness_ga_minus_seed": {
+    "n_strategies": 8,
+    "mean_diff": 5.195781745605396,
+    "better": 6,
+    "worse": 0,
+    "bootstrap_95ci_mean_diff": [
+      0.04960761072579803,
+      15.372576618710003
+    ],
+    "wilcoxon_p": 0.03125
+  },
+  "train_fitness_ga_minus_random": {
+    "n_strategies": 8,
+    "mean_diff": 3.9323126481747988,
+    "better": 6,
+    "worse": 0,
+    "bootstrap_95ci_mean_diff": [
+      0.005614754226209528,
+      11.763809506783224
+    ],
+    "wilcoxon_p": 0.03125
+  },
+  "test_fitness_ga_minus_seed": {
+    "n_strategies": 8,
+    "mean_diff": 0.13271514590662445,
+    "better": 6,
+    "worse": 1,
+    "bootstrap_95ci_mean_diff": [
+      -0.007223332290202077,
+      0.3180307376206698
+    ],
+    "wilcoxon_p": 0.15625
+  },
+  "test_fitness_ga_minus_random": {
+    "n_strategies": 8,
+    "mean_diff": 0.11893086601069927,
+    "better": 4,
+    "worse": 3,
+    "bootstrap_95ci_mean_diff": [
+      -0.025107867166696392,
+      0.3862858677382446
+    ],
+    "wilcoxon_p": 0.9375
+  },
+  "test_return_ga_minus_seed": {
+    "n_strategies": 8,
+    "mean_diff": 0.0024034122438823073,
+    "better": 3,
+    "worse": 5,
+    "bootstrap_95ci_mean_diff": [
+      -0.024195854044555012,
+      0.03444849237605428
+    ],
+    "wilcoxon_p": 0.9453125
+  },
+  "test_return_ga_minus_random": {
+    "n_strategies": 8,
+    "mean_diff": -0.2110214300619328,
+    "better": 0,
+    "worse": 8,
+    "bootstrap_95ci_mean_diff": [
+      -0.3506144914688865,
+      -0.08814499452885763
+    ],
+    "wilcoxon_p": 0.0078125
+  },
+  "mean_train_minus_test_fitness": {
+    "seed_unchanged": 0.7032882981187809,
+    "genetic_algorithm": 5.7663548978175525,
+    "random_search": 1.9529731156534536
+  }
+}
